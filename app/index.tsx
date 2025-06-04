@@ -196,7 +196,7 @@ export default function Dashboard() {
 
                 {/* Greeting and Summary */}
                 <View style={widgetStyles.summarySection}>
-                  <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>Salam, Ebad.</Text>
+                  <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>السلام عليكم, Ebad.</Text>
                   <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
                     You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 meetings</Text>, ✅ <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 tasks</Text> and 🚀 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>1 habit</Text> today. You're <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>mostly free</Text> after 4 pm.
                   </Text>
