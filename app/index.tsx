@@ -79,26 +79,46 @@ export default function Dashboard() {
     })),
   };
 
-  const toggleTheme = () => {
+  const toggleEditMode = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsDarkMode(prevMode => !prevMode);
-  };
-
-  // Enter edit mode on long press
-  const handleLongPress = useCallback(() => {
-    if (!isEditMode) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setIsEditMode(true);
-    }
+    setIsEditMode(!isEditMode);
   }, [isEditMode]);
 
-  // Exit edit mode on tap
-  const handleTapToExit = useCallback(() => {
-    if (isEditMode) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setIsEditMode(false);
-    }
-  }, [isEditMode]);
+  // Theme toggle with enhanced animation
+  const toggleButtonScale = useSharedValue(1);
+  const toggleButtonRotation = useSharedValue(0);
+
+  const toggleTheme = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Animate button press with scale and rotation
+    toggleButtonScale.value = withTiming(0.9, { 
+      duration: 100,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+    }, () => {
+      toggleButtonScale.value = withTiming(1, { 
+        duration: 200,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+      });
+    });
+
+    toggleButtonRotation.value = withTiming(
+      toggleButtonRotation.value + 180, 
+      { 
+        duration: 300,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+      }
+    );
+
+    setIsDarkMode(!isDarkMode);
+  }, [isDarkMode]);
+
+  const animatedToggleButton = useAnimatedStyle(() => ({
+    transform: [
+      { scale: toggleButtonScale.value },
+      { rotate: `${toggleButtonRotation.value}deg` }
+    ]
+  }));
 
   // Background gesture handlers
   const handleBackgroundLongPress = (event: any) => {
@@ -156,8 +176,8 @@ export default function Dashboard() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[{ flex: 1 }, animatedColors.background]}>
-        
-      
+
+
         {/* Background gesture area */}
         <LongPressGestureHandler onHandlerStateChange={handleBackgroundLongPress} minDurationMs={500}>
           <TapGestureHandler onHandlerStateChange={handleBackgroundTap} enabled={isEditMode}>
@@ -180,17 +200,22 @@ export default function Dashboard() {
                       <Text style={[widgetStyles.dateText, { color: colors.secondaryText }]}>December 9</Text>
                       <Text style={[widgetStyles.yearText, { color: colors.tertiaryText }]}>2024</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={[widgetStyles.themeToggle, { 
-                        backgroundColor: colors.cardBackground, 
-                        borderColor: colors.cardBorder,
-                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
-                      }]} 
-                      onPress={toggleTheme}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={widgetStyles.themeIcon}>{isDarkMode ? '☀️' : '🌙'}</Text>
-                    </TouchableOpacity>
+                    <Animated.View style={animatedToggleButton}>
+                      <TouchableOpacity
+                        style={[
+                          widgetStyles.themeToggle,
+                          {
+                            backgroundColor: colors.cardBackground,
+                            borderColor: colors.cardBorder,
+                            shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                          }
+                        ]}
+                        onPress={toggleTheme}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={widgetStyles.themeIcon}>{isDarkMode ? '☀️' : '🌙'}</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
                 </View>
 
