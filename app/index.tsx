@@ -1,7 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming,
+  Easing
+} from 'react-native-reanimated';
 
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
@@ -21,11 +27,27 @@ import {
     getWidgetGridSize,
     rearrangeWidgets
 } from '../utils/gridUtils';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Dashboard() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const systemColorScheme = useColorScheme();
+  const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
-  const [widgetPositions, setWidgetPositions] = useState<WidgetPosition[]>(getDefaultLayout());
+
+  // Theme transition animation
+  const themeTransition = useSharedValue(isDarkMode ? 1 : 0);
+
+  useEffect(() => {
+    themeTransition.value = withTiming(isDarkMode ? 1 : 0, {
+      duration: 300,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Apple-like easing
+    });
+  }, [isDarkMode]);
+
+  // Update theme when system changes
+  useEffect(() => {
+    setIsDarkMode(systemColorScheme === 'dark');
+  }, [systemColorScheme]);
 
   const colors = {
     background: isDarkMode ? '#000000' : '#EEEEEE',
@@ -47,6 +69,16 @@ export default function Dashboard() {
     cohortBackground: isDarkMode ? 'rgba(0, 122, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
     cohortBorder: isDarkMode ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.18)',
     resizeHandle: '#007AFF',
+  };
+
+  const animatedColors = {
+    background: useAnimatedStyle(() => ({
+      backgroundColor: interpolate(
+        themeTransition.value,
+        [0, 1],
+        [colors.background, colors.background]
+      ),
+    })),
   };
 
   const toggleTheme = () => {
@@ -99,7 +131,7 @@ export default function Dashboard() {
       if (currentWidget && currentWidget.gridX === newGridX && currentWidget.gridY === newGridY) {
         return prevPositions;
       }
-      
+
       const newPositions = rearrangeWidgets(id, newGridX, newGridY, prevPositions);
       return newPositions;
     });
@@ -112,7 +144,7 @@ export default function Dashboard() {
 
     const newGridSize = getWidgetGridSize(newSize);
     const newPos = findFirstAvailablePosition(newGridSize.width, newGridSize.height, widgetPositions, id);
-    
+
     setWidgetPositions(prev => 
       prev.map(pos => 
         pos.id === id 
@@ -125,8 +157,9 @@ export default function Dashboard() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={[widgetStyles.container, { backgroundColor: colors.background }]}>
+      <Animated.View style={[{ flex: 1 }, animatedColors.background]}>
         
+      
         {/* Background gesture area */}
         <LongPressGestureHandler onHandlerStateChange={handleBackgroundLongPress} minDurationMs={500}>
           <TapGestureHandler onHandlerStateChange={handleBackgroundTap} enabled={isEditMode}>
@@ -180,7 +213,7 @@ export default function Dashboard() {
 
                 {/* Widget Container */}
                 <View style={widgetStyles.widgetContainer}>
-                  
+
                   {/* Events Widget */}
                   <DraggableWidget widgetId="events" position={widgetPositions[0]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
                     <EventsWidget colors={colors} isDarkMode={isDarkMode} />
@@ -220,7 +253,7 @@ export default function Dashboard() {
             </View>
           </TapGestureHandler>
         </LongPressGestureHandler>
-      </View>
+      </Animated.View>
     </GestureHandlerRootView>
   );
-} 
+}
