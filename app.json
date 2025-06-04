@@ -8,15 +8,22 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "statusBarHidden": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "statusBarHidden": true,
+      "statusBarStyle": "default"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "statusBar": {
+        "hidden": true,
+        "translucent": false
+      }
     },
     "web": {
       "bundler": "metro",
