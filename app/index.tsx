@@ -6,7 +6,8 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withTiming,
-  Easing
+  Easing,
+  interpolate
 } from 'react-native-reanimated';
 
 import { DraggableWidget } from '../components/DraggableWidget';
@@ -33,6 +34,7 @@ export default function Dashboard() {
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
+  const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
 
   // Theme transition animation
   const themeTransition = useSharedValue(isDarkMode ? 1 : 0);
@@ -73,11 +75,7 @@ export default function Dashboard() {
 
   const animatedColors = {
     background: useAnimatedStyle(() => ({
-      backgroundColor: interpolate(
-        themeTransition.value,
-        [0, 1],
-        [colors.background, colors.background]
-      ),
+      backgroundColor: isDarkMode ? '#000000' : '#EEEEEE',
     })),
   };
 
