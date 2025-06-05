@@ -455,7 +455,8 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           color: isDarkMode ? '#FFFFFF' : '#000000',
           fontFamily: 'Poppins-Regular',
           lineHeight: 46,
-          marginBottom: 12,
+          marginBottom: 16,
+          marginTop: 4,
         }}>
           {currentDate}
         </Text>
