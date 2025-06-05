@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, Text, View, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 interface WidgetProps {
   colors: any;
@@ -20,20 +21,31 @@ const baseWidgetStyle = {
   borderWidth: 0,
 };
 
-export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[
-    baseWidgetStyle, 
-    { 
-      backgroundColor: '#A8C8E8', // Light blue base color
-      shadowColor: '#5A8BC4',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      elevation: 8,
-      padding: 20, // Adjusted padding for larger circles
-      paddingBottom: 0, // Reduced bottom padding specifically
-    }
-  ]}>
+export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push('/cohort');
+  };
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: '#A8C8E8', // Light blue base color
+          shadowColor: '#5A8BC4',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          elevation: 8,
+          padding: 20, // Adjusted padding for larger circles
+          paddingBottom: 0, // Reduced bottom padding specifically
+        }
+      ]}
+    >
     <View style={{
       flex: 1,
       justifyContent: 'center',
@@ -269,8 +281,9 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
         }}>Cohort</Text>
       </View>
     </View>
-  </View>
-);
+    </TouchableOpacity>
+  );
+};
 
 export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[
