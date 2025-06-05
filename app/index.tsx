@@ -322,35 +322,49 @@ export default function Dashboard() {
                 {/* Widget Container */}
                 <View style={widgetStyles.widgetContainer}>
 
-                  {/* Cohort Contacts Widget */}
-                  <DraggableWidget widgetId="events" position={widgetPositions[0]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <CohortContactsWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
+                  {/* Render widgets dynamically based on widgetPositions */}
+                  {widgetPositions.map((position) => {
+                    let WidgetComponent;
+                    switch (position.id) {
+                      case 'events':
+                        WidgetComponent = CohortContactsWidget;
+                        break;
+                      case 'messages':
+                        WidgetComponent = MinaraWidget;
+                        break;
+                      case 'habits':
+                        WidgetComponent = CalendarWidget;
+                        break;
+                      case 'askMinara':
+                        WidgetComponent = AskAIWidget;
+                        break;
+                      case 'prayer':
+                        WidgetComponent = PrayerWidget;
+                        break;
+                      case 'journal':
+                        WidgetComponent = JournalWidget;
+                        break;
+                      default:
+                        return null;
+                    }
 
-                  {/* Messages Widget */}
-                  <DraggableWidget widgetId="messages" position={widgetPositions[1]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <MinaraWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
-
-                  {/* Calendar Widget */}
-                  <DraggableWidget widgetId="habits" position={widgetPositions[2]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <CalendarWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
-
-                  {/* Ask AI Widget */}
-                  <DraggableWidget widgetId="askMinara" position={widgetPositions[3]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <AskAIWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
-
-                  {/* Prayer Widget */}
-                  <DraggableWidget widgetId="prayer" position={widgetPositions[4]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <PrayerWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
-
-                  {/* Journal Widget */}
-                  <DraggableWidget widgetId="journal" position={widgetPositions[5]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <JournalWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
+                    return (
+                      <DraggableWidget 
+                        key={position.id}
+                        widgetId={position.id} 
+                        position={position} 
+                        allPositions={widgetPositions} 
+                        onPositionChange={handleWidgetPositionChange} 
+                        onResize={handleWidgetResize} 
+                        onLiveRearrange={handleLiveRearrange} 
+                        isEditMode={isEditMode} 
+                        isDarkMode={isDarkMode} 
+                        colors={colors}
+                      >
+                        <WidgetComponent colors={colors} isDarkMode={isDarkMode} />
+                      </DraggableWidget>
+                    );
+                  })}
 
                   
                 </View>
