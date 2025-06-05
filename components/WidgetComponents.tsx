@@ -399,8 +399,39 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       { 
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         padding: 16,
+        position: 'relative',
       }
     ]}>
+      {/* Red notification bubble */}
+      <View style={{
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#FF453A',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        shadowColor: '#FF453A',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 2,
+        borderWidth: 1.5,
+        borderColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+      }}>
+        <Text style={{
+          fontSize: 11,
+          fontWeight: '600',
+          color: '#FFFFFF',
+          fontFamily: 'Poppins-Regular',
+          letterSpacing: -0.2,
+          lineHeight: 13,
+        }}>3</Text>
+      </View>
+
       <View style={{
         flex: 1,
         justifyContent: 'flex-start',
@@ -408,9 +439,9 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         {/* Day of week */}
         <Text style={{
           fontSize: 13,
-          fontWeight: '600',
+          fontWeight: 'bold',
           color: '#5AC8FA',
-          fontFamily: 'Poppins-Bold',
+          fontFamily: 'Poppins-Regular',
           marginBottom: 2,
         }}>
           {currentDay}
@@ -419,16 +450,16 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         {/* Date number */}
         <Text style={{
           fontSize: 44,
-          fontWeight: '700',
+          fontWeight: 'bold',
           color: isDarkMode ? '#FFFFFF' : '#000000',
-          fontFamily: 'Poppins-Bold',
+          fontFamily: 'Poppins-Regular',
           lineHeight: 46,
           marginBottom: 12,
         }}>
           {currentDate}
         </Text>
         
-        {/* Up Next section */}
+        {/* Upcoming section */}
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -443,11 +474,11 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           }} />
           <Text style={{
             fontSize: 12,
-            fontWeight: '600',
+            fontWeight: 'bold',
             color: isDarkMode ? '#8E8E93' : '#8E8E93',
-            fontFamily: 'Poppins-Bold',
+            fontFamily: 'Poppins-Regular',
           }}>
-            Up Next
+            Upcoming
           </Text>
         </View>
         
@@ -470,9 +501,9 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
             <View style={{ flex: 1 }}>
               <Text style={{
                 fontSize: 12,
-                fontWeight: '600',
+                fontWeight: 'bold',
                 color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'Poppins-Bold',
+                fontFamily: 'Poppins-Regular',
                 marginBottom: 1,
                 lineHeight: 14,
               }}>
@@ -480,9 +511,9 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
               </Text>
               <Text style={{
                 fontSize: 10,
-                fontWeight: '500',
+                fontWeight: 'normal',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Bold',
+                fontFamily: 'Poppins-Regular',
                 marginBottom: 1,
                 lineHeight: 12,
               }}>
@@ -490,9 +521,9 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
               </Text>
               <Text style={{
                 fontSize: 10,
-                fontWeight: '500',
+                fontWeight: 'normal',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Bold',
+                fontFamily: 'Poppins-Regular',
                 lineHeight: 12,
               }}>
                 9:00 AM (3 hrs)
