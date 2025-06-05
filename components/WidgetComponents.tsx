@@ -295,7 +295,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 60,
+      paddingHorizontal: 80,
       paddingVertical: 4,
     }}>
       {/* Main circular chat input */}
