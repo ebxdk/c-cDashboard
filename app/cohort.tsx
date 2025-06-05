@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import * as Haptics from 'expo-haptics';
 
 export default function CohortScreen() {
   const router = useRouter();
@@ -10,174 +11,197 @@ export default function CohortScreen() {
   const isDarkMode = systemColorScheme === 'dark';
 
   const colors = {
-    background: isDarkMode ? '#000000' : '#EEEEEE',
+    background: isDarkMode ? '#000000' : '#F2F2F7',
     cardBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
     primaryText: isDarkMode ? '#FFFFFF' : '#000000',
-    secondaryText: isDarkMode ? '#A0A0A0' : '#666666',
-    buttonBackground: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+    secondaryText: isDarkMode ? '#8E8E93' : '#8E8E93',
     accent: '#007AFF',
+    separator: isDarkMode ? '#38383A' : '#C6C6C8',
   };
 
   const handleBackPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 
   const handleMyCohort = () => {
-    // TODO: Navigate to My Cohort page
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Navigate to My Cohort');
   };
 
   const handleOneOnOneMentor = () => {
-    // TODO: Navigate to 1-on-1 with Mentor page
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Navigate to 1-on-1 with Mentor');
   };
 
   const handleAdvancedMentorship = () => {
-    // TODO: Navigate to Advanced Mentorship page
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Navigate to Advanced Mentorship');
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accent }]}>← Back</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar 
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
+        backgroundColor={colors.background} 
+      />
+      
+      {/* Large Title */}
+      <View style={styles.titleContainer}>
+        <Text style={[styles.largeTitle, { color: colors.primaryText }]}>Cohort</Text>
+      </View>
+
+      {/* Menu Items */}
+      <View style={[styles.menuContainer, { backgroundColor: colors.cardBackground }]}>
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: colors.separator }]} 
+          onPress={handleMyCohort}
+          activeOpacity={0.6}
+        >
+          <View style={styles.menuItemContent}>
+            <View style={styles.iconContainer}>
+              <Text style={styles.menuIcon}>👥</Text>
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={[styles.menuTitle, { color: colors.primaryText }]}>My Cohort</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.secondaryText }]}>
+                Connect with your fellow learners
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
+          </View>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.primaryText }]}>Cohort</Text>
+
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: colors.separator }]} 
+          onPress={handleOneOnOneMentor}
+          activeOpacity={0.6}
+        >
+          <View style={styles.menuItemContent}>
+            <View style={styles.iconContainer}>
+              <Text style={styles.menuIcon}>🎯</Text>
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={[styles.menuTitle, { color: colors.primaryText }]}>1-on-1 with Mentor</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.secondaryText }]}>
+                Schedule personal guidance sessions
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleAdvancedMentorship}
+          activeOpacity={0.6}
+        >
+          <View style={styles.menuItemContent}>
+            <View style={styles.iconContainer}>
+              <Text style={styles.menuIcon}>🚀</Text>
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={[styles.menuTitle, { color: colors.primaryText }]}>Advanced Mentorship</Text>
+              <Text style={[styles.menuSubtitle, { color: colors.secondaryText }]}>
+                Access specialized guidance programs
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-          Connect with your cohort and mentors
-        </Text>
-
-        {/* Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.cardBackground }]} 
-            onPress={handleMyCohort}
-            activeOpacity={0.7}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonEmoji}>👥</Text>
-              <View style={styles.buttonTextContainer}>
-                <Text style={[styles.buttonTitle, { color: colors.primaryText }]}>My Cohort</Text>
-                <Text style={[styles.buttonSubtitle, { color: colors.secondaryText }]}>
-                  Connect with your fellow learners
-                </Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.cardBackground }]} 
-            onPress={handleOneOnOneMentor}
-            activeOpacity={0.7}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonEmoji}>🎯</Text>
-              <View style={styles.buttonTextContainer}>
-                <Text style={[styles.buttonTitle, { color: colors.primaryText }]}>1-on-1 with Mentor</Text>
-                <Text style={[styles.buttonSubtitle, { color: colors.secondaryText }]}>
-                  Schedule personal guidance sessions
-                </Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.cardBackground }]} 
-            onPress={handleAdvancedMentorship}
-            activeOpacity={0.7}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonEmoji}>🚀</Text>
-              <View style={styles.buttonTextContainer}>
-                <Text style={[styles.buttonTitle, { color: colors.primaryText }]}>Advanced Mentorship</Text>
-                <Text style={[styles.buttonSubtitle, { color: colors.secondaryText }]}>
-                  Access specialized guidance programs
-                </Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.secondaryText }]}>›</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+      {/* Back Button - iOS Style */}
+      <TouchableOpacity 
+        style={[styles.backButton, { backgroundColor: colors.cardBackground }]} 
+        onPress={handleBackPress}
+        activeOpacity={0.6}
+      >
+        <Text style={[styles.backButtonText, { color: colors.accent }]}>Back</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
   },
-  header: {
+  titleContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
+  },
+  largeTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    fontFamily: 'System',
+    letterSpacing: 0.4,
+  },
+  menuContainer: {
+    marginHorizontal: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    borderBottomWidth: 0.5,
+  },
+  menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 56,
   },
-  backButton: {
-    marginRight: 15,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 30,
-    fontFamily: 'Poppins-Regular',
-  },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonContent: {
-    flexDirection: 'row',
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  buttonEmoji: {
-    fontSize: 24,
-    marginRight: 16,
+  menuIcon: {
+    fontSize: 20,
   },
-  buttonTextContainer: {
+  textContainer: {
     flex: 1,
   },
-  buttonTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-    fontFamily: 'Poppins-Regular',
+  menuTitle: {
+    fontSize: 17,
+    fontWeight: '400',
+    fontFamily: 'System',
+    marginBottom: 2,
   },
-  buttonSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
+  menuSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    fontFamily: 'System',
+    lineHeight: 16,
   },
   chevron: {
-    fontSize: 20,
-    fontWeight: '300',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  backButton: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  backButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: 'System',
   },
 });
