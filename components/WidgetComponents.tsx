@@ -282,23 +282,23 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
     }}>
       {/* Main circular chat input */}
       <View style={{
-        width: 120,
-        height: 50,
-        borderRadius: 25,
+        width: 160,
+        height: 65,
+        borderRadius: 32,
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
       }}>
         <Text style={{
-          fontSize: 18,
-          marginRight: 8,
+          fontSize: 22,
+          marginRight: 10,
         }}>💬</Text>
         <Text style={{
-          fontSize: 12,
+          fontSize: 14,
           color: isDarkMode ? '#8E8E93' : '#8E8E93',
           fontFamily: 'Poppins-Regular',
           flex: 1,
@@ -310,14 +310,14 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 20,
-        marginBottom: 16,
+        gap: 24,
+        marginBottom: 20,
       }}>
         {/* Camera button */}
         <View style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
           backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
           justifyContent: 'center',
           alignItems: 'center',
@@ -325,16 +325,16 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         }}>
           <Text style={{
-            fontSize: 18,
+            fontSize: 22,
             textAlign: 'center',
           }}>📷</Text>
         </View>
 
         {/* Microphone button */}
         <View style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
           backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
           justifyContent: 'center',
           alignItems: 'center',
@@ -342,7 +342,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         }}>
           <Text style={{
-            fontSize: 18,
+            fontSize: 22,
             textAlign: 'center',
           }}>🎤</Text>
         </View>
