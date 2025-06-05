@@ -407,7 +407,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       <View style={{
         position: 'absolute',
         top: 14,
-        right: 8,
+        right: 14,
         minWidth: 20,
         height: 20,
         borderRadius: 10,
