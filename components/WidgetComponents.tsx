@@ -299,10 +299,11 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           marginRight: 10,
         }}>💬</Text>
         <Text style={{
-          fontSize: 14,
+          fontSize: 12,
           color: isDarkMode ? '#8E8E93' : '#8E8E93',
           fontFamily: 'Poppins-Regular',
           flex: 1,
+          textAlign: 'center',
         }}>Ask Minara AI</Text>
       </View>
 
