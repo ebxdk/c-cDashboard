@@ -405,7 +405,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       {/* Red notification bubble */}
       <View style={{
         position: 'absolute',
-        top: 8,
+        top: 26,
         right: 8,
         minWidth: 18,
         height: 18,
