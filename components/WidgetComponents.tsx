@@ -389,162 +389,200 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
 
 export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const currentDate = today.getDate();
-  
-  // Get month name
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-  
-  // Get first day of month and number of days
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  
-  // Create calendar grid
-  const calendarDays = [];
-  
-  // Add empty cells for days before first day of month
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  
-  // Add days of month
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
-  
-  // Mock events for demonstration (you can replace with real data)
-  const eventsOnDays = [3, 7, 15, 22, 28]; // Days with events
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDay = dayNames[today.getDay()];
+  const currentDate = today.getDate().toString().padStart(2, '0');
   
   return (
-    <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={[
+      baseWidgetStyle, 
+      { 
+        backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+        padding: 20,
+      }
+    ]}>
       <View style={{
         flex: 1,
-        padding: 12,
+        justifyContent: 'flex-start',
       }}>
-        {/* Header */}
+        {/* Day of week */}
+        <Text style={{
+          fontSize: 13,
+          fontWeight: '500',
+          color: '#5AC8FA',
+          fontFamily: 'Poppins-Regular',
+          marginBottom: 4,
+        }}>
+          {currentDay}
+        </Text>
+        
+        {/* Date number */}
+        <Text style={{
+          fontSize: 48,
+          fontWeight: '700',
+          color: isDarkMode ? '#FFFFFF' : '#000000',
+          fontFamily: 'Poppins-Regular',
+          lineHeight: 52,
+          marginBottom: 16,
+        }}>
+          {currentDate}
+        </Text>
+        
+        {/* Up Next section */}
         <View style={{
           flexDirection: 'row',
-          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: 12,
         }}>
+          <View style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: isDarkMode ? '#8E8E93' : '#8E8E93',
+            marginRight: 8,
+          }} />
           <Text style={{
-            fontSize: 16,
-            fontWeight: '700',
-            color: isDarkMode ? '#FFFFFF' : '#000000',
+            fontSize: 13,
+            fontWeight: '600',
+            color: isDarkMode ? '#8E8E93' : '#8E8E93',
             fontFamily: 'Poppins-Regular',
           }}>
-            {monthNames[currentMonth].substring(0, 3)}
-          </Text>
-          <Text style={{
-            fontSize: 14,
-            fontWeight: '500',
-            color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-            fontFamily: 'Poppins-Regular',
-          }}>
-            {currentYear}
+            Up Next
           </Text>
         </View>
         
-        {/* Day labels */}
-        <View style={{
-          flexDirection: 'row',
-          marginBottom: 8,
-        }}>
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => (
-            <View key={index} style={{ flex: 1, alignItems: 'center' }}>
+        {/* Events list */}
+        <View style={{ flex: 1 }}>
+          {/* Event 1 */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            marginBottom: 8,
+          }}>
+            <View style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#FF453A',
+              marginRight: 8,
+              marginTop: 6,
+            }} />
+            <View style={{ flex: 1 }}>
               <Text style={{
-                fontSize: 10,
+                fontSize: 13,
                 fontWeight: '600',
+                color: isDarkMode ? '#FFFFFF' : '#000000',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 2,
+              }}>
+                STAT1P98 Live S...
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 1,
+              }}>
+                Microsoft Teams Meet...
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
                 fontFamily: 'Poppins-Regular',
               }}>
-                {dayLabel}
+                9:00 AM (3 hrs)
               </Text>
             </View>
-          ))}
-        </View>
-        
-        {/* Calendar grid */}
-        <View style={{ flex: 1 }}>
-          {Array.from({ length: Math.ceil(calendarDays.length / 7) }, (_, rowIndex) => (
-            <View key={rowIndex} style={{
-              flexDirection: 'row',
-              flex: 1,
-              marginBottom: 2,
-            }}>
-              {Array.from({ length: 7 }, (_, colIndex) => {
-                const dayIndex = rowIndex * 7 + colIndex;
-                const day = calendarDays[dayIndex];
-                const isToday = day === currentDate;
-                const hasEvent = day && eventsOnDays.includes(day);
-                
-                return (
-                  <View key={colIndex} style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingVertical: 2,
-                  }}>
-                    {day && (
-                      <View style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: isToday 
-                          ? (isDarkMode ? '#0A84FF' : '#007AFF')
-                          : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                      }}>
-                        <Text style={{
-                          fontSize: 12,
-                          fontWeight: isToday ? '700' : '500',
-                          color: isToday 
-                            ? '#FFFFFF'
-                            : (isDarkMode ? '#FFFFFF' : '#000000'),
-                          fontFamily: 'Poppins-Regular',
-                        }}>
-                          {day}
-                        </Text>
-                        {hasEvent && !isToday && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: isDarkMode ? '#FF9F0A' : '#FF9500',
-                          }} />
-                        )}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          ))}
-        </View>
-        
-        {/* Footer with next event */}
-        <View style={{
-          marginTop: 8,
-          paddingTop: 8,
-          borderTopWidth: 1,
-          borderTopColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
-        }}>
-          <Text style={{
-            fontSize: 10,
-            fontWeight: '500',
-            color: isDarkMode ? '#8E8E93' : '#8E8E93',
-            fontFamily: 'Poppins-Regular',
-            textAlign: 'center',
+          </View>
+          
+          {/* Event 2 */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            marginBottom: 8,
           }}>
-            Next: Team Meeting Tomorrow 2:00 PM
-          </Text>
+            <View style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#FF453A',
+              marginRight: 8,
+              marginTop: 6,
+            }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: isDarkMode ? '#FFFFFF' : '#000000',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 2,
+              }}>
+                Team Meeting
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 1,
+              }}>
+                Conference Room A
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+              }}>
+                2:00 PM (1 hr)
+              </Text>
+            </View>
+          </View>
+          
+          {/* Event 3 */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+          }}>
+            <View style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#FF453A',
+              marginRight: 8,
+              marginTop: 6,
+            }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: isDarkMode ? '#FFFFFF' : '#000000',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 2,
+              }}>
+                Study Session
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+                marginBottom: 1,
+              }}>
+                Library
+              </Text>
+              <Text style={{
+                fontSize: 11,
+                fontWeight: '500',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+              }}>
+                6:00 PM (2 hrs)
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
     </View>
