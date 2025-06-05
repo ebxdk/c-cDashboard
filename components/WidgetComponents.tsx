@@ -289,7 +289,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 14,
+        marginBottom: 8,
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         paddingHorizontal: 16,
@@ -314,7 +314,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         alignItems: 'center',
         width: '100%',
         paddingHorizontal: 8,
-        gap: 24,
+        gap: 16,
       }}>
         {/* Camera button */}
         <View style={{
