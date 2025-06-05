@@ -417,20 +417,112 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
 
 export const AskAIWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 8,
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : '#000000',
+        textAlign: 'center',
+        marginBottom: 8,
+      }}>
+        🤖 Ask AI
+      </Text>
+      <Text style={{
+        fontSize: 12,
+        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+        textAlign: 'center',
+      }}>
+        Get quick answers
+      </Text>
+    </View>
   </View>
 );
 
 export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 8,
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : '#000000',
+        textAlign: 'center',
+        marginBottom: 8,
+      }}>
+        🕌 Prayer
+      </Text>
+      <Text style={{
+        fontSize: 12,
+        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+        textAlign: 'center',
+      }}>
+        Prayer times
+      </Text>
+    </View>
   </View>
 );
 
 export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 8,
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : '#000000',
+        textAlign: 'center',
+        marginBottom: 8,
+      }}>
+        📝 Journal
+      </Text>
+      <Text style={{
+        fontSize: 12,
+        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+        textAlign: 'center',
+      }}>
+        Daily reflections
+      </Text>
+    </View>
   </View>
 );
 
 export const CohortWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 8,
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : '#000000',
+        textAlign: 'center',
+        marginBottom: 8,
+      }}>
+        👥 Cohort
+      </Text>
+      <Text style={{
+        fontSize: 12,
+        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+        textAlign: 'center',
+      }}>
+        Group activities
+      </Text>
+    </View>
   </View>
 );
