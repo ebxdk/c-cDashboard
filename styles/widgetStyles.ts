@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { Fonts } from '../constants/Fonts';
 
 export const widgetStyles = StyleSheet.create({
   container: {
@@ -16,7 +17,7 @@ export const widgetStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 30,
     paddingTop: 85,
-    paddingHorizontal: 25,
+    paddingHorizontal: 30,
   },
   daySection: {
     flexDirection: 'row',
@@ -26,7 +27,7 @@ export const widgetStyles = StyleSheet.create({
   dayText: {
     fontSize: 60,
     fontWeight: '700',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     lineHeight: 64,
   },
   redDot: {
@@ -45,13 +46,13 @@ export const widgetStyles = StyleSheet.create({
   dateText: {
     fontSize: 18,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 22,
   },
   yearText: {
     fontSize: 18,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 22,
   },
   themeToggle: {
@@ -79,13 +80,13 @@ export const widgetStyles = StyleSheet.create({
   greetingText: {
     fontSize: 40,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     marginBottom: 8,
   },
   summaryText: {
     fontSize: 28,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 34,
   },
   highlightText: {
@@ -99,7 +100,7 @@ export const widgetStyles = StyleSheet.create({
   },
   statItem: {
     fontSize: 14,
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
   },
   statNumber: {
     fontWeight: '600',
@@ -119,7 +120,7 @@ export const widgetStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     lineHeight: 18,
   },
   widgetArrow: {
@@ -150,13 +151,13 @@ export const widgetStyles = StyleSheet.create({
   eventTimeText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 20,
   },
   eventPeriod: {
     fontSize: 11,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     marginLeft: 3,
     opacity: 0.6,
   },
@@ -166,14 +167,14 @@ export const widgetStyles = StyleSheet.create({
   eventTitle: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     marginBottom: 2,
     lineHeight: 16,
   },
   eventDate: {
     fontSize: 11,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.6,
   },
   nextEventInfo: {
@@ -185,7 +186,7 @@ export const widgetStyles = StyleSheet.create({
   nextLabel: {
     fontSize: 10,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.6,
   },
   habitsContent: {
@@ -224,36 +225,36 @@ export const widgetStyles = StyleSheet.create({
   habitPercentage: {
     fontSize: 15,
     fontWeight: '700',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
   },
   habitPercentageSymbol: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
   },
   habitName: {
     fontSize: 11,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.7,
     textAlign: 'center',
   },
   bigNumber: {
     fontSize: 22,
     fontWeight: '700',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     lineHeight: 26,
   },
   subText: {
     fontSize: 11,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.6,
   },
   bottomText: {
     fontSize: 10,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.5,
   },
   askMinaraSmallContent: {
@@ -285,7 +286,7 @@ export const widgetStyles = StyleSheet.create({
   askMinaraLargeIconText: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
   },
   askMinaraTextBubble: {
     flex: 1,
@@ -293,7 +294,7 @@ export const widgetStyles = StyleSheet.create({
   askMinaraText: {
     fontSize: 13,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 16,
   },
   askMinaraBottomIcons: {
@@ -312,7 +313,7 @@ export const widgetStyles = StyleSheet.create({
   askBottomIcon: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
   },
   prayersProgressGrid: {
     flex: 1,
@@ -344,12 +345,12 @@ export const widgetStyles = StyleSheet.create({
   prayerName: {
     fontSize: 9,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
   },
   progressText: {
     fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     textAlign: 'center',
   },
   journalContent: {
@@ -363,7 +364,7 @@ export const widgetStyles = StyleSheet.create({
   journalDayLabel: {
     fontSize: 9,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
     marginBottom: 3,
     opacity: 0.6,
     textTransform: 'uppercase',
@@ -371,7 +372,7 @@ export const widgetStyles = StyleSheet.create({
   journalPrompt: {
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     lineHeight: 16,
   },
   journalMetaSection: {
@@ -420,12 +421,12 @@ export const widgetStyles = StyleSheet.create({
   cohortMainText: {
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'System',
+    fontFamily: Fonts.header,
   },
   cohortSubText: {
     fontSize: 11,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.7,
   },
   cohortFooter: {
@@ -434,7 +435,7 @@ export const widgetStyles = StyleSheet.create({
   cohortAppName: {
     fontSize: 10,
     fontWeight: '500',
-    fontFamily: 'System',
+    fontFamily: Fonts.body,
     opacity: 0.6,
   },
 }); 

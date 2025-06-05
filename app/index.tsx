@@ -1,40 +1,46 @@
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useState, useEffect } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { DeviceMotion } from 'expo-sensors';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming,
-  Easing,
-  interpolate
+import Animated, {
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
 
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
-    AskMinaraWidget,
+    AskAIWidget,
     CohortWidget,
     EventsWidget,
     HabitsWidget,
     JournalWidget,
-    MessagesWidget,
+    MinaraWidget,
     PrayerWidget
 } from '../components/WidgetComponents';
 import { widgetStyles } from '../styles/widgetStyles';
-import { WidgetPosition } from '../types/widget';
 import {
     findFirstAvailablePosition,
     getDefaultLayout,
     getWidgetGridSize,
     rearrangeWidgets
 } from '../utils/gridUtils';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Dashboard() {
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
   const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
+
+  // Parallax effect state
+  const [deviceMotion, setDeviceMotion] = useState({ x: 0, y: 0 });
+  const backgroundX = useSharedValue(0);
+  const backgroundY = useSharedValue(0);
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   // Theme transition animation
   const themeTransition = useSharedValue(isDarkMode ? 1 : 0);
@@ -46,6 +52,33 @@ export default function Dashboard() {
     });
   }, [isDarkMode]);
 
+  // Device motion parallax effect
+  useEffect(() => {
+    const subscription = DeviceMotion.addListener((motionData) => {
+      if (motionData.rotation) {
+        // Subtle parallax movement based on device rotation
+        const maxOffset = 20; // Maximum offset in pixels
+        const newX = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.gamma * 30));
+        const newY = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.beta * 30));
+        
+        backgroundX.value = withTiming(newX, {
+          duration: 100,
+          easing: Easing.out(Easing.quad),
+        });
+        backgroundY.value = withTiming(newY, {
+          duration: 100,
+          easing: Easing.out(Easing.quad),
+        });
+      }
+    });
+
+    DeviceMotion.setUpdateInterval(100); // Update every 100ms
+
+    return () => {
+      subscription && subscription.remove();
+    };
+  }, []);
+
   // Update theme when system changes
   useEffect(() => {
     setIsDarkMode(systemColorScheme === 'dark');
@@ -55,8 +88,8 @@ export default function Dashboard() {
     background: isDarkMode ? '#000000' : '#EEEEEE',
     cardBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
     primaryText: isDarkMode ? '#FFFFFF' : '#000000',
-    secondaryText: isDarkMode ? '#8E8E93' : '#3C3C43',
-    tertiaryText: isDarkMode ? '#636366' : '#8E8E93',
+    secondaryText: isDarkMode ? '#A0A0A0' : '#666666',
+    tertiaryText: isDarkMode ? '#808080' : '#777777',
     cardBorder: isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.05)',
     redDot: '#FF3B30',
     prayerCompleted: '#007AFF',
@@ -78,6 +111,14 @@ export default function Dashboard() {
       backgroundColor: isDarkMode ? '#000000' : '#EEEEEE',
     })),
   };
+
+  // Animated background with parallax effect
+  const animatedBackgroundStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: backgroundX.value },
+      { translateY: backgroundY.value },
+    ],
+  }));
 
   const toggleEditMode = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -119,6 +160,22 @@ export default function Dashboard() {
       { rotate: `${toggleButtonRotation.value}deg` }
     ]
   }));
+
+  // Handle long press to enter edit mode
+  const handleLongPress = useCallback(() => {
+    if (!isEditMode) {
+      setIsEditMode(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  }, [isEditMode]);
+
+  // Handle tap to exit edit mode
+  const handleTapToExit = useCallback(() => {
+    if (isEditMode) {
+      setIsEditMode(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [isEditMode]);
 
   // Background gesture handlers
   const handleBackgroundLongPress = (event: any) => {
@@ -175,8 +232,37 @@ export default function Dashboard() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Animated.View style={[{ flex: 1 }, animatedColors.background]}>
-
+      <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: -50,
+            left: -50,
+            right: -50,
+            bottom: -50,
+            opacity: isDarkMode ? 0.25 : 0.35,
+          },
+          animatedBackgroundStyle
+        ]}>
+          <ImageBackground
+            source={require('../assets/images/cc.patterns-01.png')}
+            style={{
+              width: screenWidth + 100,
+              height: screenHeight + 100,
+            }}
+            resizeMode="cover"
+          />
+          <BlurView
+            intensity={15}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+        </Animated.View>
 
         {/* Background gesture area */}
         <LongPressGestureHandler onHandlerStateChange={handleBackgroundLongPress} minDurationMs={500}>
@@ -223,15 +309,15 @@ export default function Dashboard() {
                 <View style={widgetStyles.summarySection}>
                   <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>السلام عليكم</Text>
                   <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
-                    You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 meetings</Text>, ✅ <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 tasks</Text> and 🚀 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>1 habit</Text> today. You're <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>mostly free</Text> after 4 pm.
+                    You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 upcoming events</Text>, 💬 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 new messages</Text> and 🌟 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>4 daily habits</Text> awaiting your attention. <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>Let's crush it, akhi! 💪</Text>
                   </Text>
                 </View>
 
                 {/* Stats Row */}
                 <View style={widgetStyles.statsRow}>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>🚶 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>4.7K</Text> steps</Text>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>🕐 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>7.3</Text> hours</Text>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>🏃 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>36</Text> mins</Text>
+                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>📅 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>3</Text> events</Text>
+                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>💬 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>2</Text> messages</Text>
+                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>🌟 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>4</Text> habits</Text>
                 </View>
 
                 {/* Widget Container */}
@@ -244,7 +330,7 @@ export default function Dashboard() {
 
                   {/* Messages Widget */}
                   <DraggableWidget widgetId="messages" position={widgetPositions[1]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <MessagesWidget colors={colors} isDarkMode={isDarkMode} />
+                    <MinaraWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
                   {/* Habits Widget */}
@@ -252,9 +338,9 @@ export default function Dashboard() {
                     <HabitsWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
-                  {/* Ask Minara Widget */}
+                  {/* Ask AI Widget */}
                   <DraggableWidget widgetId="askMinara" position={widgetPositions[3]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <AskMinaraWidget colors={colors} isDarkMode={isDarkMode} />
+                    <AskAIWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
                   {/* Prayer Widget */}
@@ -276,7 +362,7 @@ export default function Dashboard() {
             </View>
           </TapGestureHandler>
         </LongPressGestureHandler>
-      </Animated.View>
+      </View>
     </GestureHandlerRootView>
   );
 }
