@@ -273,12 +273,16 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
 );
 
 export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 22 }]}>
     <View style={{
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 8,
+      paddingTop: 12,
+      paddingBottom: 12,
+      paddingLeft: 12,
+      paddingRight: 12,
+      marginTop: 8,
     }}>
       {/* Main circular chat input */}
       <View style={{
@@ -311,7 +315,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         justifyContent: 'center',
         alignItems: 'center',
         gap: 24,
-        marginBottom: 20,
+        marginBottom: 8,
       }}>
         {/* Camera button */}
         <View style={{
