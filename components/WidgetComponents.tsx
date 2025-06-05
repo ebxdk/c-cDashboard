@@ -292,7 +292,8 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
+        marginTop: 8,
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         paddingHorizontal: 16,
@@ -319,9 +320,9 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
       }}>
         {/* Camera button */}
         <View style={{
-          width: 56,
-          height: 56,
-          borderRadius: 28,
+          width: 64,
+          height: 64,
+          borderRadius: 32,
           backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
           justifyContent: 'center',
           alignItems: 'center',
@@ -329,16 +330,16 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         }}>
           <Text style={{
-            fontSize: 22,
+            fontSize: 24,
             textAlign: 'center',
           }}>📷</Text>
         </View>
 
         {/* Microphone button */}
         <View style={{
-          width: 56,
-          height: 56,
-          borderRadius: 28,
+          width: 64,
+          height: 64,
+          borderRadius: 32,
           backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
           justifyContent: 'center',
           alignItems: 'center',
@@ -346,7 +347,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         }}>
           <Text style={{
-            fontSize: 22,
+            fontSize: 24,
             textAlign: 'center',
           }}>🎤</Text>
         </View>
