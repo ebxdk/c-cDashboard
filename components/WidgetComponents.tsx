@@ -273,7 +273,24 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
 );
 
 export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 16 }]}>
+  <View style={[
+    baseWidgetStyle, 
+    { 
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#F8F9FA',
+      padding: 16,
+      // Apple-style gradient overlay
+      background: isDarkMode 
+        ? 'linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 50%, #1A1A1C 100%)'
+        : 'linear-gradient(135deg, #F8F9FA 0%, #FFFFFF 50%, #F5F5F7 100%)',
+      shadowColor: isDarkMode ? '#000000' : '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDarkMode ? 0.15 : 0.08,
+      shadowRadius: 12,
+      elevation: 8,
+      borderWidth: isDarkMode ? 0.5 : 1,
+      borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+    }
+  ]}>
     <View style={{
       flex: 1,
       justifyContent: 'center',
@@ -286,13 +303,18 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         width: 152,
         height: 65,
         borderRadius: 32,
-        backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+        backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 8,
-        borderWidth: 1,
-        borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
+        borderWidth: isDarkMode ? 0.5 : 1,
+        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         paddingHorizontal: 16,
+        shadowColor: isDarkMode ? '#000000' : '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDarkMode ? 0.25 : 0.04,
+        shadowRadius: 4,
+        elevation: 2,
       }}>
         <Text style={{
           fontSize: 22,
@@ -321,11 +343,16 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           width: 64,
           height: 64,
           borderRadius: 32,
-          backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+          backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
           justifyContent: 'center',
           alignItems: 'center',
-          borderWidth: 1,
-          borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
+          borderWidth: isDarkMode ? 0.5 : 1,
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          shadowColor: isDarkMode ? '#000000' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDarkMode ? 0.25 : 0.04,
+          shadowRadius: 4,
+          elevation: 2,
         }}>
           <Text style={{
             fontSize: 24,
@@ -338,11 +365,16 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           width: 64,
           height: 64,
           borderRadius: 32,
-          backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+          backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
           justifyContent: 'center',
           alignItems: 'center',
-          borderWidth: 1,
-          borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
+          borderWidth: isDarkMode ? 0.5 : 1,
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          shadowColor: isDarkMode ? '#000000' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDarkMode ? 0.25 : 0.04,
+          shadowRadius: 4,
+          elevation: 2,
         }}>
           <Text style={{
             fontSize: 24,
