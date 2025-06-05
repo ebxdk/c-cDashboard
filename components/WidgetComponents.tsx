@@ -392,7 +392,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDay = dayNames[today.getDay()];
   const currentDate = today.getDate().toString().padStart(2, '0');
-  
+
   return (
     <View style={[
       baseWidgetStyle, 
@@ -406,11 +406,11 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       {/* Red notification bubble */}
       <View style={{
         position: 'absolute',
-        top: 26,
+        top: 14,
         right: 8,
-        minWidth: 18,
-        height: 18,
-        borderRadius: 9,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
         backgroundColor: '#FF453A',
         justifyContent: 'center',
         alignItems: 'center',
@@ -424,12 +424,12 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         borderColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
       }}>
         <Text style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 'bold',
           color: '#FFFFFF',
           fontFamily: 'Poppins-Regular',
           letterSpacing: -0.3,
-          lineHeight: 18,
+          lineHeight: 14,
           textAlign: 'center',
         }}>3</Text>
       </View>
@@ -449,7 +449,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         }}>
           {currentDay}
         </Text>
-        
+
         {/* Date number */}
         <Text style={{
           fontSize: 44,
@@ -462,7 +462,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         }}>
           {currentDate}
         </Text>
-        
+
         {/* Upcoming section */}
         <View style={{
           flexDirection: 'row',
@@ -485,7 +485,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
             Upcoming
           </Text>
         </View>
-        
+
         {/* Events list */}
         <View style={{ flex: 1 }}>
           {/* Event 1 */}
