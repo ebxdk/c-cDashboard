@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Text, View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 interface WidgetProps {
   colors: any;
@@ -25,6 +26,8 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
   const router = useRouter();
 
   const handlePress = () => {
+    // Provide haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/cohort');
   };
 
