@@ -388,7 +388,30 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
 );
 
 export const HabitsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+  <View style={[baseWidgetStyle, { backgroundColor: '#007AFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        textAlign: 'center',
+      }}>
+        Habits Widget
+      </Text>
+      <Text style={{
+        fontSize: 14,
+        color: '#FFFFFF',
+        opacity: 0.8,
+        marginTop: 4,
+        textAlign: 'center',
+      }}>
+        (Blue for identification)
+      </Text>
+    </View>
   </View>
 );
 
