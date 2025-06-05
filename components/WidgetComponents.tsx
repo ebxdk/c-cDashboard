@@ -309,10 +309,11 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
       {/* Two smaller circular buttons */}
       <View style={{
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
         paddingHorizontal: 8,
+        gap: 24,
       }}>
         {/* Camera button */}
         <View style={{
