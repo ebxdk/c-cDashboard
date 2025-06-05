@@ -209,7 +209,7 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
                 letterSpacing: -0.3,
               }}>+5</Text>
             </View>
-            
+
             {/* Red notification badge */}
             <View style={{
               position: 'absolute',
@@ -240,7 +240,7 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
               }}>12+</Text>
             </View>
           </View>
-          
+
           <Text style={{
             fontSize: 12,
             fontWeight: '500',
@@ -253,7 +253,7 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           }}>more</Text>
         </View>
       </View>
-      
+
       {/* Bottom label */}
       <View style={{
         alignItems: 'center',
@@ -306,7 +306,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 6,
         borderWidth: isDarkMode ? 0.5 : 1,
         borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         paddingHorizontal: 16,
@@ -410,4 +410,4 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
 export const CohortWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
   </View>
-); 
+);
