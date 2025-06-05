@@ -88,7 +88,6 @@ export const getDefaultLayout = (): WidgetPosition[] => {
     { id: 'askMinara', gridX: 0, gridY: 2, size: 'small', ...getWidgetGridSize('small') },
     { id: 'prayer', gridX: 1, gridY: 2, size: 'small', ...getWidgetGridSize('small') },
     { id: 'journal', gridX: 0, gridY: 3, size: 'small', ...getWidgetGridSize('small') },
-    { id: 'cohort', gridX: 1, gridY: 3, size: 'small', ...getWidgetGridSize('small') },
   ];
 };
 

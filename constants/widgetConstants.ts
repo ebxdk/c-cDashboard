@@ -54,5 +54,4 @@ export const WIDGET_DEFINITIONS: Record<string, WidgetData> = {
   askMinara: { id: 'askMinara', type: 'small', availableSizes: ['small', 'medium'] },
   prayer: { id: 'prayer', type: 'small', availableSizes: ['small', 'medium'] },
   journal: { id: 'journal', type: 'small', availableSizes: ['small', 'medium'] },
-  cohort: { id: 'cohort', type: 'small', availableSizes: ['small', 'medium'] },
 }; 

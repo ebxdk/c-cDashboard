@@ -630,32 +630,3 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
   </View>
 );
 
-export const CohortWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 8,
-    }}>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '600',
-        color: isDarkMode ? '#FFFFFF' : '#000000',
-        textAlign: 'center',
-        marginBottom: 8,
-        fontFamily: 'Poppins-Regular',
-      }}>
-        👥 Cohort
-      </Text>
-      <Text style={{
-        fontSize: 12,
-        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-        textAlign: 'center',
-        fontFamily: 'Poppins-Regular',
-      }}>
-        Group activities
-      </Text>
-    </View>
-  </View>
-);
