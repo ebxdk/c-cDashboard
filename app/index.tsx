@@ -17,7 +17,6 @@ import {
     AskAIWidget,
     CalendarWidget,
     CohortContactsWidget,
-    CohortWidget,
     JournalWidget,
     MinaraWidget,
     PrayerWidget
@@ -353,10 +352,7 @@ export default function Dashboard() {
                     <JournalWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
-                  {/* Cohort Widget */}
-                  <DraggableWidget widgetId="cohort" position={widgetPositions[6]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <CohortWidget colors={colors} isDarkMode={isDarkMode} />
-                  </DraggableWidget>
+                  
                 </View>
               </ScrollView>
             </View>
