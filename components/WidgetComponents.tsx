@@ -398,7 +398,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       baseWidgetStyle, 
       { 
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
-        padding: 20,
+        padding: 16,
       }
     ]}>
       <View style={{
@@ -408,22 +408,22 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         {/* Day of week */}
         <Text style={{
           fontSize: 13,
-          fontWeight: '500',
+          fontWeight: '600',
           color: '#5AC8FA',
-          fontFamily: 'Poppins-Regular',
-          marginBottom: 4,
+          fontFamily: 'Poppins-Bold',
+          marginBottom: 2,
         }}>
           {currentDay}
         </Text>
         
         {/* Date number */}
         <Text style={{
-          fontSize: 48,
+          fontSize: 44,
           fontWeight: '700',
           color: isDarkMode ? '#FFFFFF' : '#000000',
-          fontFamily: 'Poppins-Regular',
-          lineHeight: 52,
-          marginBottom: 16,
+          fontFamily: 'Poppins-Bold',
+          lineHeight: 46,
+          marginBottom: 12,
         }}>
           {currentDate}
         </Text>
@@ -432,20 +432,20 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
-          marginBottom: 12,
+          marginBottom: 8,
         }}>
           <View style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: 6,
+            height: 6,
+            borderRadius: 3,
             backgroundColor: isDarkMode ? '#8E8E93' : '#8E8E93',
-            marginRight: 8,
+            marginRight: 6,
           }} />
           <Text style={{
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: '600',
             color: isDarkMode ? '#8E8E93' : '#8E8E93',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'Poppins-Bold',
           }}>
             Up Next
           </Text>
@@ -457,129 +457,45 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           <View style={{
             flexDirection: 'row',
             alignItems: 'flex-start',
-            marginBottom: 8,
+            marginBottom: 6,
           }}>
             <View style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
+              width: 4,
+              height: 4,
+              borderRadius: 2,
               backgroundColor: '#FF453A',
-              marginRight: 8,
-              marginTop: 6,
+              marginRight: 6,
+              marginTop: 4,
             }} />
             <View style={{ flex: 1 }}>
               <Text style={{
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: '600',
                 color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'Poppins-Regular',
-                marginBottom: 2,
+                fontFamily: 'Poppins-Bold',
+                marginBottom: 1,
+                lineHeight: 14,
               }}>
                 STAT1P98 Live S...
               </Text>
               <Text style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: '500',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'Poppins-Bold',
                 marginBottom: 1,
+                lineHeight: 12,
               }}>
                 Microsoft Teams Meet...
               </Text>
               <Text style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: '500',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'Poppins-Bold',
+                lineHeight: 12,
               }}>
                 9:00 AM (3 hrs)
-              </Text>
-            </View>
-          </View>
-          
-          {/* Event 2 */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            marginBottom: 8,
-          }}>
-            <View style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: '#FF453A',
-              marginRight: 8,
-              marginTop: 6,
-            }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'Poppins-Regular',
-                marginBottom: 2,
-              }}>
-                Team Meeting
-              </Text>
-              <Text style={{
-                fontSize: 11,
-                fontWeight: '500',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
-                marginBottom: 1,
-              }}>
-                Conference Room A
-              </Text>
-              <Text style={{
-                fontSize: 11,
-                fontWeight: '500',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
-              }}>
-                2:00 PM (1 hr)
-              </Text>
-            </View>
-          </View>
-          
-          {/* Event 3 */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-          }}>
-            <View style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: '#FF453A',
-              marginRight: 8,
-              marginTop: 6,
-            }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'Poppins-Regular',
-                marginBottom: 2,
-              }}>
-                Study Session
-              </Text>
-              <Text style={{
-                fontSize: 11,
-                fontWeight: '500',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
-                marginBottom: 1,
-              }}>
-                Library
-              </Text>
-              <Text style={{
-                fontSize: 11,
-                fontWeight: '500',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
-              }}>
-                6:00 PM (2 hrs)
               </Text>
             </View>
           </View>
