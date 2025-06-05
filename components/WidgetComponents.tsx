@@ -387,35 +387,169 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   </View>
 );
 
-export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 8,
-    }}>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '600',
-        color: isDarkMode ? '#FFFFFF' : '#000000',
-        textAlign: 'center',
-        marginBottom: 8,
-        fontFamily: 'Poppins-Regular',
+export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const currentDate = today.getDate();
+  
+  // Get month name
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  
+  // Create calendar grid
+  const calendarDays = [];
+  
+  // Add empty cells for days before first day of month
+  for (let i = 0; i < firstDay; i++) {
+    calendarDays.push(null);
+  }
+  
+  // Add days of month
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push(day);
+  }
+  
+  // Mock events for demonstration (you can replace with real data)
+  const eventsOnDays = [3, 7, 15, 22, 28]; // Days with events
+  
+  return (
+    <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+      <View style={{
+        flex: 1,
+        padding: 12,
       }}>
-        📅 Calendar
-      </Text>
-      <Text style={{
-        fontSize: 12,
-        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-        textAlign: 'center',
-        fontFamily: 'Poppins-Regular',
-      }}>
-        Today's events
-      </Text>
+        {/* Header */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
+        }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '700',
+            color: isDarkMode ? '#FFFFFF' : '#000000',
+            fontFamily: 'Poppins-Regular',
+          }}>
+            {monthNames[currentMonth].substring(0, 3)}
+          </Text>
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '500',
+            color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+            fontFamily: 'Poppins-Regular',
+          }}>
+            {currentYear}
+          </Text>
+        </View>
+        
+        {/* Day labels */}
+        <View style={{
+          flexDirection: 'row',
+          marginBottom: 8,
+        }}>
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, index) => (
+            <View key={index} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{
+                fontSize: 10,
+                fontWeight: '600',
+                color: isDarkMode ? '#8E8E93' : '#8E8E93',
+                fontFamily: 'Poppins-Regular',
+              }}>
+                {dayLabel}
+              </Text>
+            </View>
+          ))}
+        </View>
+        
+        {/* Calendar grid */}
+        <View style={{ flex: 1 }}>
+          {Array.from({ length: Math.ceil(calendarDays.length / 7) }, (_, rowIndex) => (
+            <View key={rowIndex} style={{
+              flexDirection: 'row',
+              flex: 1,
+              marginBottom: 2,
+            }}>
+              {Array.from({ length: 7 }, (_, colIndex) => {
+                const dayIndex = rowIndex * 7 + colIndex;
+                const day = calendarDays[dayIndex];
+                const isToday = day === currentDate;
+                const hasEvent = day && eventsOnDays.includes(day);
+                
+                return (
+                  <View key={colIndex} style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 2,
+                  }}>
+                    {day && (
+                      <View style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: isToday 
+                          ? (isDarkMode ? '#0A84FF' : '#007AFF')
+                          : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                      }}>
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: isToday ? '700' : '500',
+                          color: isToday 
+                            ? '#FFFFFF'
+                            : (isDarkMode ? '#FFFFFF' : '#000000'),
+                          fontFamily: 'Poppins-Regular',
+                        }}>
+                          {day}
+                        </Text>
+                        {hasEvent && !isToday && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            width: 4,
+                            height: 4,
+                            borderRadius: 2,
+                            backgroundColor: isDarkMode ? '#FF9F0A' : '#FF9500',
+                          }} />
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+        
+        {/* Footer with next event */}
+        <View style={{
+          marginTop: 8,
+          paddingTop: 8,
+          borderTopWidth: 1,
+          borderTopColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+        }}>
+          <Text style={{
+            fontSize: 10,
+            fontWeight: '500',
+            color: isDarkMode ? '#8E8E93' : '#8E8E93',
+            fontFamily: 'Poppins-Regular',
+            textAlign: 'center',
+          }}>
+            Next: Team Meeting Tomorrow 2:00 PM
+          </Text>
+        </View>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 export const AskAIWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
