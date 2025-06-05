@@ -15,9 +15,9 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
     AskAIWidget,
+    CalendarWidget,
+    CohortContactsWidget,
     CohortWidget,
-    EventsWidget,
-    HabitsWidget,
     JournalWidget,
     MinaraWidget,
     PrayerWidget
@@ -323,9 +323,9 @@ export default function Dashboard() {
                 {/* Widget Container */}
                 <View style={widgetStyles.widgetContainer}>
 
-                  {/* Events Widget */}
+                  {/* Cohort Contacts Widget */}
                   <DraggableWidget widgetId="events" position={widgetPositions[0]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <EventsWidget colors={colors} isDarkMode={isDarkMode} />
+                    <CohortContactsWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
                   {/* Messages Widget */}
@@ -333,9 +333,9 @@ export default function Dashboard() {
                     <MinaraWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
-                  {/* Habits Widget */}
+                  {/* Calendar Widget */}
                   <DraggableWidget widgetId="habits" position={widgetPositions[2]} allPositions={widgetPositions} onPositionChange={handleWidgetPositionChange} onResize={handleWidgetResize} onLiveRearrange={handleLiveRearrange} isEditMode={isEditMode} isDarkMode={isDarkMode} colors={colors}>
-                    <HabitsWidget colors={colors} isDarkMode={isDarkMode} />
+                    <CalendarWidget colors={colors} isDarkMode={isDarkMode} />
                   </DraggableWidget>
 
                   {/* Ask AI Widget */}

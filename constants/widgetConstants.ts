@@ -48,9 +48,9 @@ export const WIGGLE_CONFIG = {
 
 // Widget definitions
 export const WIDGET_DEFINITIONS: Record<string, WidgetData> = {
-  events: { id: 'events', type: 'medium', availableSizes: ['medium', 'large'] },
+  events: { id: 'events', type: 'medium', availableSizes: ['medium', 'large'] }, // Cohort contacts
   messages: { id: 'messages', type: 'small', availableSizes: ['small', 'medium'] },
-  habits: { id: 'habits', type: 'small', availableSizes: ['small', 'medium'] },
+  habits: { id: 'habits', type: 'small', availableSizes: ['small', 'medium'] }, // Calendar widget
   askMinara: { id: 'askMinara', type: 'small', availableSizes: ['small', 'medium'] },
   prayer: { id: 'prayer', type: 'small', availableSizes: ['small', 'medium'] },
   journal: { id: 'journal', type: 'small', availableSizes: ['small', 'medium'] },

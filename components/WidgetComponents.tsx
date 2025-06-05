@@ -20,7 +20,7 @@ const baseWidgetStyle = {
   borderWidth: 0,
 };
 
-export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
+export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[
     baseWidgetStyle, 
     { 
@@ -387,8 +387,31 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   </View>
 );
 
-export const HabitsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
+export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 8,
+    }}>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : '#000000',
+        textAlign: 'center',
+        marginBottom: 8,
+      }}>
+        📅 Calendar
+      </Text>
+      <Text style={{
+        fontSize: 12,
+        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
+        textAlign: 'center',
+      }}>
+        Today's events
+      </Text>
+    </View>
   </View>
 );
 
