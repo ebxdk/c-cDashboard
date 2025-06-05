@@ -273,16 +273,13 @@ export const EventsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
 );
 
 export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 22 }]}>
+  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 16 }]}>
     <View style={{
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingTop: 12,
-      paddingBottom: 12,
-      paddingLeft: 12,
-      paddingRight: 12,
-      marginTop: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     }}>
       {/* Main circular chat input */}
       <View style={{
@@ -292,8 +289,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
-        marginTop: 8,
+        marginBottom: 14,
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3C' : '#E5E5EA',
         paddingHorizontal: 16,
@@ -313,10 +309,10 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
       {/* Two smaller circular buttons */}
       <View style={{
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-evenly',
         alignItems: 'center',
-        gap: 24,
-        marginBottom: 8,
+        width: '100%',
+        paddingHorizontal: 8,
       }}>
         {/* Camera button */}
         <View style={{
