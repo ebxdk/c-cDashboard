@@ -401,6 +401,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
+        fontFamily: 'Poppins-Regular',
       }}>
         📅 Calendar
       </Text>
@@ -408,6 +409,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
       }}>
         Today's events
       </Text>
@@ -429,6 +431,7 @@ export const AskAIWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
+        fontFamily: 'Poppins-Regular',
       }}>
         🤖 Ask AI
       </Text>
@@ -436,6 +439,7 @@ export const AskAIWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
       }}>
         Get quick answers
       </Text>
@@ -457,6 +461,7 @@ export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
+        fontFamily: 'Poppins-Regular',
       }}>
         🕌 Prayer
       </Text>
@@ -464,6 +469,7 @@ export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
       }}>
         Prayer times
       </Text>
@@ -485,6 +491,7 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
+        fontFamily: 'Poppins-Regular',
       }}>
         📝 Journal
       </Text>
@@ -492,6 +499,7 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
       }}>
         Daily reflections
       </Text>
@@ -513,6 +521,7 @@ export const CohortWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
+        fontFamily: 'Poppins-Regular',
       }}>
         👥 Cohort
       </Text>
@@ -520,6 +529,7 @@ export const CohortWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
+        fontFamily: 'Poppins-Regular',
       }}>
         Group activities
       </Text>
