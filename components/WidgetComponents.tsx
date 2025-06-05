@@ -428,7 +428,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           color: '#FFFFFF',
           fontFamily: 'Poppins-Regular',
           letterSpacing: -0.3,
-          lineHeight: 10,
+          lineHeight: 18,
           textAlign: 'center',
         }}>3</Text>
       </View>
@@ -444,6 +444,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           color: '#5AC8FA',
           fontFamily: 'Poppins-Regular',
           marginBottom: 2,
+          marginTop: 6,
         }}>
           {currentDay}
         </Text>
@@ -454,9 +455,9 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           fontWeight: 'bold',
           color: isDarkMode ? '#FFFFFF' : '#000000',
           fontFamily: 'Poppins-Regular',
-          lineHeight: 46,
+          lineHeight: 48,
           marginBottom: 16,
-          marginTop: 4,
+          marginTop: 2,
         }}>
           {currentDate}
         </Text>
@@ -509,7 +510,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
                 marginBottom: 1,
                 lineHeight: 14,
               }}>
-                STAT1P98 Live S...
+                Iftar Outing
               </Text>
               <Text style={{
                 fontSize: 10,
@@ -519,7 +520,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
                 marginBottom: 1,
                 lineHeight: 12,
               }}>
-                Microsoft Teams Meet...
+                Revert Reach Iftar @ GC Ridgeway
               </Text>
               <Text style={{
                 fontSize: 10,
