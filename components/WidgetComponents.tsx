@@ -399,6 +399,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       { 
         backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
         padding: 16,
+        paddingTop: 12,
         position: 'relative',
       }
     ]}>
@@ -444,7 +445,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           color: '#5AC8FA',
           fontFamily: 'Poppins-Regular',
           marginBottom: 2,
-          marginTop: 6,
+          marginTop: 2,
         }}>
           {currentDay}
         </Text>
@@ -456,8 +457,8 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           color: isDarkMode ? '#FFFFFF' : '#000000',
           fontFamily: 'Poppins-Regular',
           lineHeight: 48,
-          marginBottom: 16,
-          marginTop: 2,
+          marginBottom: 12,
+          marginTop: 0,
         }}>
           {currentDate}
         </Text>
