@@ -23,6 +23,15 @@
       "statusBar": {
         "hidden": true,
         "translucent": false
+      },
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": {
+        "domain-config": [
+          {
+            "domain": "minara-3-ebadkhan5487.replit.app",
+            "cleartextTrafficPermitted": true
+          }
+        ]
       }
     },
     "web": {

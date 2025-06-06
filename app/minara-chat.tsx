@@ -724,6 +724,8 @@ export default function MinaraChatScreen() {
         headers: {
           'X-API-Key': 'ebadkhan5487minara',
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'MinaraApp/1.0',
         },
         signal: abortController.signal,
       });
@@ -805,10 +807,16 @@ export default function MinaraChatScreen() {
         ));
       } else {
         console.error('Error fetching AI response:', error);
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          url: apiUrl
+        });
         // Fallback to error message
         setMessages(prev => prev.map(msg => 
           msg.id === parseInt(aiMessageId)
-            ? { ...msg, text: 'Sorry, I encountered an error while connecting to the server. Please check your internet connection and try again.' }
+            ? { ...msg, text: `Sorry, I encountered an error while connecting to the server: ${error.message}. Please check your internet connection and try again.` }
             : msg
         ));
       }
