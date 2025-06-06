@@ -717,7 +717,7 @@ export default function MinaraChatScreen() {
       abortControllerRef.current = abortController;
       
       const mode = 'minara'; // You can make this dynamic if needed
-      const apiUrl = `https://fd9eee7e-d0c0-4bb1-bf17-3cf5bb5b602d-00-dnzft2cr6llb.worf.replit.dev/api/${mode}/stream?query=${encodeURIComponent(userMessage)}`;
+      const apiUrl = `https://minara-3-ebadkhan5487.replit.app/api/${mode}/stream?query=${encodeURIComponent(userMessage)}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
