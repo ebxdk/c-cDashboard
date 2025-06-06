@@ -35,50 +35,44 @@ interface ChatHistory {
 const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
   if (!text) return null;
   
-  // Arabic text detection regex - UPDATED to capture entire phrases/verses
-  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+/g;
-  
   // Process text line by line to maintain proper formatting
   const lines = text.split('\n');
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Process text with Arabic highlighting (enhanced) - UNIFIED PHRASES
+  // Process text with Arabic highlighting
   const processTextWithArabic = (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
     let segmentKey = startKey;
     let currentIndex = 0;
     
-    // Find Arabic text matches - NOW CAPTURES ENTIRE PHRASES/VERSES
+    // Enhanced Arabic detection regex - includes all Arabic script ranges
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)*/g;
+    
+    // Find all Arabic text matches
     const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
     let match;
-    const arabicRegexForMatching = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+/g;
     
-    while ((match = arabicRegexForMatching.exec(text)) !== null) {
-      // Trim whitespace from the matched text but keep the positions
-      const matchedText = match[0];
-      const trimmedText = matchedText.trim();
-      
-      if (trimmedText.length > 0) {
-        // Find the actual start and end positions of the trimmed text
-        const startOffset = matchedText.indexOf(trimmedText);
+    while ((match = arabicRegex.exec(text)) !== null) {
+      const matchedText = match[0].trim();
+      if (matchedText.length > 0) {
         arabicMatches.push({
-          start: match.index + startOffset,
-          end: match.index + startOffset + trimmedText.length,
-          text: trimmedText
+          start: match.index,
+          end: match.index + match[0].length,
+          text: matchedText
         });
       }
     }
     
-    // Process Arabic matches with enhanced styling - UNIFIED BLOCKS
+    // Process matches in order
     arabicMatches.forEach(arabicMatch => {
       // Add text before Arabic
       if (arabicMatch.start > currentIndex) {
         const beforeText = text.slice(currentIndex, arabicMatch.start);
-        if (beforeText) {
+        if (beforeText.trim()) {
           segments.push(
             <Text key={segmentKey++} style={{
-              fontSize: 18, // Bigger regular text
+              fontSize: 18,
               color: colors.primaryText,
               fontFamily: 'System',
             }}>
@@ -88,36 +82,32 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
         }
       }
       
-      // Add Arabic text in a modern card wrapper
+      // Add Arabic text in a styled container
       segments.push(
         <View key={segmentKey++} style={{
           backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
           borderRadius: 12,
           paddingHorizontal: 20,
           paddingVertical: 16,
-          marginVertical: 12,
+          marginVertical: 8,
           marginHorizontal: 4,
           borderWidth: 1,
           borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-          shadowColor: isDarkMode ? '#000000' : '#000000',
+          shadowColor: '#000000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: isDarkMode ? 0.3 : 0.08,
           shadowRadius: 8,
           elevation: 2,
-          width: '100%',
-          alignSelf: 'flex-start',
-          flexDirection: 'column',
+          alignSelf: 'stretch',
         }}>
           <Text style={{
-            fontSize: 19,
+            fontSize: 20,
             fontWeight: '500',
             color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
             fontFamily: 'System',
-            letterSpacing: 0.3,
             textAlign: 'right',
-            lineHeight: 30,
-            width: '100%',
-            flexWrap: 'wrap',
+            lineHeight: 32,
+            letterSpacing: 0.5,
           }}>
             {arabicMatch.text}
           </Text>
@@ -127,13 +117,13 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
       currentIndex = arabicMatch.end;
     });
     
-    // Add remaining text
+    // Add remaining text after all Arabic matches
     if (currentIndex < text.length) {
       const remainingText = text.slice(currentIndex);
-      if (remainingText) {
+      if (remainingText.trim()) {
         segments.push(
           <Text key={segmentKey++} style={{
-            fontSize: 18, // Bigger regular text
+            fontSize: 18,
             color: colors.primaryText,
             fontFamily: 'System',
           }}>
@@ -147,7 +137,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
     if (segments.length === 0) {
       segments.push(
         <Text key={segmentKey++} style={{
-          fontSize: 18, // Bigger regular text
+          fontSize: 18,
           color: colors.primaryText,
           fontFamily: 'System',
         }}>
