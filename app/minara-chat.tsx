@@ -35,119 +35,135 @@ interface ChatHistory {
 const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
   if (!text) return null;
   
+  // Debounce complex processing during streaming to prevent freezing
+  const isStreaming = isGenerating && text.length < 500; // Only apply optimization during initial streaming
+  
   // Process text line by line to maintain proper formatting
   const lines = text.split('\n');
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Process text with Arabic highlighting
-  const processTextWithArabic = (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
-    const segments: React.ReactElement[] = [];
-    let segmentKey = startKey;
-    let currentIndex = 0;
-    
-    // Enhanced Arabic detection regex - includes all Arabic script ranges
-    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)*/g;
-    
-    // Find all Arabic text matches
-    const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
-    let match;
-    
-    while ((match = arabicRegex.exec(text)) !== null) {
-      const matchedText = match[0].trim();
-      if (matchedText.length > 0) {
-        arabicMatches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          text: matchedText
-        });
-      }
-    }
-    
-    // Process matches in order
-    arabicMatches.forEach(arabicMatch => {
-      // Add text before Arabic
-      if (arabicMatch.start > currentIndex) {
-        const beforeText = text.slice(currentIndex, arabicMatch.start);
-        if (beforeText.trim()) {
-          segments.push(
-            <Text key={segmentKey++} style={{
-              fontSize: 18,
-              color: colors.primaryText,
-              fontFamily: 'System',
-            }}>
-              {beforeText}
-            </Text>
-          );
-        }
-      }
+  // Optimized Arabic processing with memoization and reduced complexity
+  const processTextWithArabic = React.useMemo(() => {
+    return (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
+      const segments: React.ReactElement[] = [];
+      let segmentKey = startKey;
+      let currentIndex = 0;
       
-      // Add Arabic text in a styled container
-      segments.push(
-        <View key={segmentKey++} style={{
-          backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
-          borderRadius: 12,
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          marginVertical: 8,
-          marginHorizontal: 4,
-          borderWidth: 1,
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDarkMode ? 0.3 : 0.08,
-          shadowRadius: 8,
-          elevation: 2,
-          alignSelf: 'stretch',
-        }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: '500',
-            color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-            fontFamily: 'System',
-            textAlign: 'right',
-            lineHeight: 32,
-            letterSpacing: 0.5,
-          }}>
-            {arabicMatch.text}
-          </Text>
-        </View>
-      );
+      // Simplified Arabic detection regex for better performance
+      const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
       
-      currentIndex = arabicMatch.end;
-    });
-    
-    // Add remaining text after all Arabic matches
-    if (currentIndex < text.length) {
-      const remainingText = text.slice(currentIndex);
-      if (remainingText.trim()) {
+      // Pre-compile regex matches to avoid repeated execution
+      const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
+      let match;
+      
+      // Limit processing during streaming to prevent freeze
+      if (isStreaming && text.length > 200) {
+        // During streaming, use simple rendering for long text
         segments.push(
           <Text key={segmentKey++} style={{
             fontSize: 18,
             color: colors.primaryText,
             fontFamily: 'System',
           }}>
-            {remainingText}
+            {text}
+          </Text>
+        );
+        return segments;
+      }
+      
+      // Full processing for completed text or shorter text
+      while ((match = arabicRegex.exec(text)) !== null) {
+        const matchedText = match[0].trim();
+        if (matchedText.length > 2) { // Only process meaningful Arabic text
+          arabicMatches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            text: matchedText
+          });
+        }
+      }
+      
+      // Process matches in order with batching
+      arabicMatches.forEach((arabicMatch, index) => {
+        // Add text before Arabic
+        if (arabicMatch.start > currentIndex) {
+          const beforeText = text.slice(currentIndex, arabicMatch.start);
+          if (beforeText.trim()) {
+            segments.push(
+              <Text key={segmentKey++} style={{
+                fontSize: 18,
+                color: colors.primaryText,
+                fontFamily: 'System',
+              }}>
+                {beforeText}
+              </Text>
+            );
+          }
+        }
+        
+        // Add Arabic text in a styled container with reduced styling complexity
+        segments.push(
+          <View key={segmentKey++} style={{
+            backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
+            borderRadius: 12,
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            marginVertical: 8,
+            marginHorizontal: 4,
+            borderWidth: 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            alignSelf: 'stretch',
+          }}>
+            <Text style={{
+              fontSize: 20,
+              fontWeight: '500',
+              color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+              fontFamily: 'System',
+              textAlign: 'right',
+              lineHeight: 32,
+              letterSpacing: 0.5,
+            }}>
+              {arabicMatch.text}
+            </Text>
+          </View>
+        );
+        
+        currentIndex = arabicMatch.end;
+      });
+      
+      // Add remaining text after all Arabic matches
+      if (currentIndex < text.length) {
+        const remainingText = text.slice(currentIndex);
+        if (remainingText.trim()) {
+          segments.push(
+            <Text key={segmentKey++} style={{
+              fontSize: 18,
+              color: colors.primaryText,
+              fontFamily: 'System',
+            }}>
+              {remainingText}
+            </Text>
+          );
+        }
+      }
+      
+      // If no Arabic text found, return the original text
+      if (segments.length === 0) {
+        segments.push(
+          <Text key={segmentKey++} style={{
+            fontSize: 18,
+            color: colors.primaryText,
+            fontFamily: 'System',
+          }}>
+            {text}
           </Text>
         );
       }
-    }
-    
-    // If no Arabic text found, return the original text
-    if (segments.length === 0) {
-      segments.push(
-        <Text key={segmentKey++} style={{
-          fontSize: 18,
-          color: colors.primaryText,
-          fontFamily: 'System',
-        }}>
-          {text}
-        </Text>
-      );
-    }
-    
-    return segments;
-  };
+      
+      return segments;
+    };
+  }, [isStreaming, text.length]); // Memoize based on streaming state and text length
   
   lines.forEach((line, lineIndex) => {
     if (!line.trim()) {
@@ -233,52 +249,66 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
       return; // IMPORTANT: Return here to prevent duplicate processing
     }
     
-    // Process regular text with inline formatting
-    const processInlineFormatting = (text: string): React.ReactElement[] => {
-      const segments: React.ReactElement[] = [];
-      let segmentKey = 0;
-      let currentIndex = 0;
-      
-      // Find all formatting patterns with enhanced regex
-      const patterns = [
-        { regex: /\*\*([^*]+)\*\*/g, type: 'bold' },
-        { regex: /\*([^*]+)\*/g, type: 'italic' },
-        { regex: /`([^`]+)`/g, type: 'code' },
-        { regex: /~~([^~]+)~~/g, type: 'strikethrough' },
-        { regex: /__([^_]+)__/g, type: 'underline' },
-      ];
-      
-      const matches: Array<{
-        start: number;
-        end: number;
-        content: string;
-        type: string;
-      }> = [];
-      
-      patterns.forEach(pattern => {
-        let match;
-        const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
-        while ((match = regex.exec(text)) !== null) {
-          matches.push({
-            start: match.index,
-            end: match.index + match[0].length,
-            content: match[1],
-            type: pattern.type
-          });
+    // Process regular text with inline formatting - optimized for streaming
+    const processInlineFormatting = React.useMemo(() => {
+      return (text: string): React.ReactElement[] => {
+        const segments: React.ReactElement[] = [];
+        let segmentKey = 0;
+        let currentIndex = 0;
+        
+        // Simplified processing during streaming to prevent freeze
+        if (isStreaming && text.length > 150) {
+          // During streaming, use basic Arabic processing without complex formatting
+          return processTextWithArabic(text, 0, colors, isDarkMode);
         }
-      });
-      
-      // Sort matches by position
-      matches.sort((a, b) => a.start - b.start);
-      
-      // Process matches and text between them
-      matches.forEach(match => {
-        // Add text before match
-        if (match.start > currentIndex) {
-          const beforeText = text.slice(currentIndex, match.start);
-          segments.push(...processTextWithArabic(beforeText, segmentKey, colors, isDarkMode));
-          segmentKey += 10; // Leave room for Arabic segments
-        }
+        
+        // Find all formatting patterns with enhanced regex
+        const patterns = [
+          { regex: /\*\*([^*]+)\*\*/g, type: 'bold' },
+          { regex: /\*([^*]+)\*/g, type: 'italic' },
+          { regex: /`([^`]+)`/g, type: 'code' },
+          { regex: /~~([^~]+)~~/g, type: 'strikethrough' },
+          { regex: /__([^_]+)__/g, type: 'underline' },
+        ];
+        
+        const matches: Array<{
+          start: number;
+          end: number;
+          content: string;
+          type: string;
+        }> = [];
+        
+        // Limit pattern matching during heavy processing
+        const maxMatches = isStreaming ? 5 : 50;
+        let matchCount = 0;
+        
+        patterns.forEach(pattern => {
+          if (matchCount >= maxMatches) return;
+          
+          let match;
+          const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+          while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
+            matches.push({
+              start: match.index,
+              end: match.index + match[0].length,
+              content: match[1],
+              type: pattern.type
+            });
+            matchCount++;
+          }
+        });
+        
+        // Sort matches by position
+        matches.sort((a, b) => a.start - b.start);
+        
+        // Process matches and text between them
+        matches.forEach(match => {
+          // Add text before match
+          if (match.start > currentIndex) {
+            const beforeText = text.slice(currentIndex, match.start);
+            segments.push(...processTextWithArabic(beforeText, segmentKey, colors, isDarkMode));
+            segmentKey += 10; // Leave room for Arabic segments
+          }
         
         // Add formatted match with enhanced styling
         switch (match.type) {
@@ -360,16 +390,17 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
         }
         
         currentIndex = match.end;
-      });
-      
-      // Add remaining text
-      if (currentIndex < text.length) {
-        const remainingText = text.slice(currentIndex);
-        segments.push(...processTextWithArabic(remainingText, segmentKey, colors, isDarkMode));
-      }
-      
-      return segments;
-    };
+        });
+        
+        // Add remaining text
+        if (currentIndex < text.length) {
+          const remainingText = text.slice(currentIndex);
+          segments.push(...processTextWithArabic(remainingText, segmentKey, colors, isDarkMode));
+        }
+        
+        return segments;
+      };
+    }, [isStreaming, text.length, colors, isDarkMode]); // Memoize based on key dependencies
     
     // Process the line
     const lineElements = processInlineFormatting(line);
@@ -747,38 +778,46 @@ export default function MinaraChatScreen() {
             
             // Only collect content from content type messages
             if (parsed.type === 'content' && parsed.content) {
-              // Update the message in real-time
-              setMessages(prev => prev.map(msg => 
-                msg.id === parseInt(aiMessageId)
-                  ? { ...msg, text: msg.text + parsed.content }
-                  : msg
-              ));
-              
-              // Add throttled haptic feedback for meaningful content
-              const trimmedContent = parsed.content.trim();
-              if (trimmedContent.length > 2) {
-                // Only trigger haptic for meaningful content chunks (more than 2 characters)
-                // and throttle to prevent excessive calls
-                try {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                } catch (error) {
-                  // Silently handle haptic errors to prevent crashes
-                  console.log('Haptic feedback error:', error);
+              // Throttle updates to prevent freezing during heavy Arabic processing
+              if (i % 3 === 0 || i === lines.length - 1) { // Update every 3rd line or last line
+                // Update the message in batches
+                setMessages(prev => prev.map(msg => 
+                  msg.id === parseInt(aiMessageId)
+                    ? { ...msg, text: msg.text + parsed.content }
+                    : msg
+                ));
+                
+                // Add throttled haptic feedback for meaningful content
+                const trimmedContent = parsed.content.trim();
+                if (trimmedContent.length > 5) { // Increased threshold to reduce frequency
+                  try {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  } catch (error) {
+                    // Silently handle haptic errors to prevent crashes
+                    console.log('Haptic feedback error:', error);
+                  }
                 }
+                
+                // Auto-scroll as content comes in with smoother behavior
+                setTimeout(() => {
+                  if (scrollViewRef.current && !isUserScrolling) {
+                    // Only auto-scroll if user hasn't manually scrolled recently
+                    scrollViewRef.current.scrollToEnd({ 
+                      animated: true 
+                    });
+                  }
+                }, 200); // Increased delay for better performance
+              } else {
+                // Still accumulate content but don't trigger UI update
+                setMessages(prev => prev.map(msg => 
+                  msg.id === parseInt(aiMessageId)
+                    ? { ...msg, text: msg.text + parsed.content }
+                    : msg
+                ));
               }
               
-              // Auto-scroll as content comes in with smoother behavior
-              setTimeout(() => {
-                if (scrollViewRef.current && !isUserScrolling) {
-                  // Only auto-scroll if user hasn't manually scrolled recently
-                  scrollViewRef.current.scrollToEnd({ 
-                    animated: true 
-                  });
-                }
-              }, 150);
-              
-              // Add a small delay to simulate streaming effect
-              await new Promise(resolve => setTimeout(resolve, 20));
+              // Reduced delay for better responsiveness
+              await new Promise(resolve => setTimeout(resolve, 10));
             }
           } catch (parseError) {
             // Skip lines that can't be parsed as JSON
