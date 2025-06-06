@@ -32,7 +32,7 @@ interface ChatHistory {
 }
 
 // Function to format AI responses with markdown-like styling in real-time
-const formatAIResponse = (text: string, colors: any, isDarkMode: boolean) => {
+const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGenerating: boolean) => {
   if (!text) return null;
   
   // Debounce complex processing during streaming to prevent freezing
@@ -1391,7 +1391,7 @@ export default function MinaraChatScreen() {
                       paddingVertical: 0,
                     }
                   ]}>
-                    {formatAIResponse(msg.text, colors, isDarkMode)}
+                    {formatAIResponse(msg.text, colors, isDarkMode, isGenerating)}
                     {isGenerating && currentGenerationId === msg.id.toString() && (
                       <Animated.Text style={{ 
                         color: colors.primaryText, 
