@@ -3,7 +3,7 @@ export const Fonts = {
   header: 'AminMedium',
   
   // For body text, descriptions, and general content
-  body: 'PoppinsRegular',
+  body: 'System',
   
   // Font weights (for reference)
   weights: {

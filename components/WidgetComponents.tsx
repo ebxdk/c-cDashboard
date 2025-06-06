@@ -1,7 +1,10 @@
-import React from 'react';
-import { Image, Text, View, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import React, { useRef } from 'react';
+import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
+
 
 interface WidgetProps {
   colors: any;
@@ -98,7 +101,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
             fontSize: 12,
             fontWeight: '500',
             color: '#FFFFFF',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'System',
             opacity: 0.95,
             textAlign: 'center',
             letterSpacing: -0.1,
@@ -142,7 +145,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
             fontSize: 12,
             fontWeight: '500',
             color: '#FFFFFF',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'System',
             opacity: 0.95,
             textAlign: 'center',
             letterSpacing: -0.1,
@@ -186,7 +189,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
             fontSize: 12,
             fontWeight: '500',
             color: '#FFFFFF',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'System',
             opacity: 0.95,
             textAlign: 'center',
             letterSpacing: -0.1,
@@ -220,7 +223,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
                 fontSize: 22,
                 fontWeight: '600',
                 color: '#666666',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'System',
                 letterSpacing: -0.3,
               }}>+5</Text>
             </View>
@@ -252,7 +255,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
                 fontFamily: 'System',
                 letterSpacing: -0.2,
                 lineHeight: 13,
-              }}>12+</Text>
+              }}>2</Text>
             </View>
           </View>
 
@@ -260,7 +263,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
             fontSize: 12,
             fontWeight: '500',
             color: '#FFFFFF',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'System',
             opacity: 0.85,
             textAlign: 'center',
             letterSpacing: -0.1,
@@ -278,7 +281,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
           fontSize: 16,
           fontWeight: '700',
           color: '#FFFFFF',
-          fontFamily: 'Poppins-Regular',
+          fontFamily: 'System',
           opacity: 0.9,
           letterSpacing: -0.2,
         }}>Cohort</Text>
@@ -288,82 +291,52 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
   );
 };
 
-export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[
-    baseWidgetStyle, 
-    { 
-      backgroundColor: isDarkMode ? '#1C1C1E' : '#F8F9FA',
-      padding: 16,
-      // Apple-style gradient overlay
-      background: isDarkMode 
-        ? 'linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 50%, #1A1A1C 100%)'
-        : 'linear-gradient(135deg, #F8F9FA 0%, #FFFFFF 50%, #F5F5F7 100%)',
-      shadowColor: isDarkMode ? '#000000' : '#000000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: isDarkMode ? 0.15 : 0.08,
-      shadowRadius: 12,
-      elevation: 8,
-      borderWidth: isDarkMode ? 0.5 : 1,
-      borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-    }
-  ]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 60,
-      paddingVertical: 4,
-    }}>
-      {/* Main circular chat input */}
-      <View style={{
-        width: 152,
-        height: 65,
-        borderRadius: 32,
-        backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 6,
-        borderWidth: isDarkMode ? 0.5 : 1,
-        borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-        paddingHorizontal: 16,
-        shadowColor: isDarkMode ? '#000000' : '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDarkMode ? 0.25 : 0.04,
-        shadowRadius: 4,
-        elevation: 2,
-      }}>
-        <Text style={{
-          fontSize: 22,
-          marginRight: 10,
-        }}>💬</Text>
-        <Text style={{
-          fontSize: 12,
-          color: isDarkMode ? '#8E8E93' : '#8E8E93',
-          fontFamily: 'Poppins-Regular',
-          flex: 1,
-          textAlign: 'center',
-        }}>Ask Minara AI</Text>
-      </View>
+export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
 
-      {/* Two smaller circular buttons */}
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/minara-chat');
+  };
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: isDarkMode ? '#1C1C1E' : '#F8F9FA',
+          padding: 16,
+          shadowColor: isDarkMode ? '#000000' : '#000000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: isDarkMode ? 0.15 : 0.08,
+          shadowRadius: 12,
+          elevation: 8,
+          borderWidth: isDarkMode ? 0.5 : 1,
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+        }
+      ]}
+      activeOpacity={0.8}
+    >
       <View style={{
-        flexDirection: 'row',
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 8,
-        gap: 16,
+        paddingHorizontal: 60,
+        paddingVertical: 4,
       }}>
-        {/* Camera button */}
+        {/* Main circular chat input */}
         <View style={{
-          width: 64,
-          height: 64,
+          width: 152,
+          height: 65,
           borderRadius: 32,
           backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
-          justifyContent: 'center',
+          flexDirection: 'row',
           alignItems: 'center',
+          marginBottom: 6,
           borderWidth: isDarkMode ? 0.5 : 1,
           borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          paddingHorizontal: 16,
           shadowColor: isDarkMode ? '#000000' : '#000000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: isDarkMode ? 0.25 : 0.04,
@@ -371,37 +344,76 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
           elevation: 2,
         }}>
           <Text style={{
-            fontSize: 24,
+            fontSize: 22,
+            marginRight: 10,
+          }}>💬</Text>
+          <Text style={{
+            fontSize: 12,
+            color: isDarkMode ? '#8E8E93' : '#8E8E93',
+            fontFamily: 'System',
+            flex: 1,
             textAlign: 'center',
-          }}>📷</Text>
+          }}>Ask Minara AI</Text>
         </View>
 
-        {/* Microphone button */}
+        {/* Two smaller circular buttons */}
         <View style={{
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
+          flexDirection: 'row',
           justifyContent: 'center',
           alignItems: 'center',
-          borderWidth: isDarkMode ? 0.5 : 1,
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-          shadowColor: isDarkMode ? '#000000' : '#000000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDarkMode ? 0.25 : 0.04,
-          shadowRadius: 4,
-          elevation: 2,
+          width: '100%',
+          paddingHorizontal: 8,
+          gap: 16,
         }}>
-          <Text style={{
-            fontSize: 24,
-            textAlign: 'center',
-          }}>🎤</Text>
+          {/* Camera button */}
+          <View style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: isDarkMode ? 0.5 : 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: isDarkMode ? '#000000' : '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isDarkMode ? 0.25 : 0.04,
+            shadowRadius: 4,
+            elevation: 2,
+          }}>
+            <Text style={{
+              fontSize: 24,
+              textAlign: 'center',
+            }}>📷</Text>
+          </View>
+
+          {/* Microphone button */}
+          <View style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: isDarkMode ? 0.5 : 1,
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: isDarkMode ? '#000000' : '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isDarkMode ? 0.25 : 0.04,
+            shadowRadius: 4,
+            elevation: 2,
+          }}>
+            <Text style={{
+              fontSize: 24,
+              textAlign: 'center',
+            }}>🎤</Text>
+          </View>
         </View>
+
       </View>
-
-    </View>
-  </View>
-);
+    </TouchableOpacity>
+  );
+};
 
 export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const today = new Date();
@@ -443,7 +455,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           fontSize: 11,
           fontWeight: 'bold',
           color: '#FFFFFF',
-          fontFamily: 'Poppins-Regular',
+          fontFamily: 'System',
           letterSpacing: -0.3,
           lineHeight: 14,
           textAlign: 'center',
@@ -459,7 +471,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           fontSize: 13,
           fontWeight: 'bold',
           color: '#5AC8FA',
-          fontFamily: 'Poppins-Regular',
+          fontFamily: 'System',
           marginBottom: 2,
           marginTop: 2,
         }}>
@@ -471,7 +483,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           fontSize: 44,
           fontWeight: 'bold',
           color: isDarkMode ? '#FFFFFF' : '#000000',
-          fontFamily: 'Poppins-Regular',
+          fontFamily: 'System',
           lineHeight: 48,
           marginBottom: 12,
           marginTop: 0,
@@ -496,7 +508,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
             fontSize: 12,
             fontWeight: 'bold',
             color: isDarkMode ? '#8E8E93' : '#8E8E93',
-            fontFamily: 'Poppins-Regular',
+            fontFamily: 'System',
           }}>
             Upcoming
           </Text>
@@ -523,7 +535,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
                 fontSize: 12,
                 fontWeight: 'bold',
                 color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'System',
                 marginBottom: 1,
                 lineHeight: 14,
               }}>
@@ -533,7 +545,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
                 fontSize: 10,
                 fontWeight: 'normal',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'System',
                 marginBottom: 1,
                 lineHeight: 12,
               }}>
@@ -543,7 +555,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
                 fontSize: 10,
                 fontWeight: 'normal',
                 color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'Poppins-Regular',
+                fontFamily: 'System',
                 lineHeight: 12,
               }}>
                 9:00 AM (3 hrs)
@@ -556,35 +568,302 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
   );
 };
 
-export const AskAIWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 8,
-    }}>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '600',
-        color: isDarkMode ? '#FFFFFF' : '#000000',
-        textAlign: 'center',
-        marginBottom: 8,
-        fontFamily: 'Poppins-Regular',
+export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  // Calculate progress percentage (3 out of 5 = 60%)
+  const progress = 3;
+  const total = 5;
+  const progressPercentage = (progress / total) * 100;
+  
+  // SVG circle parameters - bigger and much thicker ring
+  const size = 100;
+  const strokeWidth = 22;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
+  // Calculate the proper page width for the ScrollView
+  const { width: screenWidth } = Dimensions.get('window');
+  
+  // Calculate small widget size using the same formula as in constants
+  const gridPadding = 23;
+  const widgetGap = 20;
+  const additionalRightPadding = 6;
+  const smallWidgetSize = Math.floor((screenWidth - (gridPadding * 1) - widgetGap - additionalRightPadding) / 2);
+  
+  // The available width for each page should be the full widget width
+  const pageWidth = smallWidgetSize;
+
+  // Optimized infinite scroll setup - use fewer copies for better performance
+  const originalPages = ['prayer', 'reading', 'exercise'] as const;
+  const copiesPerSide = 5; // Reduced from 50 to 5 for better performance
+  const totalCopies = copiesPerSide * 2 + 1;
+  const startIndex = copiesPerSide;
+
+  // Scroll animation values
+  const scrollX = useSharedValue(startIndex * originalPages.length * pageWidth);
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+
+  // Optimized scroll handler with throttling
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  }, []);
+
+  // Initialize scroll position after component mounts
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ 
+        x: startIndex * originalPages.length * pageWidth, 
+        animated: false 
+      });
+    }, 50); // Reduced timeout for faster initialization
+    return () => clearTimeout(timer);
+  }, [pageWidth]);
+
+  // Simplified Page component with reduced animations for better performance
+  const PageView = React.memo(({ children, index }: { children: React.ReactNode; index: number }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+      const inputRange = [
+        (index - 1) * pageWidth,
+        index * pageWidth,
+        (index + 1) * pageWidth,
+      ];
+
+      // Simplified scale animation only - removed complex rotations and translations
+      const scale = interpolate(
+        scrollX.value,
+        inputRange,
+        [0.9, 1, 0.9],
+        'clamp'
+      );
+
+      // Simplified opacity animation
+      const opacity = interpolate(
+        scrollX.value,
+        inputRange,
+        [0.7, 1, 0.7],
+        'clamp'
+      );
+
+      return {
+        transform: [{ scale }],
+        opacity,
+      };
+    });
+
+    return (
+      <Animated.View style={[
+        {
+          width: pageWidth,
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        animatedStyle
+      ]}>
+        {children}
+      </Animated.View>
+    );
+  });
+
+  // Memoized page content to prevent unnecessary re-renders
+  const createPageContent = React.useCallback((pageType: 'prayer' | 'reading' | 'exercise', marginTop: number) => {
+    // Define different colors for each page using theme colors
+    const getPageColors = (pageType: 'prayer' | 'reading' | 'exercise') => {
+      switch (pageType) {
+        case 'prayer':
+          return '#1E90FF'; // Vibrant dodger blue (more pop than light sky blue)
+        case 'reading':
+          return '#FF1744'; // More vibrant red (brighter than theme red)
+        case 'exercise':
+          return '#9370DB'; // Vibrant medium purple (much more pop than pastel)
+        default:
+          return colors.redDot;
+      }
+    };
+
+    const pageColor = getPageColors(pageType);
+
+    return (
+      <>
+        {/* SVG Circular Progress Ring */}
+        <View style={{
+          width: size,
+          height: size,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 8,
+          marginTop,
+          position: 'relative',
+        }}>
+          <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+            {/* Background Ring */}
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={colors.habitBackground}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+            />
+            
+            {/* Progress Ring */}
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={pageColor}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+            />
+          </Svg>
+          
+          {/* Centered emoji in the middle of the ring */}
+          <View style={{
+            position: 'absolute',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: size,
+            height: size,
+          }}>
+            <Text style={{
+              fontSize: 28,
+              textAlign: 'center',
+            }}>👋</Text>
+          </View>
+        </View>
+
+        {/* Habit Label */}
+        <Text style={{
+          fontSize: 14,
+          fontWeight: '600',
+          color: colors.primaryText,
+          textAlign: 'center',
+          marginBottom: 2,
+          fontFamily: 'System',
+          letterSpacing: 0.5,
+        }}>
+          {pageType === 'prayer' ? 'Prayer' : pageType === 'reading' ? 'Reading' : 'Exercise'}
+        </Text>
+
+        {/* Progress Stats - Combined in one line */}
+        <Text style={{
+          fontSize: 16,
+          fontWeight: '700',
+          color: pageColor,
+          textAlign: 'center',
+          fontFamily: 'System',
+        }}>
+          {progress}/{total} per day
+        </Text>
+      </>
+    );
+  }, [size, strokeWidth, radius, strokeDasharray, strokeDashoffset, colors, progress, total]);
+
+  // Optimized page generation with memoization
+  const pages = React.useMemo(() => {
+    const generatedPages = [];
+    let pageIndex = 0;
+
+    for (let copy = 0; copy < totalCopies; copy++) {
+      for (let i = 0; i < originalPages.length; i++) {
+        const pageType = originalPages[i];
+        const marginTop = 3; // Same marginTop for all pages for consistent centering
+        
+        generatedPages.push(
+          <PageView key={`${copy}-${i}`} index={pageIndex}>
+            {createPageContent(pageType, marginTop)}
+          </PageView>
+        );
+        pageIndex++;
+      }
+    }
+    return generatedPages;
+  }, [pageWidth, createPageContent]);
+
+  // Simplified dot animation with reduced complexity
+  const DotComponent = React.memo(({ index }: { index: number }) => {
+    const animatedDotStyle = useAnimatedStyle(() => {
+      'worklet';
+      
+      // Simplified calculation for better performance and stability
+      const currentPageFloat = scrollX.value / pageWidth;
+      const currentPageIndex = Math.round(currentPageFloat) % originalPages.length;
+      const normalizedPage = currentPageIndex < 0 ? currentPageIndex + originalPages.length : currentPageIndex;
+      const isActive = normalizedPage === index;
+      
+      // Define colors directly in worklet for stability
+      let activeColor = '#1E90FF'; // Default vibrant blue
+      if (index === 0) activeColor = '#1E90FF'; // Prayer - vibrant dodger blue
+      else if (index === 1) activeColor = '#FF1744'; // Reading - vibrant red  
+      else if (index === 2) activeColor = '#9370DB'; // Exercise - vibrant purple
+      
+      const inactiveColor = isDarkMode ? '#48484A' : '#8E8E93';
+      
+      return {
+        transform: [{ scale: isActive ? 1.2 : 0.8 }],
+        opacity: isActive ? 1 : 0.4,
+        backgroundColor: isActive ? activeColor : inactiveColor,
+      };
+    }, [scrollX, pageWidth, isDarkMode]);
+
+    return (
+      <Animated.View style={[
+        {
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+        },
+        animatedDotStyle
+      ]} />
+    );
+  });
+
+  return (
+    <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}>
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        decelerationRate="fast"
+        contentInsetAdjustmentBehavior="never"
+        directionalLockEnabled={true}
+        scrollEventThrottle={8} // Reduced from 16 for better performance
+        disableIntervalMomentum={true}
+        disableScrollViewPanResponder={false}
+        onScroll={onScroll}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexDirection: 'row', height: '100%' }}
+        removeClippedSubviews={true} // Enable view recycling for better performance
+      >
+        {pages}
+      </Animated.ScrollView>
+
+      {/* Simplified page indicator dots */}
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: -12,
+        left: 0,
+        right: 0,
+        gap: 6,
       }}>
-        🤖 Ask AI
-      </Text>
-      <Text style={{
-        fontSize: 12,
-        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-        textAlign: 'center',
-        fontFamily: 'Poppins-Regular',
-      }}>
-        Get quick answers
-      </Text>
+        {[0, 1, 2].map((index) => (
+          <DotComponent key={index} index={index} />
+        ))}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
   <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
@@ -600,7 +879,7 @@ export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
-        fontFamily: 'Poppins-Regular',
+        fontFamily: 'System',
       }}>
         🕌 Prayer
       </Text>
@@ -608,7 +887,7 @@ export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
-        fontFamily: 'Poppins-Regular',
+        fontFamily: 'System',
       }}>
         Prayer times
       </Text>
@@ -630,7 +909,7 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         color: isDarkMode ? '#FFFFFF' : '#000000',
         textAlign: 'center',
         marginBottom: 8,
-        fontFamily: 'Poppins-Regular',
+        fontFamily: 'System',
       }}>
         📝 Journal
       </Text>
@@ -638,7 +917,7 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         fontSize: 12,
         color: isDarkMode ? '#8E8E93' : '#6B6B6B',
         textAlign: 'center',
-        fontFamily: 'Poppins-Regular',
+        fontFamily: 'System',
       }}>
         Daily reflections
       </Text>

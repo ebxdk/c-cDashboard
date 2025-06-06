@@ -5,28 +5,28 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
 } from 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
-    AskAIWidget,
-    CalendarWidget,
-    CohortContactsWidget,
-    JournalWidget,
-    MinaraWidget,
-    PrayerWidget
+  CalendarWidget,
+  CohortContactsWidget,
+  HabitWidget,
+  JournalWidget,
+  MinaraWidget,
+  PrayerWidget
 } from '../components/WidgetComponents';
 import { widgetStyles } from '../styles/widgetStyles';
 import {
-    findFirstAvailablePosition,
-    getDefaultLayout,
-    getWidgetGridSize,
-    rearrangeWidgets
+  findFirstAvailablePosition,
+  getDefaultLayout,
+  getWidgetGridSize,
+  rearrangeWidgets
 } from '../utils/gridUtils';
 
 export default function Dashboard() {
@@ -35,10 +35,14 @@ export default function Dashboard() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
 
-  // Parallax effect state
+  // Enhanced parallax effect state with multiple layers
   const [deviceMotion, setDeviceMotion] = useState({ x: 0, y: 0 });
   const backgroundX = useSharedValue(0);
   const backgroundY = useSharedValue(0);
+  const backgroundLayer2X = useSharedValue(0);
+  const backgroundLayer2Y = useSharedValue(0);
+  const backgroundLayer3X = useSharedValue(0);
+  const backgroundLayer3Y = useSharedValue(0);
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   // Theme transition animation
@@ -51,32 +55,85 @@ export default function Dashboard() {
     });
   }, [isDarkMode]);
 
-  // Device motion parallax effect
+  // Enhanced device motion parallax effect with multiple layers
   useEffect(() => {
-    const subscription = DeviceMotion.addListener((motionData) => {
-      if (motionData.rotation) {
-        // Subtle parallax movement based on device rotation
-        const maxOffset = 20; // Maximum offset in pixels
-        const newX = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.gamma * 30));
-        const newY = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.beta * 30));
-        
-        backgroundX.value = withTiming(newX, {
-          duration: 100,
-          easing: Easing.out(Easing.quad),
-        });
-        backgroundY.value = withTiming(newY, {
-          duration: 100,
-          easing: Easing.out(Easing.quad),
-        });
-      }
-    });
+    let subscription: any = null;
+    let lastUpdate = 0;
+    
+    const startDeviceMotion = async () => {
+      try {
+        // Request permission for device motion (iOS)
+        const { status } = await DeviceMotion.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Device motion permission not granted');
+          return;
+        }
 
-    DeviceMotion.setUpdateInterval(100); // Update every 100ms
+        // Set update interval to 16ms for 60fps smooth updates
+        DeviceMotion.setUpdateInterval(16);
+
+        subscription = DeviceMotion.addListener((motionData) => {
+          const now = Date.now();
+          // Throttle updates to prevent overwhelming the animation system
+          if (now - lastUpdate < 8) return; // ~120fps max for ultra-smooth motion
+          lastUpdate = now;
+
+          if (motionData.rotation) {
+            // Enhanced parallax with multiple layers and reduced sensitivity
+            const maxOffset = 25; // Reduced from 50 for less dramatic effect
+            const sensitivity = 60; // Reduced from 120 for less sensitive movement
+            
+            // Calculate new positions with enhanced smoothing
+            const targetX = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.gamma * sensitivity));
+            const targetY = Math.max(-maxOffset, Math.min(maxOffset, motionData.rotation.beta * sensitivity));
+            
+            // Layer 1 (main background) - full movement
+            backgroundX.value = withTiming(targetX, {
+              duration: 100,
+              easing: Easing.out(Easing.quad),
+            });
+            
+            backgroundY.value = withTiming(targetY, {
+              duration: 100,
+              easing: Easing.out(Easing.quad),
+            });
+
+            // Layer 2 - 60% movement speed for depth
+            backgroundLayer2X.value = withTiming(targetX * 0.6, {
+              duration: 120,
+              easing: Easing.out(Easing.quad),
+            });
+            
+            backgroundLayer2Y.value = withTiming(targetY * 0.6, {
+              duration: 120,
+              easing: Easing.out(Easing.quad),
+            });
+
+            // Layer 3 - 30% movement speed for even more depth
+            backgroundLayer3X.value = withTiming(targetX * 0.3, {
+              duration: 150,
+              easing: Easing.out(Easing.quad),
+            });
+            
+            backgroundLayer3Y.value = withTiming(targetY * 0.3, {
+              duration: 150,
+              easing: Easing.out(Easing.quad),
+            });
+          }
+        });
+      } catch (error) {
+        console.log('Error setting up device motion:', error);
+      }
+    };
+
+    startDeviceMotion();
 
     return () => {
-      subscription && subscription.remove();
+      if (subscription) {
+        subscription.remove();
+      }
     };
-  }, []);
+  }, [backgroundX, backgroundY, backgroundLayer2X, backgroundLayer2Y, backgroundLayer3X, backgroundLayer3Y]);
 
   // Update theme when system changes
   useEffect(() => {
@@ -111,13 +168,39 @@ export default function Dashboard() {
     })),
   };
 
-  // Animated background with parallax effect
-  const animatedBackgroundStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: backgroundX.value },
-      { translateY: backgroundY.value },
-    ],
-  }));
+  // Enhanced animated background styles with multiple layers
+  const animatedBackgroundStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { translateX: backgroundX.value },
+        { translateY: backgroundY.value },
+        { scale: 1.1 }, // Slight scale to prevent edge visibility
+      ],
+    };
+  });
+
+  const animatedBackgroundLayer2Style = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { translateX: backgroundLayer2X.value },
+        { translateY: backgroundLayer2Y.value },
+        { scale: 1.05 },
+      ],
+    };
+  });
+
+  const animatedBackgroundLayer3Style = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { translateX: backgroundLayer3X.value },
+        { translateY: backgroundLayer3Y.value },
+        { scale: 1.02 },
+      ],
+    };
+  });
 
   const toggleEditMode = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -156,7 +239,7 @@ export default function Dashboard() {
   const animatedToggleButton = useAnimatedStyle(() => ({
     transform: [
       { scale: toggleButtonScale.value },
-      { rotate: `${toggleButtonRotation.value}deg` }
+      { rotate: `${toggleButtonRotation.value}deg` },
     ]
   }));
 
@@ -232,6 +315,76 @@ export default function Dashboard() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
+        
+        {/* Enhanced Multi-Layer Parallax Background */}
+        
+        {/* Background Layer 3 - Slowest movement (30%) */}
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: -80,
+            left: -80,
+            right: -80,
+            bottom: -80,
+            opacity: isDarkMode ? 0.08 : 0.12,
+            zIndex: 1,
+          },
+          animatedBackgroundLayer3Style
+        ]}>
+          <ImageBackground
+            source={require('../assets/images/cc.patterns-01.png')}
+            style={{
+              width: screenWidth + 160,
+              height: screenHeight + 160,
+            }}
+            resizeMode="cover"
+          />
+          <BlurView
+            intensity={25}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+        </Animated.View>
+
+        {/* Background Layer 2 - Medium movement (60%) */}
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: -60,
+            left: -60,
+            right: -60,
+            bottom: -60,
+            opacity: isDarkMode ? 0.15 : 0.20,
+            zIndex: 2,
+          },
+          animatedBackgroundLayer2Style
+        ]}>
+          <ImageBackground
+            source={require('../assets/images/cc.patterns-01.png')}
+            style={{
+              width: screenWidth + 120,
+              height: screenHeight + 120,
+            }}
+            resizeMode="cover"
+          />
+          <BlurView
+            intensity={18}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+        </Animated.View>
+
+        {/* Background Layer 1 - Full movement (100%) */}
         <Animated.View style={[
           {
             position: 'absolute',
@@ -240,6 +393,7 @@ export default function Dashboard() {
             right: -50,
             bottom: -50,
             opacity: isDarkMode ? 0.25 : 0.35,
+            zIndex: 3,
           },
           animatedBackgroundStyle
         ]}>
@@ -252,7 +406,7 @@ export default function Dashboard() {
             resizeMode="cover"
           />
           <BlurView
-            intensity={15}
+            intensity={12}
             style={{
               position: 'absolute',
               top: 0,
@@ -263,10 +417,67 @@ export default function Dashboard() {
           />
         </Animated.View>
 
+        {/* Floating Elements Layer - Enhanced movement (150%) */}
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 4,
+            pointerEvents: 'none',
+          },
+          useAnimatedStyle(() => ({
+            transform: [
+              { translateX: backgroundX.value * 3.0 },
+              { translateY: backgroundY.value * 3.0 },
+            ],
+          }))
+        ]}>
+          {/* Subtle floating dots */}
+          <View style={{
+            position: 'absolute',
+            top: '20%',
+            left: '15%',
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+          }} />
+          <View style={{
+            position: 'absolute',
+            top: '60%',
+            right: '20%',
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)',
+          }} />
+          <View style={{
+            position: 'absolute',
+            top: '40%',
+            left: '70%',
+            width: 3,
+            height: 3,
+            borderRadius: 1.5,
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+          }} />
+          <View style={{
+            position: 'absolute',
+            bottom: '30%',
+            left: '25%',
+            width: 5,
+            height: 5,
+            borderRadius: 2.5,
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.04)',
+          }} />
+        </Animated.View>
+
         {/* Background gesture area */}
         <LongPressGestureHandler onHandlerStateChange={handleBackgroundLongPress} minDurationMs={500}>
           <TapGestureHandler onHandlerStateChange={handleBackgroundTap} enabled={isEditMode}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, zIndex: 10 }}>
               <ScrollView 
                 style={widgetStyles.mainScrollView}
                 contentContainerStyle={[widgetStyles.scrollContent]}
@@ -308,7 +519,7 @@ export default function Dashboard() {
                 <View style={widgetStyles.summarySection}>
                   <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>السلام عليكم</Text>
                   <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
-                    You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 upcoming events</Text>, 💬 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 new messages</Text> and 🌟 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>4 daily habits</Text> awaiting your attention. <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>Let's crush it, akhi! 💪</Text>
+                    You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 upcoming events</Text>, 💬 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 new messages</Text> and 🌟 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>4 daily habits</Text> awaiting your attention. <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>Let's crush it! 💪</Text>
                   </Text>
                 </View>
 
@@ -336,7 +547,7 @@ export default function Dashboard() {
                         WidgetComponent = CalendarWidget;
                         break;
                       case 'askMinara':
-                        WidgetComponent = AskAIWidget;
+                        WidgetComponent = HabitWidget;
                         break;
                       case 'prayer':
                         WidgetComponent = PrayerWidget;
@@ -360,6 +571,8 @@ export default function Dashboard() {
                         isEditMode={isEditMode} 
                         isDarkMode={isDarkMode} 
                         colors={colors}
+                        parallaxX={backgroundX}
+                        parallaxY={backgroundY}
                       >
                         <WidgetComponent colors={colors} isDarkMode={isDarkMode} />
                       </DraggableWidget>

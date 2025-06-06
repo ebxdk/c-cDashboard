@@ -18,7 +18,6 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     'AminMedium': require('../assets/fonts/Amin Medium.ttf'),
-    'PoppinsRegular': require('../assets/fonts/Poppins-Regular.ttf'),
   });
 
   useEffect(() => {
@@ -36,6 +35,8 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="cohort" options={{ headerShown: false }} />
+        <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
+        <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="dark" hidden={true} />
