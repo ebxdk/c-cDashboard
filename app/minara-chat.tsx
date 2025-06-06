@@ -737,8 +737,13 @@ export default function MinaraChatScreen() {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
       
-      const mode = 'minara'; // You can make this dynamic if needed
+      const mode = 'minara';
       const apiUrl = `https://minara-3-ebadkhan5487.replit.app/api/${mode}/stream?query=${encodeURIComponent(userMessage)}`;
+      
+      // Add timeout to prevent hanging requests
+      const timeoutId = setTimeout(() => {
+        abortController.abort();
+      }, 30000); // 30 second timeout
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -751,18 +756,23 @@ export default function MinaraChatScreen() {
         signal: abortController.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Server responded with status ${response.status}: ${response.statusText}`);
       }
 
-      // React Native compatible streaming approach
-      // Since ReadableStream.getReader() may not be available, we'll use response.text()
-      // and simulate streaming by processing the response incrementally
-      
+      // Check if response has content
       const responseText = await response.text();
-      const lines = responseText.split('\n');
       
-      // Process each line with a small delay to simulate real-time streaming
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty response from server');
+      }
+      
+      const lines = responseText.split('\n');
+      let hasContent = false;
+      
+      // Process each line with error handling
       for (let i = 0; i < lines.length; i++) {
         // Check if generation was stopped
         if (abortController.signal.aborted) {
@@ -773,13 +783,18 @@ export default function MinaraChatScreen() {
         
         if (line.startsWith('data: ')) {
           try {
-            const jsonStr = line.substring(6); // Remove "data: " prefix
+            const jsonStr = line.substring(6);
+            if (jsonStr === '[DONE]') {
+              break;
+            }
+            
             const parsed = JSON.parse(jsonStr);
             
             // Only collect content from content type messages
             if (parsed.type === 'content' && parsed.content) {
+              hasContent = true;
               // Throttle updates to prevent freezing during heavy Arabic processing
-              if (i % 3 === 0 || i === lines.length - 1) { // Update every 3rd line or last line
+              if (i % 3 === 0 || i === lines.length - 1) {
                 // Update the message in batches
                 setMessages(prev => prev.map(msg => 
                   msg.id === parseInt(aiMessageId)
@@ -789,24 +804,23 @@ export default function MinaraChatScreen() {
                 
                 // Add throttled haptic feedback for meaningful content
                 const trimmedContent = parsed.content.trim();
-                if (trimmedContent.length > 5) { // Increased threshold to reduce frequency
+                if (trimmedContent.length > 5) {
                   try {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   } catch (error) {
-                    // Silently handle haptic errors to prevent crashes
+                    // Silently handle haptic errors
                     console.log('Haptic feedback error:', error);
                   }
                 }
                 
-                // Auto-scroll as content comes in with smoother behavior
+                // Auto-scroll as content comes in
                 setTimeout(() => {
                   if (scrollViewRef.current && !isUserScrolling) {
-                    // Only auto-scroll if user hasn't manually scrolled recently
                     scrollViewRef.current.scrollToEnd({ 
                       animated: true 
                     });
                   }
-                }, 200); // Increased delay for better performance
+                }, 200);
               } else {
                 // Still accumulate content but don't trigger UI update
                 setMessages(prev => prev.map(msg => 
@@ -816,7 +830,7 @@ export default function MinaraChatScreen() {
                 ));
               }
               
-              // Reduced delay for better responsiveness
+              // Small delay for better performance
               await new Promise(resolve => setTimeout(resolve, 10));
             }
           } catch (parseError) {
@@ -825,30 +839,38 @@ export default function MinaraChatScreen() {
           }
         }
       }
+      
+      // If no content was received, show an error
+      if (!hasContent) {
+        throw new Error('No content received from the server. The AI service may be temporarily unavailable.');
+      }
+      
     } catch (error: any) {
+      console.error('Error fetching AI response:', error);
+      
+      let errorMessage = 'Sorry, I encountered an unexpected error. Please try again.';
+      
       if (error.name === 'AbortError') {
         console.log('Generation was stopped by user');
-        // Update message to show it was stopped
-        setMessages(prev => prev.map(msg => 
-          msg.id === parseInt(aiMessageId)
-            ? { ...msg, text: msg.text + '\n\n[Generation stopped]' }
-            : msg
-        ));
-      } else {
-        console.error('Error fetching AI response:', error);
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          url: apiUrl
-        });
-        // Fallback to error message
-        setMessages(prev => prev.map(msg => 
-          msg.id === parseInt(aiMessageId)
-            ? { ...msg, text: `Sorry, I encountered an error while connecting to the server: ${error.message}. Please check your internet connection and try again.` }
-            : msg
-        ));
+        errorMessage = '[Generation stopped]';
+      } else if (error.message.includes('Network request failed')) {
+        errorMessage = 'Unable to connect to the AI service. Please check your internet connection and try again.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'The request timed out. Please try again with a shorter message.';
+      } else if (error.message.includes('status')) {
+        errorMessage = `Server error: ${error.message}. Please try again later.`;
+      } else if (error.message.includes('Empty response')) {
+        errorMessage = 'The AI service returned an empty response. Please try again.';
+      } else if (error.message.includes('No content received')) {
+        errorMessage = error.message;
       }
+      
+      // Update message with appropriate error
+      setMessages(prev => prev.map(msg => 
+        msg.id === parseInt(aiMessageId)
+          ? { ...msg, text: msg.text + (msg.text ? '\n\n' : '') + errorMessage }
+          : msg
+      ));
     } finally {
       setIsGenerating(false);
       setCurrentGenerationId(null);
