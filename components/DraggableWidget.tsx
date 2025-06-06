@@ -2,14 +2,14 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
-  Extrapolate,
-  interpolate,
-  runOnJS,
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
+    Extrapolate,
+    interpolate,
+    runOnJS,
+    useAnimatedGestureHandler,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
 } from 'react-native-reanimated';
 
 import { GRID_CELL_HEIGHT, GRID_CELL_WIDTH, GRID_PADDING, WIDGET_DEFINITIONS, WIDGET_GAP } from '../constants/widgetConstants';
@@ -23,25 +23,27 @@ interface DraggableWidgetComponentProps extends DraggableWidgetProps {
   isDarkMode: boolean;
   colors: any;
   onLiveRearrange?: (draggedId: string, newX: number, newY: number) => void;
+  parallaxX?: Animated.SharedValue<number>;
+  parallaxY?: Animated.SharedValue<number>;
 }
 
-// Enhanced spring config for buttery smooth animations
+// Enhanced spring config for much less buttery animations
 const BUTTERY_SPRING_CONFIG = {
-  damping: 20,
-  mass: 0.8,
-  stiffness: 300,
-  overshootClamping: false,
-  restDisplacementThreshold: 0.001,
-  restSpeedThreshold: 0.001,
+  damping: 45,
+  mass: 1.8,
+  stiffness: 120,
+  overshootClamping: true,
+  restDisplacementThreshold: 0.02,
+  restSpeedThreshold: 0.02,
 };
 
 const DRAG_SPRING_CONFIG = {
-  damping: 25,
-  mass: 1,
-  stiffness: 400,
-  overshootClamping: false,
-  restDisplacementThreshold: 0.001,
-  restSpeedThreshold: 0.001,
+  damping: 50,
+  mass: 2.0,
+  stiffness: 150,
+  overshootClamping: true,
+  restDisplacementThreshold: 0.02,
+  restSpeedThreshold: 0.02,
 };
 
 export const DraggableWidget: React.FC<DraggableWidgetComponentProps> = ({
@@ -54,7 +56,9 @@ export const DraggableWidget: React.FC<DraggableWidgetComponentProps> = ({
   colors,
   onPositionChange,
   onResize,
-  onLiveRearrange
+  onLiveRearrange,
+  parallaxX,
+  parallaxY
 }) => {
   const widgetDef = WIDGET_DEFINITIONS[widgetId];
   
@@ -197,7 +201,7 @@ export const DraggableWidget: React.FC<DraggableWidgetComponentProps> = ({
     },
   });
 
-  // Enhanced animated style with smooth interpolations
+  // Enhanced animated style with smooth interpolations but no parallax
   const animatedStyle = useAnimatedStyle(() => {
     // Smooth shadow and elevation changes during drag
     const shadowOpacity = interpolate(
