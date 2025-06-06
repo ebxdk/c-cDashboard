@@ -43,127 +43,125 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Optimized Arabic processing with memoization and reduced complexity
-  const processTextWithArabic = React.useMemo(() => {
-    return (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
-      const segments: React.ReactElement[] = [];
-      let segmentKey = startKey;
-      let currentIndex = 0;
-      
-      // Simplified Arabic detection regex for better performance
-      const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
-      
-      // Pre-compile regex matches to avoid repeated execution
-      const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
-      let match;
-      
-      // Limit processing during streaming to prevent freeze
-      if (isStreaming && text.length > 200) {
-        // During streaming, use simple rendering for long text
-        segments.push(
-          <Text key={segmentKey++} style={{
-            fontSize: 18,
-            color: colors.primaryText,
-            fontFamily: 'System',
-          }}>
-            {text}
-          </Text>
-        );
-        return segments;
+  // Optimized Arabic processing with reduced complexity
+  const processTextWithArabic = (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
+    const segments: React.ReactElement[] = [];
+    let segmentKey = startKey;
+    let currentIndex = 0;
+    
+    // Simplified Arabic detection regex for better performance
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
+    
+    // Pre-compile regex matches to avoid repeated execution
+    const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
+    let match;
+    
+    // Limit processing during streaming to prevent freeze
+    if (isStreaming && text.length > 200) {
+      // During streaming, use simple rendering for long text
+      segments.push(
+        <Text key={segmentKey++} style={{
+          fontSize: 18,
+          color: colors.primaryText,
+          fontFamily: 'System',
+        }}>
+          {text}
+        </Text>
+      );
+      return segments;
+    }
+    
+    // Full processing for completed text or shorter text
+    while ((match = arabicRegex.exec(text)) !== null) {
+      const matchedText = match[0].trim();
+      if (matchedText.length > 2) { // Only process meaningful Arabic text
+        arabicMatches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: matchedText
+        });
       }
-      
-      // Full processing for completed text or shorter text
-      while ((match = arabicRegex.exec(text)) !== null) {
-        const matchedText = match[0].trim();
-        if (matchedText.length > 2) { // Only process meaningful Arabic text
-          arabicMatches.push({
-            start: match.index,
-            end: match.index + match[0].length,
-            text: matchedText
-          });
-        }
-      }
-      
-      // Process matches in order with batching
-      arabicMatches.forEach((arabicMatch, index) => {
-        // Add text before Arabic
-        if (arabicMatch.start > currentIndex) {
-          const beforeText = text.slice(currentIndex, arabicMatch.start);
-          if (beforeText.trim()) {
-            segments.push(
-              <Text key={segmentKey++} style={{
-                fontSize: 18,
-                color: colors.primaryText,
-                fontFamily: 'System',
-              }}>
-                {beforeText}
-              </Text>
-            );
-          }
-        }
-        
-        // Add Arabic text in a styled container with reduced styling complexity
-        segments.push(
-          <View key={segmentKey++} style={{
-            backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
-            borderRadius: 12,
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            marginVertical: 8,
-            marginHorizontal: 4,
-            borderWidth: 1,
-            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-            alignSelf: 'stretch',
-          }}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: '500',
-              color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-              fontFamily: 'System',
-              textAlign: 'right',
-              lineHeight: 32,
-              letterSpacing: 0.5,
-            }}>
-              {arabicMatch.text}
-            </Text>
-          </View>
-        );
-        
-        currentIndex = arabicMatch.end;
-      });
-      
-      // Add remaining text after all Arabic matches
-      if (currentIndex < text.length) {
-        const remainingText = text.slice(currentIndex);
-        if (remainingText.trim()) {
+    }
+    
+    // Process matches in order with batching
+    arabicMatches.forEach((arabicMatch, index) => {
+      // Add text before Arabic
+      if (arabicMatch.start > currentIndex) {
+        const beforeText = text.slice(currentIndex, arabicMatch.start);
+        if (beforeText.trim()) {
           segments.push(
             <Text key={segmentKey++} style={{
               fontSize: 18,
               color: colors.primaryText,
               fontFamily: 'System',
             }}>
-              {remainingText}
+              {beforeText}
             </Text>
           );
         }
       }
       
-      // If no Arabic text found, return the original text
-      if (segments.length === 0) {
+      // Add Arabic text in a styled container with reduced styling complexity
+      segments.push(
+        <View key={segmentKey++} style={{
+          backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
+          borderRadius: 12,
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          marginVertical: 8,
+          marginHorizontal: 4,
+          borderWidth: 1,
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          alignSelf: 'stretch',
+        }}>
+          <Text style={{
+            fontSize: 20,
+            fontWeight: '500',
+            color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+            fontFamily: 'System',
+            textAlign: 'right',
+            lineHeight: 32,
+            letterSpacing: 0.5,
+          }}>
+            {arabicMatch.text}
+          </Text>
+        </View>
+      );
+      
+      currentIndex = arabicMatch.end;
+    });
+    
+    // Add remaining text after all Arabic matches
+    if (currentIndex < text.length) {
+      const remainingText = text.slice(currentIndex);
+      if (remainingText.trim()) {
         segments.push(
           <Text key={segmentKey++} style={{
             fontSize: 18,
             color: colors.primaryText,
             fontFamily: 'System',
           }}>
-            {text}
+            {remainingText}
           </Text>
         );
       }
-      
-      return segments;
-    };
-  }, [isStreaming, text.length]); // Memoize based on streaming state and text length
+    }
+    
+    // If no Arabic text found, return the original text
+    if (segments.length === 0) {
+      segments.push(
+        <Text key={segmentKey++} style={{
+          fontSize: 18,
+          color: colors.primaryText,
+          fontFamily: 'System',
+        }}>
+          {text}
+        </Text>
+      );
+    }
+    
+    return segments;
+  };
   
   lines.forEach((line, lineIndex) => {
     if (!line.trim()) {
@@ -250,157 +248,155 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     }
     
     // Process regular text with inline formatting - optimized for streaming
-    const processInlineFormatting = React.useMemo(() => {
-      return (text: string): React.ReactElement[] => {
-        const segments: React.ReactElement[] = [];
-        let segmentKey = 0;
-        let currentIndex = 0;
+    const processInlineFormatting = (text: string): React.ReactElement[] => {
+      const segments: React.ReactElement[] = [];
+      let segmentKey = 0;
+      let currentIndex = 0;
+      
+      // Simplified processing during streaming to prevent freeze
+      if (isStreaming && text.length > 150) {
+        // During streaming, use basic Arabic processing without complex formatting
+        return processTextWithArabic(text, 0, colors, isDarkMode);
+      }
+      
+      // Find all formatting patterns with enhanced regex
+      const patterns = [
+        { regex: /\*\*([^*]+)\*\*/g, type: 'bold' },
+        { regex: /\*([^*]+)\*/g, type: 'italic' },
+        { regex: /`([^`]+)`/g, type: 'code' },
+        { regex: /~~([^~]+)~~/g, type: 'strikethrough' },
+        { regex: /__([^_]+)__/g, type: 'underline' },
+      ];
+      
+      const matches: Array<{
+        start: number;
+        end: number;
+        content: string;
+        type: string;
+      }> = [];
+      
+      // Limit pattern matching during heavy processing
+      const maxMatches = isStreaming ? 5 : 50;
+      let matchCount = 0;
+      
+      patterns.forEach(pattern => {
+        if (matchCount >= maxMatches) return;
         
-        // Simplified processing during streaming to prevent freeze
-        if (isStreaming && text.length > 150) {
-          // During streaming, use basic Arabic processing without complex formatting
-          return processTextWithArabic(text, 0, colors, isDarkMode);
+        let match;
+        const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+        while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
+          matches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            content: match[1],
+            type: pattern.type
+          });
+          matchCount++;
         }
-        
-        // Find all formatting patterns with enhanced regex
-        const patterns = [
-          { regex: /\*\*([^*]+)\*\*/g, type: 'bold' },
-          { regex: /\*([^*]+)\*/g, type: 'italic' },
-          { regex: /`([^`]+)`/g, type: 'code' },
-          { regex: /~~([^~]+)~~/g, type: 'strikethrough' },
-          { regex: /__([^_]+)__/g, type: 'underline' },
-        ];
-        
-        const matches: Array<{
-          start: number;
-          end: number;
-          content: string;
-          type: string;
-        }> = [];
-        
-        // Limit pattern matching during heavy processing
-        const maxMatches = isStreaming ? 5 : 50;
-        let matchCount = 0;
-        
-        patterns.forEach(pattern => {
-          if (matchCount >= maxMatches) return;
-          
-          let match;
-          const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
-          while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
-            matches.push({
-              start: match.index,
-              end: match.index + match[0].length,
-              content: match[1],
-              type: pattern.type
-            });
-            matchCount++;
-          }
-        });
-        
-        // Sort matches by position
-        matches.sort((a, b) => a.start - b.start);
-        
-        // Process matches and text between them
-        matches.forEach(match => {
-          // Add text before match
-          if (match.start > currentIndex) {
-            const beforeText = text.slice(currentIndex, match.start);
-            segments.push(...processTextWithArabic(beforeText, segmentKey, colors, isDarkMode));
-            segmentKey += 10; // Leave room for Arabic segments
-          }
-        
-        // Add formatted match with enhanced styling
-        switch (match.type) {
-          case 'bold':
-            segments.push(
-              <Text key={segmentKey++} style={{
-                fontWeight: '700',
-                fontSize: 18, // Bigger bold text
-                color: colors.primaryText,
-                fontFamily: 'System',
-                // Add subtle glow for bold text
-                textShadowColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-                textShadowOffset: { width: 0, height: 0.5 },
-                textShadowRadius: 1,
-              }}>
-                {match.content}
-              </Text>
-            );
-            break;
-          case 'italic':
-            segments.push(
-              <Text key={segmentKey++} style={{
-                fontStyle: 'italic',
-                fontSize: 18, // Bigger italic text
-                color: isDarkMode ? '#E8E8E8' : '#2C2C2C',
-                fontFamily: 'System',
-                letterSpacing: 0.2,
-              }}>
-                {match.content}
-              </Text>
-            );
-            break;
-          case 'code':
-            segments.push(
-              <Text key={segmentKey++} style={{
-                fontFamily: 'Courier',
-                fontSize: 17, // Bigger code text
-                color: isDarkMode ? '#FF6B9D' : '#E91E63',
-                backgroundColor: isDarkMode ? 'rgba(255, 107, 157, 0.15)' : 'rgba(233, 30, 99, 0.08)',
-                paddingHorizontal: 6,
-                paddingVertical: 3,
-                borderRadius: 6,
-                // Add subtle border and shadow
-                borderWidth: 1,
-                borderColor: isDarkMode ? 'rgba(255, 107, 157, 0.3)' : 'rgba(233, 30, 99, 0.2)',
-                shadowColor: isDarkMode ? '#FF6B9D' : '#E91E63',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.2,
-                shadowRadius: 2,
-              }}>
-                {match.content}
-              </Text>
-            );
-            break;
-          case 'strikethrough':
-            segments.push(
-              <Text key={segmentKey++} style={{
-                textDecorationLine: 'line-through',
-                fontSize: 18, // Bigger strikethrough text
-                color: isDarkMode ? '#888888' : '#666666',
-                fontFamily: 'System',
-              }}>
-                {match.content}
-              </Text>
-            );
-            break;
-          case 'underline':
-            segments.push(
-              <Text key={segmentKey++} style={{
-                textDecorationLine: 'underline',
-                fontSize: 18, // Bigger underline text
-                color: isDarkMode ? '#64B5F6' : '#1976D2',
-                fontFamily: 'System',
-              }}>
-                {match.content}
-              </Text>
-            );
-            break;
+      });
+      
+      // Sort matches by position
+      matches.sort((a, b) => a.start - b.start);
+      
+      // Process matches and text between them
+      matches.forEach(match => {
+        // Add text before match
+        if (match.start > currentIndex) {
+          const beforeText = text.slice(currentIndex, match.start);
+          segments.push(...processTextWithArabic(beforeText, segmentKey, colors, isDarkMode));
+          segmentKey += 10; // Leave room for Arabic segments
         }
-        
-        currentIndex = match.end;
-        });
-        
-        // Add remaining text
-        if (currentIndex < text.length) {
-          const remainingText = text.slice(currentIndex);
-          segments.push(...processTextWithArabic(remainingText, segmentKey, colors, isDarkMode));
-        }
-        
-        return segments;
-      };
-    }, [isStreaming, text.length, colors, isDarkMode]); // Memoize based on key dependencies
+      
+      // Add formatted match with enhanced styling
+      switch (match.type) {
+        case 'bold':
+          segments.push(
+            <Text key={segmentKey++} style={{
+              fontWeight: '700',
+              fontSize: 18, // Bigger bold text
+              color: colors.primaryText,
+              fontFamily: 'System',
+              // Add subtle glow for bold text
+              textShadowColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+              textShadowOffset: { width: 0, height: 0.5 },
+              textShadowRadius: 1,
+            }}>
+              {match.content}
+            </Text>
+          );
+          break;
+        case 'italic':
+          segments.push(
+            <Text key={segmentKey++} style={{
+              fontStyle: 'italic',
+              fontSize: 18, // Bigger italic text
+              color: isDarkMode ? '#E8E8E8' : '#2C2C2C',
+              fontFamily: 'System',
+              letterSpacing: 0.2,
+            }}>
+              {match.content}
+            </Text>
+          );
+          break;
+        case 'code':
+          segments.push(
+            <Text key={segmentKey++} style={{
+              fontFamily: 'Courier',
+              fontSize: 17, // Bigger code text
+              color: isDarkMode ? '#FF6B9D' : '#E91E63',
+              backgroundColor: isDarkMode ? 'rgba(255, 107, 157, 0.15)' : 'rgba(233, 30, 99, 0.08)',
+              paddingHorizontal: 6,
+              paddingVertical: 3,
+              borderRadius: 6,
+              // Add subtle border and shadow
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(255, 107, 157, 0.3)' : 'rgba(233, 30, 99, 0.2)',
+              shadowColor: isDarkMode ? '#FF6B9D' : '#E91E63',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
+            }}>
+              {match.content}
+            </Text>
+          );
+          break;
+        case 'strikethrough':
+          segments.push(
+            <Text key={segmentKey++} style={{
+              textDecorationLine: 'line-through',
+              fontSize: 18, // Bigger strikethrough text
+              color: isDarkMode ? '#888888' : '#666666',
+              fontFamily: 'System',
+            }}>
+              {match.content}
+            </Text>
+          );
+          break;
+        case 'underline':
+          segments.push(
+            <Text key={segmentKey++} style={{
+              textDecorationLine: 'underline',
+              fontSize: 18, // Bigger underline text
+              color: isDarkMode ? '#64B5F6' : '#1976D2',
+              fontFamily: 'System',
+            }}>
+              {match.content}
+            </Text>
+          );
+          break;
+      }
+      
+      currentIndex = match.end;
+      });
+      
+      // Add remaining text
+      if (currentIndex < text.length) {
+        const remainingText = text.slice(currentIndex);
+        segments.push(...processTextWithArabic(remainingText, segmentKey, colors, isDarkMode));
+      }
+      
+      return segments;
+    };
     
     // Process the line
     const lineElements = processInlineFormatting(line);
