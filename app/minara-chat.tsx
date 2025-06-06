@@ -101,27 +101,36 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         }
       }
       
-      // Add Arabic text in a styled container with reduced styling complexity
+      // Add Arabic text in a styled container with enhanced typography
       segments.push(
         <View key={segmentKey++} style={{
-          backgroundColor: isDarkMode ? 'rgba(28, 28, 30, 0.8)' : 'rgba(248, 249, 250, 0.9)',
-          borderRadius: 12,
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          marginVertical: 8,
-          marginHorizontal: 4,
-          borderWidth: 1,
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          backgroundColor: isDarkMode ? 'rgba(20, 25, 35, 0.95)' : 'rgba(250, 252, 255, 0.95)',
+          borderRadius: 16,
+          paddingHorizontal: 24,
+          paddingVertical: 20,
+          marginVertical: 12,
+          marginHorizontal: 8,
+          borderWidth: 1.5,
+          borderColor: isDarkMode ? 'rgba(139, 184, 232, 0.15)' : 'rgba(59, 130, 246, 0.12)',
           alignSelf: 'stretch',
+          shadowColor: isDarkMode ? '#000000' : '#1F2937',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: isDarkMode ? 0.4 : 0.08,
+          shadowRadius: 8,
+          elevation: 4,
         }}>
           <Text style={{
-            fontSize: 20,
-            fontWeight: '500',
-            color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+            fontSize: 24,
+            fontWeight: '600',
+            color: isDarkMode ? '#F8FAFC' : '#0F172A',
             fontFamily: 'System',
             textAlign: 'right',
-            lineHeight: 32,
-            letterSpacing: 0.5,
+            lineHeight: 40,
+            letterSpacing: 0.8,
+            writingDirection: 'rtl',
+            textShadowColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 2,
           }}>
             {arabicMatch.text}
           </Text>
