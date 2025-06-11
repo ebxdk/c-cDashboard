@@ -1,35 +1,37 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { DeviceMotion } from 'expo-sensors';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
-  CalendarWidget,
-  CohortContactsWidget,
-  HabitWidget,
-  JournalWidget,
-  MinaraWidget,
-  PrayerWidget
+    CalendarWidget,
+    CohortContactsWidget,
+    HabitWidget,
+    JournalWidget,
+    MinaraWidget,
+    PrayerWidget
 } from '../components/WidgetComponents';
 import { widgetStyles } from '../styles/widgetStyles';
 import {
-  findFirstAvailablePosition,
-  getDefaultLayout,
-  getWidgetGridSize,
-  rearrangeWidgets
+    findFirstAvailablePosition,
+    getDefaultLayout,
+    getWidgetGridSize,
+    rearrangeWidgets
 } from '../utils/gridUtils';
 
 export default function Dashboard() {
+  const params = useLocalSearchParams();
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -314,6 +316,9 @@ export default function Dashboard() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {params.noAnim === '1' && (
+        <Stack.Screen options={{ animation: 'none' }} />
+      )}
       <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
         
         {/* Enhanced Multi-Layer Parallax Background */}
@@ -480,7 +485,10 @@ export default function Dashboard() {
             <View style={{ flex: 1, zIndex: 10 }}>
               <ScrollView 
                 style={widgetStyles.mainScrollView}
-                contentContainerStyle={[widgetStyles.scrollContent]}
+                contentContainerStyle={{
+                  ...widgetStyles.scrollContent,
+                  paddingBottom: 120,
+                }}
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={!isEditMode}
                 bounces={!isEditMode}

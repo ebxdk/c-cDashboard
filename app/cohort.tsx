@@ -1,11 +1,12 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CohortScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const systemColorScheme = useColorScheme();
   const isDarkMode = systemColorScheme === 'dark';
 
@@ -45,6 +46,9 @@ export default function CohortScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {params.noAnim === '1' && (
+        <Stack.Screen options={{ animation: 'none' }} />
+      )}
       <StatusBar 
         barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
         backgroundColor="transparent"

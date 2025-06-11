@@ -1,6 +1,6 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
@@ -47,18 +47,14 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   const processTextWithArabic = (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
     let segmentKey = startKey;
-    let currentIndex = 0;
-    
-    // Simplified Arabic detection regex for better performance
-    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
-    
-    // Pre-compile regex matches to avoid repeated execution
-    const arabicMatches: Array<{ start: number; end: number; text: string }> = [];
+    let lastIndex = 0;
+
+    // Strict regex: only match segments that are entirely Arabic (no English, no numbers, no Latin punctuation)
+    const arabicRegex = /([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF،؟\.\s]+)/g;
     let match;
-    
-    // Limit processing during streaming to prevent freeze
+
+    // During streaming, render as plain text for performance
     if (isStreaming && text.length > 200) {
-      // During streaming, use simple rendering for long text
       segments.push(
         <Text key={segmentKey++} style={{
           fontSize: 18,
@@ -70,24 +66,11 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       );
       return segments;
     }
-    
-    // Full processing for completed text or shorter text
+
     while ((match = arabicRegex.exec(text)) !== null) {
-      const matchedText = match[0].trim();
-      if (matchedText.length > 2) { // Only process meaningful Arabic text
-        arabicMatches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          text: matchedText
-        });
-      }
-    }
-    
-    // Process matches in order with batching
-    arabicMatches.forEach((arabicMatch, index) => {
-      // Add text before Arabic
-      if (arabicMatch.start > currentIndex) {
-        const beforeText = text.slice(currentIndex, arabicMatch.start);
+      // Add any non-Arabic text before this match
+      if (match.index > lastIndex) {
+        const beforeText = text.slice(lastIndex, match.index);
         if (beforeText.trim()) {
           segments.push(
             <Text key={segmentKey++} style={{
@@ -100,41 +83,96 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           );
         }
       }
-      
-      // Add Arabic text in a clean, unified container
-      segments.push(
-        <View key={segmentKey++} style={{
-          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-          borderRadius: 12,
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          marginVertical: 8,
-          marginHorizontal: 0,
-          borderWidth: 1,
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-          alignSelf: 'stretch',
-        }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: '500',
+      const arabicText = match[0].trim();
+      // Only wrap if the segment is strictly Arabic (no English, no numbers, no Latin punctuation)
+      if (
+        arabicText &&
+        /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF،؟\.\s]+$/.test(arabicText)
+      ) {
+        segments.push(
+          <View
+            key={segmentKey++}
+            style={{
+              backgroundColor: isDarkMode
+                ? 'rgba(30, 41, 59, 0.55)'
+                : 'rgba(203, 213, 225, 0.45)',
+              borderRadius: 18,
+              paddingHorizontal: 24,
+              paddingVertical: 18,
+              marginVertical: 12,
+              marginHorizontal: 0,
+              borderWidth: 2,
+              borderColor: isDarkMode ? '#0fffc3' : '#6366f1',
+              shadowColor: isDarkMode ? '#0fffc3' : '#6366f1',
+              shadowOpacity: 0.18,
+              shadowRadius: 16,
+              alignSelf: 'stretch',
+              overflow: 'hidden',
+              minWidth: '100%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              position: 'relative',
+              maxWidth: '100%',
+            }}
+          >
+            {/* Futuristic accent bar */}
+            <View
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: 6,
+                height: '100%',
+                backgroundColor: isDarkMode ? '#0fffc3' : '#6366f1',
+                opacity: 0.7,
+                borderTopLeftRadius: 18,
+                borderBottomLeftRadius: 18,
+              }}
+            />
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 20,
+                fontWeight: '700',
+                color: isDarkMode ? '#fff' : '#18181b',
+                textAlign: 'right',
+                lineHeight: 32,
+                letterSpacing: 0.5,
+                writingDirection: 'rtl',
+                textShadowColor: isDarkMode ? '#0fffc3' : '#6366f1',
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 8,
+                paddingLeft: 16,
+                paddingRight: 0,
+                flexShrink: 1,
+                flexWrap: 'wrap',
+                minWidth: 0,
+                maxWidth: '100%',
+              }}
+              numberOfLines={0}
+              ellipsizeMode="tail"
+            >
+              {arabicText}
+            </Text>
+          </View>
+        );
+      } else if (arabicText) {
+        // If not pure Arabic, render as normal text
+        segments.push(
+          <Text key={segmentKey++} style={{
+            fontSize: 18,
             color: colors.primaryText,
             fontFamily: 'System',
-            textAlign: 'right',
-            lineHeight: 32,
-            letterSpacing: 0.3,
-            writingDirection: 'rtl',
           }}>
-            {arabicMatch.text}
+            {arabicText}
           </Text>
-        </View>
-      );
-      
-      currentIndex = arabicMatch.end;
-    });
-    
-    // Add remaining text after all Arabic matches
-    if (currentIndex < text.length) {
-      const remainingText = text.slice(currentIndex);
+        );
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    // Add any remaining non-Arabic text
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex);
       if (remainingText.trim()) {
         segments.push(
           <Text key={segmentKey++} style={{
@@ -147,8 +185,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         );
       }
     }
-    
-    // If no Arabic text found, return the original text
+    // If no segments found, return the original text
     if (segments.length === 0) {
       segments.push(
         <Text key={segmentKey++} style={{
@@ -160,7 +197,6 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         </Text>
       );
     }
-    
     return segments;
   };
   
@@ -448,6 +484,7 @@ export default function MinaraChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const params = useLocalSearchParams();
 
   // Sample chat history data with actual stored messages
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([
@@ -1133,6 +1170,9 @@ export default function MinaraChatScreen() {
     <SafeAreaView 
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      {params.noAnim === '1' && (
+        <Stack.Screen options={{ animation: 'none' }} />
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -1390,14 +1430,18 @@ export default function MinaraChatScreen() {
                   ]}>
                     {formatAIResponse(msg.text, colors, isDarkMode, isGenerating)}
                     {isGenerating && currentGenerationId === msg.id.toString() && (
-                      <Animated.Text style={{ 
-                        color: colors.primaryText, 
-                        fontSize: 16,
+                      <Animated.View style={{ 
                         opacity: cursorAnimation,
-                        marginLeft: 2
+                        marginLeft: 6,
+                        marginTop: 4,
                       }}>
-                        ▊
-                      </Animated.Text>
+                        <View style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          backgroundColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        }} />
+                      </Animated.View>
                     )}
                   </View>
                 </Animated.View>
