@@ -1650,7 +1650,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   inputSection: {
-    paddingBottom: 34,
+    paddingBottom: 120, // Increased to account for bottom nav bar
     paddingTop: 16,
   },
   suggestionsContainer: {
