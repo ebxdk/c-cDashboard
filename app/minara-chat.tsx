@@ -1651,7 +1651,7 @@ const styles = StyleSheet.create({
   },
   inputSection: {
     position: 'absolute',
-    bottom: 104, // Position above the 104px tall bottom nav bar
+    bottom: 124, // Position above the 104px tall bottom nav bar with extra padding
     left: 0,
     right: 0,
     paddingTop: 16,
