@@ -1621,7 +1621,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 160, // Add space for input area (about 140px) + nav bar (104px)
     minHeight: '100%',
   },
   messageRow: {
@@ -1650,8 +1650,13 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   inputSection: {
-    paddingBottom: 120, // Increased to account for bottom nav bar
+    position: 'absolute',
+    bottom: 104, // Position above the 104px tall bottom nav bar
+    left: 0,
+    right: 0,
     paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: 'transparent',
   },
   suggestionsContainer: {
     marginBottom: 20,
