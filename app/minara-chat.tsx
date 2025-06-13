@@ -342,19 +342,6 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   return (
     <View style={{ flex: 1 }}>
       {formattedElements}
-      {isGenerating && (
-        <Animated.View style={{ 
-          opacity: cursorAnimation,
-          marginTop: 8,
-        }}>
-          <View style={{
-            width: 8,
-            height: 20,
-            backgroundColor: colors.primaryText,
-            opacity: 0.7,
-          }} />
-        </Animated.View>
-      )}
     </View>
   );
 };
