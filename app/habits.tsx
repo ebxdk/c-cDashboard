@@ -89,7 +89,13 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
   );
 };
 
-const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Partial<Habit>) => void }> = ({ habit, updateHabit }) => {
+const MainRing: React.FC<{ 
+  habit: Habit; 
+  updateHabit: (id: string, updates: Partial<Habit>) => void;
+  setShowCelebration: (show: boolean) => void;
+  celebrationAnimations: any[];
+  celebrationEmojis: string[];
+}> = ({ habit, updateHabit, setShowCelebration, celebrationAnimations, celebrationEmojis }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
@@ -99,18 +105,6 @@ const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Part
   const ringScale = useRef(new Animated.Value(1)).current;
   const emojiScale = useRef(new Animated.Value(1)).current;
   const emojiRotation = useRef(new Animated.Value(0)).current;
-
-  // Celebration state and animation setup
-  const [showCelebration, setShowCelebration] = useState(false);
-  const celebrationEmojis = ['🎉', '🥳', '🎊', '🎈', '🎁'];
-  const celebrationAnimations = useRef(
-    Array.from({ length: 20 }, () => ({
-      translateX: new Animated.Value(0),
-      translateY: new Animated.Value(SCREEN_HEIGHT),
-      rotation: new Animated.Value(0),
-      scale: new Animated.Value(0),
-    }))
-  ).current;
 
   let progress = 0;
   const wasComplete = useRef(false);
@@ -341,36 +335,7 @@ const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Part
         </View>
       )}
 
-    {/* Celebration Animation Overlay */}
-    {showCelebration && (
-      <View style={styles.celebrationOverlay} pointerEvents="none">
-        {celebrationAnimations.map((emoji, index) => (
-          <Animated.View
-            key={index}
-            style={[
-              styles.celebrationEmoji,
-              {
-                transform: [
-                  { translateX: emoji.translateX },
-                  { translateY: emoji.translateY },
-                  { 
-                    rotate: emoji.rotation.interpolate({
-                      inputRange: [0, 360],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                  { scale: emoji.scale },
-                ],
-              },
-            ]}
-          >
-            <Text style={styles.celebrationEmojiText}>
-              {celebrationEmojis[index % celebrationEmojis.length]}
-            </Text>
-          </Animated.View>
-        ))}
-      </View>
-    )}
+    
     </TouchableOpacity>
   );
 };
@@ -380,8 +345,20 @@ export default function HabitsScreen() {
   const router = useRouter();
   const { habits, updateHabit } = useHabits();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
+  
+  // Celebration animations for background
+  const celebrationEmojis = ['🎉', '🥳', '🎊', '🎈', '🎁'];
+  const celebrationAnimations = useRef(
+    Array.from({ length: 20 }, () => ({
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(SCREEN_HEIGHT),
+      rotation: new Animated.Value(0),
+      scale: new Animated.Value(0),
+    }))
+  ).current;
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -519,6 +496,37 @@ export default function HabitsScreen() {
         </ScrollView>
       </View>
 
+      {/* Celebration Animation Background */}
+      {showCelebration && (
+        <View style={styles.celebrationBackground} pointerEvents="none">
+          {celebrationAnimations.map((emoji, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.celebrationEmoji,
+                {
+                  transform: [
+                    { translateX: emoji.translateX },
+                    { translateY: emoji.translateY },
+                    { 
+                      rotate: emoji.rotation.interpolate({
+                        inputRange: [0, 360],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                    { scale: emoji.scale },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.celebrationEmojiText}>
+                {celebrationEmojis[index % celebrationEmojis.length]}
+              </Text>
+            </Animated.View>
+          ))}
+        </View>
+      )}
+
       {/* Main content */}
       <PanGestureHandler
         ref={panRef}
@@ -533,7 +541,13 @@ export default function HabitsScreen() {
             },
           ]}
         >
-          <MainRing habit={currentHabit} updateHabit={updateHabit} />
+          <MainRing 
+            habit={currentHabit} 
+            updateHabit={updateHabit}
+            setShowCelebration={setShowCelebration}
+            celebrationAnimations={celebrationAnimations}
+            celebrationEmojis={celebrationEmojis}
+          />
         </Animated.View>
       </PanGestureHandler>
 
@@ -666,13 +680,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.6,
   },
-  celebrationOverlay: {
+  celebrationBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 10,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
     backgroundColor: 'transparent',
   },
   celebrationEmoji: {
