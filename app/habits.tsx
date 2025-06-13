@@ -267,7 +267,19 @@ const MainRing: React.FC<{
 
   return (
     <TouchableOpacity onPress={handleRingPress} activeOpacity={0.8} style={styles.mainRingContainer}>
-      <Animated.View style={{ transform: [{ scale: ringScale }] }}>
+      <Animated.View style={[
+        { transform: [{ scale: ringScale }] },
+        progress >= 1 && {
+          shadowColor: habit.color,
+          shadowOffset: {
+            width: 0,
+            height: 0,
+          },
+          shadowOpacity: 0.6,
+          shadowRadius: 20,
+          elevation: 20,
+        }
+      ]}>
         <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
         {/* Background ring */}
         <Circle
