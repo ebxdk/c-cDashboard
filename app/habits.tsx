@@ -14,6 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -149,8 +150,34 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
+  const handleRingPress = async () => {
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Play satisfying sound
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav' },
+        { shouldPlay: true, volume: 0.3 }
+      );
+      // Clean up sound after playing
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      // Fallback to just haptic if sound fails
+      console.log('Sound playback failed:', error);
+    }
+  };
+
   return (
-    <View style={styles.mainRingContainer}>
+    <TouchableOpacity 
+      style={styles.mainRingContainer}
+      onPress={handleRingPress}
+      activeOpacity={0.9}
+    >
       <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
         {/* Background ring */}
         <Circle
@@ -207,7 +234,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
           <IconSymbol name="chevron.right" size={16} color="#000" />
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
