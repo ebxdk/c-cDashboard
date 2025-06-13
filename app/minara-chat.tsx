@@ -122,47 +122,50 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: 20,
-            marginBottom: 28, // Increased bottom margin to prevent overlap
-            paddingVertical: 8, // Additional padding around the entire container
-            zIndex: 1, // Ensure Arabic containers are above other content
+            marginTop: 32, // Increased top margin for better separation
+            marginBottom: 48, // Significantly increased bottom margin
+            paddingVertical: 16, // Increased padding around the entire container
+            zIndex: 10, // Higher z-index to ensure Arabic containers are always on top
             position: 'relative', // Establish stacking context
+            // Add clear separation from other elements
+            borderTopWidth: 0,
+            borderBottomWidth: 0,
           }}>
             <View style={{
-              paddingVertical: 24,
-              paddingHorizontal: 24,
+              paddingVertical: 32, // Increased internal padding
+              paddingHorizontal: 28,
               backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
-              borderRadius: 12,
+              borderRadius: 16, // Slightly larger border radius
               borderLeftWidth: 4,
               borderLeftColor: '#87CEEB',
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
               marginHorizontal: 0,
-              minHeight: 60, // Ensure minimum height to prevent collapsing
+              minHeight: 80, // Increased minimum height
               shadowColor: isDarkMode ? '#000000' : '#87CEEB',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDarkMode ? 0.3 : 0.1,
-              shadowRadius: 4,
-              elevation: 2,
-              // Force clear any floating elements
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: isDarkMode ? 0.4 : 0.15,
+              shadowRadius: 6,
+              elevation: 5, // Higher elevation for better separation
               overflow: 'visible',
+              // Ensure proper spacing and no overlap
+              marginVertical: 8,
             }}>
               <Text
                 style={{
                   color: '#4A90E2',
                   fontWeight: '600',
                   fontSize: 20,
-                  lineHeight: 40, // Increased line height for better Arabic text spacing
+                  lineHeight: 45, // Increased line height for better spacing
                   textAlign: 'right', // RTL alignment for Arabic
                   fontFamily: 'System',
                   width: '100%',
                   flexShrink: 1,
                   flexWrap: 'wrap',
-                  paddingVertical: 8,
-                  paddingBottom: 12, // Extra bottom padding within text
+                  paddingVertical: 12, // Increased padding
+                  paddingBottom: 16, // Even more bottom padding within text
                   textAlignVertical: 'top',
-                  // Ensure text doesn't overflow container
                   includeFontPadding: false,
                 }}
                 numberOfLines={0} // Allow unlimited lines for dynamic height
@@ -183,19 +186,21 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`english-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: needsTopMargin ? 24 : 8, // Increased margins around Arabic
-            marginBottom: needsBottomMargin ? 20 : 8,
-            paddingVertical: 4,
+            marginTop: needsTopMargin ? 40 : 12, // Much larger margins around Arabic
+            marginBottom: needsBottomMargin ? 36 : 12,
+            paddingVertical: 8, // Increased padding
             zIndex: 0, // Lower z-index than Arabic containers
+            // Ensure clear separation from Arabic containers
+            minHeight: 20,
           }}>
             <Text style={{ 
               color: colors.primaryText,
               width: '100%',
               flexShrink: 1,
               fontSize: 16,
-              lineHeight: 24,
-              paddingHorizontal: 4,
-              paddingVertical: 2,
+              lineHeight: 26, // Slightly increased line height
+              paddingHorizontal: 8, // Increased horizontal padding
+              paddingVertical: 6, // Increased vertical padding
             }}>
               {segment.text}
             </Text>
@@ -1421,9 +1426,9 @@ export default function MinaraChatScreen() {
               <View key={msg.id} style={[
                 styles.aiMessageContainer,
                 { 
-                  marginTop: isConsecutive ? 16 : 32,
-                  marginBottom: 16, // Increased bottom margin to prevent overlap
-                  paddingBottom: 8, // Additional padding at container level
+                  marginTop: isConsecutive ? 24 : 40, // Increased top margins
+                  marginBottom: 32, // Significantly increased bottom margin
+                  paddingBottom: 16, // Increased padding at container level
                 }
               ]}>
                 <Animated.View style={[
@@ -1432,8 +1437,8 @@ export default function MinaraChatScreen() {
                     backgroundColor: 'transparent',
                     paddingHorizontal: 0,
                     maxWidth: '100%',
-                    paddingBottom: 16, // Increased padding at bottom
-                    minHeight: 20, // Ensure minimum height
+                    paddingBottom: 24, // Increased bottom padding
+                    minHeight: 24, // Increased minimum height
                     overflow: 'visible', // Allow content to be fully visible
                   },
                   messageAnimation && {
@@ -1457,10 +1462,10 @@ export default function MinaraChatScreen() {
                     styles.aiMessageText,
                     {
                       paddingHorizontal: 0,
-                      paddingVertical: 8,
+                      paddingVertical: 12, // Increased vertical padding
                       maxWidth: '100%',
                       flexShrink: 1,
-                      marginBottom: 8, // Extra margin at text container level
+                      marginBottom: 20, // Significantly increased margin at text container level
                     }
                   ]}>
                     {formatAIResponse(msg.text, colors, isDarkMode, isGenerating, cursorAnimation)}
@@ -1468,8 +1473,8 @@ export default function MinaraChatScreen() {
                       <Animated.View style={{ 
                         opacity: cursorAnimation,
                         marginLeft: 6,
-                        marginTop: 8,
-                        marginBottom: 4,
+                        marginTop: 16, // Increased top margin for cursor
+                        marginBottom: 8, // Increased bottom margin for cursor
                       }}>
                         <View style={{
                           width: 16,
