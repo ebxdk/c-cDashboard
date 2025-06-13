@@ -3,31 +3,34 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { DeviceMotion } from 'expo-sensors';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { GestureHandlerRootView, LongPressGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
+import { Dimensions, ImageBackground, Linking, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { GestureHandlerRootView, LongPressGestureHandler, PanGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
+  Easing,
+  runOnJS,
+  useAnimatedGestureHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
-    CalendarWidget,
-    CohortContactsWidget,
-    HabitWidget,
-    JournalWidget,
-    MinaraWidget,
-    PrayerWidget
+  CalendarWidget,
+  CohortContactsWidget,
+  HabitWidget,
+  JournalWidget,
+  MinaraWidget,
+  PrayerWidget
 } from '../components/WidgetComponents';
 import { widgetStyles } from '../styles/widgetStyles';
 import {
-    findFirstAvailablePosition,
-    getDefaultLayout,
-    getWidgetGridSize,
-    rearrangeWidgets
+  findFirstAvailablePosition,
+  getDefaultLayout,
+  getWidgetGridSize,
+  rearrangeWidgets
 } from '../utils/gridUtils';
 
 export default function Dashboard() {
@@ -35,6 +38,7 @@ export default function Dashboard() {
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
 
   // Enhanced parallax effect state with multiple layers
@@ -49,6 +53,19 @@ export default function Dashboard() {
 
   // Theme transition animation
   const themeTransition = useSharedValue(isDarkMode ? 1 : 0);
+
+  // Settings modal animation
+  const settingsTranslateY = useSharedValue(0);
+  const settingsScale = useSharedValue(0.95);
+  const settingsOpacity = useSharedValue(0);
+  const backdropOpacity = useSharedValue(0);
+  const backdropBlur = useSharedValue(0);
+  // Background scale animation for card presentation effect
+  const backgroundScale = useSharedValue(1);
+  const backgroundTranslateY = useSharedValue(0);
+
+  // 1. Add animation guard state at the top of Dashboard
+  const [isSettingsAnimating, setIsSettingsAnimating] = useState(false);
 
   useEffect(() => {
     themeTransition.value = withTiming(isDarkMode ? 1 : 0, {
@@ -143,12 +160,13 @@ export default function Dashboard() {
   }, [systemColorScheme]);
 
   const colors = {
-    background: isDarkMode ? '#000000' : '#EEEEEE',
+    background: isDarkMode ? '#000000' : '#FFFFFF', // Pure white for light mode
     cardBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
     primaryText: isDarkMode ? '#FFFFFF' : '#000000',
     secondaryText: isDarkMode ? '#A0A0A0' : '#666666',
     tertiaryText: isDarkMode ? '#808080' : '#777777',
-    cardBorder: isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.05)',
+    cardBorder: isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.08)', // Slightly stronger border for light mode
+    cardShadow: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', // Subtle shadow for cards
     redDot: '#FF3B30',
     prayerCompleted: '#007AFF',
     prayerPending: isDarkMode ? '#48484A' : '#D1D1D6',
@@ -166,7 +184,7 @@ export default function Dashboard() {
 
   const animatedColors = {
     background: useAnimatedStyle(() => ({
-      backgroundColor: isDarkMode ? '#000000' : '#EEEEEE',
+      backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
     })),
   };
 
@@ -176,8 +194,8 @@ export default function Dashboard() {
     return {
       transform: [
         { translateX: backgroundX.value },
-        { translateY: backgroundY.value },
-        { scale: 1.1 }, // Slight scale to prevent edge visibility
+        { translateY: backgroundY.value + backgroundTranslateY.value },
+        { scale: backgroundScale.value * 1.1 }, // Slight scale to prevent edge visibility
       ],
     };
   });
@@ -187,8 +205,8 @@ export default function Dashboard() {
     return {
       transform: [
         { translateX: backgroundLayer2X.value },
-        { translateY: backgroundLayer2Y.value },
-        { scale: 1.05 },
+        { translateY: backgroundLayer2Y.value + backgroundTranslateY.value },
+        { scale: backgroundScale.value * 1.05 },
       ],
     };
   });
@@ -198,52 +216,304 @@ export default function Dashboard() {
     return {
       transform: [
         { translateX: backgroundLayer3X.value },
-        { translateY: backgroundLayer3Y.value },
-        { scale: 1.02 },
+        { translateY: backgroundLayer3Y.value + backgroundTranslateY.value },
+        { scale: backgroundScale.value * 1.02 },
       ],
     };
   });
 
-  const toggleEditMode = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsEditMode(!isEditMode);
-  }, [isEditMode]);
+  // Main content container animation for card presentation
+  const animatedMainContent = useAnimatedStyle(() => ({
+    transform: [
+      { scale: backgroundScale.value },
+      { translateY: backgroundTranslateY.value }
+    ],
+  }));
 
-  // Theme toggle with enhanced animation
-  const toggleButtonScale = useSharedValue(1);
-  const toggleButtonRotation = useSharedValue(0);
+  // Clean, minimal settings modal animation
+  const animatedSettingsModal = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: settingsTranslateY.value },
+      { scale: settingsScale.value }
+    ],
+    opacity: settingsOpacity.value,
+  }));
+
+  // Animated backdrop styles for premium feel
+  const animatedBackdropBlur = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const animatedBackdropOverlay = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value * 0.6, // Slightly less opacity for overlay
+  }));
+
+  // Drag gesture handler for buttery smooth iOS-style dismiss
+  const panGestureHandler = useAnimatedGestureHandler({
+    onStart: (_, context: { startY: number }) => {
+      context.startY = settingsTranslateY.value;
+    },
+    onActive: (event, context: { startY: number }) => {
+      const newTranslateY = context.startY + event.translationY;
+      // Only allow downward dragging
+      if (newTranslateY >= 0) {
+        settingsTranslateY.value = newTranslateY;
+        
+        // Interactive scale feedback during drag
+        const dragProgress = Math.min(newTranslateY / (screenHeight * 0.3), 1);
+        const scaleValue = 1 - (dragProgress * 0.04); // Scale down slightly as dragged
+        settingsScale.value = Math.max(scaleValue, 0.96);
+        
+        // Scale background back to normal as modal is dismissed
+        const backgroundScaleValue = 0.88 + (dragProgress * 0.12); // Scale from 0.88 to 1.0 (more dramatic)
+        backgroundScale.value = Math.min(backgroundScaleValue, 1);
+        backgroundTranslateY.value = -35 + (dragProgress * 35); // Move from -35 to 0 (more dramatic)
+        
+        // Fade backdrop based on drag progress
+        const backdropValue = 1 - (dragProgress * 0.5);
+        backdropOpacity.value = Math.max(backdropValue, 0.5);
+      }
+    },
+    onEnd: (event) => {
+      const shouldDismiss = event.translationY > 100 || event.velocityY > 500;
+      
+      if (shouldDismiss) {
+        // Ultra-smooth spring dismiss animation
+        settingsTranslateY.value = withSpring(screenHeight, {
+          damping: 35,
+          mass: 0.8,
+          stiffness: 200,
+          overshootClamping: true,
+          restDisplacementThreshold: 0.01,
+          restSpeedThreshold: 2,
+        }, () => {
+          runOnJS(setIsSettingsVisible)(false);
+        });
+        // Scale down on dismiss
+        settingsScale.value = withSpring(0.94, {
+          damping: 32,
+          mass: 0.7,
+          stiffness: 250,
+          overshootClamping: true,
+        });
+        settingsOpacity.value = withSpring(0, {
+          damping: 30,
+          mass: 0.6,
+          stiffness: 300,
+          overshootClamping: true,
+        });
+        // Background scale back to normal
+        backgroundScale.value = withSpring(1, {
+          damping: 30,
+          mass: 0.7,
+          stiffness: 200,
+          overshootClamping: true,
+        });
+        backgroundTranslateY.value = withSpring(0, {
+          damping: 30,
+          mass: 0.7,
+          stiffness: 200,
+          overshootClamping: true,
+        });
+        // Backdrop fade-out on dismiss
+        backdropOpacity.value = withSpring(0, {
+          damping: 32,
+          mass: 0.7,
+          stiffness: 280,
+          overshootClamping: true,
+        });
+        backdropBlur.value = withSpring(0, {
+          damping: 35,
+          mass: 0.8,
+          stiffness: 250,
+          overshootClamping: true,
+        });
+      } else {
+        // Buttery snap back with perfect spring feel
+        settingsTranslateY.value = withSpring(0, {
+          damping: 25,
+          mass: 0.7,
+          stiffness: 250,
+          overshootClamping: false,
+          restDisplacementThreshold: 0.01,
+          restSpeedThreshold: 2,
+        });
+        // Scale back to full size
+        settingsScale.value = withSpring(1, {
+          damping: 22,
+          mass: 0.6,
+          stiffness: 280,
+          overshootClamping: false,
+        });
+        settingsOpacity.value = withSpring(1, {
+          damping: 20,
+          mass: 0.5,
+          stiffness: 300,
+          overshootClamping: false,
+        });
+        // Background scale back to card presentation state
+        backgroundScale.value = withSpring(0.88, {
+          damping: 35,
+          mass: 1.2,
+          stiffness: 200,
+          overshootClamping: true,
+        });
+        backgroundTranslateY.value = withSpring(-35, {
+          damping: 35,
+          mass: 1.2,
+          stiffness: 200,
+          overshootClamping: true,
+        });
+        // Backdrop restore on snap back
+        backdropOpacity.value = withSpring(1, {
+          damping: 18,
+          mass: 0.5,
+          stiffness: 320,
+          overshootClamping: false,
+        });
+        backdropBlur.value = withSpring(1, {
+          damping: 20,
+          mass: 0.6,
+          stiffness: 280,
+          overshootClamping: false,
+        });
+      }
+    },
+  });
+
+  // Clean, sophisticated settings functions with ultra-buttery spring animations
+  const openSettings = useCallback(() => {
+    if (isSettingsAnimating) return;
+    setIsSettingsAnimating(true);
+    setIsSettingsVisible(true);
+    settingsTranslateY.value = screenHeight;
+    settingsScale.value = 0.94;
+    settingsOpacity.value = 0;
+    backdropOpacity.value = 0;
+    backdropBlur.value = 0;
+    backgroundScale.value = 1;
+    backgroundTranslateY.value = 0;
+    settingsTranslateY.value = withSpring(0, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+      restDisplacementThreshold: 0.01,
+      restSpeedThreshold: 2,
+    }, () => {
+      runOnJS(setIsSettingsAnimating)(false);
+    });
+    settingsScale.value = withSpring(1, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    settingsOpacity.value = withSpring(1, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backgroundScale.value = withSpring(0.88, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backgroundTranslateY.value = withSpring(-35, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backdropOpacity.value = withSpring(1, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backdropBlur.value = withSpring(1, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [screenHeight, isSettingsAnimating]);
+
+  const closeSettings = useCallback(() => {
+    if (isSettingsAnimating) return;
+    setIsSettingsAnimating(true);
+    settingsTranslateY.value = withSpring(screenHeight, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+      restDisplacementThreshold: 0.01,
+      restSpeedThreshold: 2,
+    }, () => {
+      runOnJS(setIsSettingsVisible)(false);
+      runOnJS(setIsSettingsAnimating)(false);
+    });
+    settingsScale.value = withSpring(0.94, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    settingsOpacity.value = withSpring(0, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backgroundScale.value = withSpring(1, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backgroundTranslateY.value = withSpring(0, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backdropOpacity.value = withSpring(0, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    backdropBlur.value = withSpring(0, {
+      damping: 30,
+      mass: 1.0,
+      stiffness: 210,
+      overshootClamping: true,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [screenHeight, isSettingsAnimating]);
 
   const toggleTheme = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    // Animate button press with scale and rotation
-    toggleButtonScale.value = withTiming(0.9, { 
-      duration: 100,
-      easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-    }, () => {
-      toggleButtonScale.value = withTiming(1, { 
-        duration: 200,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-      });
-    });
-
-    toggleButtonRotation.value = withTiming(
-      toggleButtonRotation.value + 180, 
-      { 
-        duration: 300,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-      }
-    );
-
     setIsDarkMode(!isDarkMode);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [isDarkMode]);
 
-  const animatedToggleButton = useAnimatedStyle(() => ({
-    transform: [
-      { scale: toggleButtonScale.value },
-      { rotate: `${toggleButtonRotation.value}deg` },
-    ]
+  const handleWebsitePress = useCallback(() => {
+    Linking.openURL('https://your-website.com');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  // Settings button - NO animation to prevent double-tap issues
+  const animatedSettingsButton = useAnimatedStyle(() => ({
+    // No transform animation - just static styling
   }));
+
+  const handleSettingsPress = useCallback(() => {
+    // Direct call with no button animation interference
+    openSettings();
+  }, [openSettings]);
 
   // Handle long press to enter edit mode
   const handleLongPress = useCallback(() => {
@@ -482,7 +752,7 @@ export default function Dashboard() {
         {/* Background gesture area */}
         <LongPressGestureHandler onHandlerStateChange={handleBackgroundLongPress} minDurationMs={500}>
           <TapGestureHandler onHandlerStateChange={handleBackgroundTap} enabled={isEditMode}>
-            <View style={{ flex: 1, zIndex: 10 }}>
+            <Animated.View style={[{ flex: 1, zIndex: 10 }, animatedMainContent]}>
               <ScrollView 
                 style={widgetStyles.mainScrollView}
                 contentContainerStyle={{
@@ -504,7 +774,7 @@ export default function Dashboard() {
                       <Text style={[widgetStyles.dateText, { color: colors.secondaryText }]}>December 9</Text>
                       <Text style={[widgetStyles.yearText, { color: colors.tertiaryText }]}>2024</Text>
                     </View>
-                    <Animated.View style={animatedToggleButton}>
+                    <Animated.View style={animatedSettingsButton}>
                       <TouchableOpacity
                         style={[
                           widgetStyles.themeToggle,
@@ -514,10 +784,10 @@ export default function Dashboard() {
                             shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
                           }
                         ]}
-                        onPress={toggleTheme}
+                        onPress={handleSettingsPress}
                         activeOpacity={0.7}
                       >
-                        <Text style={widgetStyles.themeIcon}>{isDarkMode ? '☀️' : '🌙'}</Text>
+                        <Text style={widgetStyles.themeIcon}>⚙️</Text>
                       </TouchableOpacity>
                     </Animated.View>
                   </View>
@@ -590,9 +860,680 @@ export default function Dashboard() {
                   
                 </View>
               </ScrollView>
-            </View>
+            </Animated.View>
           </TapGestureHandler>
         </LongPressGestureHandler>
+
+        {/* Settings Modal */}
+        <Modal
+          visible={isSettingsVisible}
+          transparent={true}
+          animationType="none"
+          onRequestClose={closeSettings}
+        >
+          <View style={{ 
+            flex: 1, 
+            justifyContent: 'flex-end',
+          }}>
+            {/* Frosty blur background */}
+            <Animated.View style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              },
+              animatedBackdropBlur
+            ]}>
+              <BlurView
+                intensity={100}
+                tint={isDarkMode ? 'dark' : 'light'}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: isDarkMode
+                    ? 'rgba(30, 80, 200, 0.10)'
+                    : 'rgba(30, 80, 200, 0.18)',
+                  opacity: 0.8,
+                }}
+              />
+            </Animated.View>
+            
+            {/* Subtle overlay for depth - reduced opacity for frostier look */}
+            <Animated.View style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+              },
+              animatedBackdropOverlay
+            ]} />
+            
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={closeSettings}
+              activeOpacity={1}
+            />
+            
+            <PanGestureHandler onGestureEvent={panGestureHandler}>
+              <Animated.View style={[
+                {
+                  backgroundColor: colors.background,
+                  borderTopLeftRadius: 32,
+                  borderTopRightRadius: 32,
+                  height: screenHeight * 0.85,
+                  shadowColor: '#000000',
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: isDarkMode ? 0.3 : 0.15,
+                  shadowRadius: 20,
+                  elevation: 20,
+                },
+                animatedSettingsModal
+              ]}>
+                {/* Drag Handle */}
+                <View style={{
+                  width: 40,
+                  height: 4,
+                  backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+                  borderRadius: 2,
+                  alignSelf: 'center',
+                  marginTop: 12,
+                  marginBottom: 8,
+                }} />
+
+                {/* Header */}
+                <View style={{
+                  paddingTop: 20,
+                  paddingHorizontal: 20,
+                  paddingBottom: 20,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: colors.cardBorder,
+                  backgroundColor: colors.background,
+                }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <Text style={{
+                      fontSize: 34,
+                      fontWeight: '700',
+                      color: colors.primaryText,
+                      letterSpacing: -0.8,
+                    }}>
+                      Settings
+                    </Text>
+                    <TouchableOpacity
+                      onPress={closeSettings}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 15,
+                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: isDarkMode ? 0 : 0.5,
+                        borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{
+                        fontSize: 16,
+                        color: colors.secondaryText,
+                        fontWeight: '600',
+                      }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <ScrollView 
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {/* Profile Section */}
+                  <View style={{
+                    paddingHorizontal: 20,
+                    paddingVertical: 32,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: colors.cardBorder,
+                  }}>
+                    <View style={{
+                      backgroundColor: colors.cardBackground,
+                      borderRadius: 24,
+                      padding: 24,
+                      borderWidth: isDarkMode ? 0.5 : 1,
+                      borderColor: colors.cardBorder,
+                      shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: isDarkMode ? 0.05 : 0.08,
+                      shadowRadius: 8,
+                      elevation: isDarkMode ? 2 : 4,
+                    }}>
+                      <Text style={{
+                        fontSize: 24,
+                        fontWeight: '700',
+                        color: colors.primaryText,
+                        marginBottom: 8,
+                        letterSpacing: -0.4,
+                      }}>
+                        Your Name
+                      </Text>
+                      <Text style={{
+                        fontSize: 16,
+                        color: colors.secondaryText,
+                        letterSpacing: -0.1,
+                        marginBottom: 20,
+                      }}>
+                        your.email@example.com
+                      </Text>
+                      <TouchableOpacity style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 20,
+                        backgroundColor: colors.accent,
+                        borderRadius: 25,
+                        alignSelf: 'flex-start',
+                      }}>
+                        <Text style={{
+                          fontSize: 15,
+                          fontWeight: '600',
+                          color: '#FFFFFF',
+                          letterSpacing: -0.1,
+                        }}>
+                          Edit Profile
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Settings Groups */}
+                  <View style={{ paddingTop: 32 }}>
+                    
+                    {/* General Section */}
+                    <View style={{ marginBottom: 32 }}>
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: colors.secondaryText,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        paddingHorizontal: 20,
+                        marginBottom: 12,
+                      }}>
+                        General
+                      </Text>
+                      
+                      <View style={{
+                        backgroundColor: colors.cardBackground,
+                        marginHorizontal: 20,
+                        borderRadius: 24,
+                        borderWidth: isDarkMode ? 0.5 : 1,
+                        borderColor: colors.cardBorder,
+                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isDarkMode ? 0.05 : 0.08,
+                        shadowRadius: 8,
+                        elevation: isDarkMode ? 2 : 4,
+                      }}>
+                        {/* Preferences */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            borderBottomWidth: 0.5,
+                            borderBottomColor: colors.cardBorder,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>⚙️</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Preferences
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Appearance */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            borderBottomWidth: 0.5,
+                            borderBottomColor: colors.cardBorder,
+                          }}
+                          onPress={toggleTheme}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: colors.accent,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                          }}>
+                            <Text style={{ fontSize: 16, color: '#FFFFFF' }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{
+                              fontSize: 17,
+                              fontWeight: '400',
+                              color: colors.primaryText,
+                              letterSpacing: -0.2,
+                            }}>
+                              Appearance
+                            </Text>
+                            <Text style={{
+                              fontSize: 13,
+                              color: colors.secondaryText,
+                              marginTop: 1,
+                              letterSpacing: -0.1,
+                            }}>
+                              {isDarkMode ? 'Dark' : 'Light'}
+                            </Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Notifications */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>🔔</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Notifications
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Privacy & Security Section */}
+                    <View style={{ marginBottom: 32 }}>
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: colors.secondaryText,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        paddingHorizontal: 20,
+                        marginBottom: 12,
+                      }}>
+                        Privacy & Security
+                      </Text>
+                      
+                      <View style={{
+                        backgroundColor: colors.cardBackground,
+                        marginHorizontal: 20,
+                        borderRadius: 24,
+                        borderWidth: isDarkMode ? 0.5 : 1,
+                        borderColor: colors.cardBorder,
+                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isDarkMode ? 0.05 : 0.08,
+                        shadowRadius: 8,
+                        elevation: isDarkMode ? 2 : 4,
+                      }}>
+                        {/* Privacy */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            borderBottomWidth: 0.5,
+                            borderBottomColor: colors.cardBorder,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>🔒</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Privacy
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Data & Analytics */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>📊</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Data & Analytics
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Support Section */}
+                    <View style={{ marginBottom: 32 }}>
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: colors.secondaryText,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        paddingHorizontal: 20,
+                        marginBottom: 12,
+                      }}>
+                        Support
+                      </Text>
+                      
+                      <View style={{
+                        backgroundColor: colors.cardBackground,
+                        marginHorizontal: 20,
+                        borderRadius: 24,
+                        borderWidth: isDarkMode ? 0.5 : 1,
+                        borderColor: colors.cardBorder,
+                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isDarkMode ? 0.05 : 0.08,
+                        shadowRadius: 8,
+                        elevation: isDarkMode ? 2 : 4,
+                      }}>
+                        {/* Help & Support */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            borderBottomWidth: 0.5,
+                            borderBottomColor: colors.cardBorder,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>❓</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Help & Support
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Visit Our Website */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            borderBottomWidth: 0.5,
+                            borderBottomColor: colors.cardBorder,
+                          }}
+                          onPress={handleWebsitePress}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>🌐</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            Visit Our Website
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* About */}
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                          }}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 16,
+                            borderWidth: isDarkMode ? 0 : 0.5,
+                            borderColor: isDarkMode ? 'transparent' : 'rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <Text style={{ fontSize: 16, color: colors.primaryText }}>ℹ️</Text>
+                          </View>
+                          <Text style={{
+                            fontSize: 17,
+                            fontWeight: '400',
+                            color: colors.primaryText,
+                            flex: 1,
+                            letterSpacing: -0.2,
+                          }}>
+                            About
+                          </Text>
+                          <Text style={{
+                            fontSize: 17,
+                            color: colors.tertiaryText,
+                            fontWeight: '400',
+                          }}>
+                            ›
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* App Version */}
+                    <View style={{
+                      paddingHorizontal: 20,
+                      paddingVertical: 16,
+                      alignItems: 'center',
+                    }}>
+                      <Text style={{
+                        fontSize: 13,
+                        color: colors.tertiaryText,
+                        letterSpacing: -0.1,
+                      }}>
+                        Version 1.0.0 (Build 1)
+                      </Text>
+                    </View>
+                  </View>
+                </ScrollView>
+              </Animated.View>
+            </PanGestureHandler>
+          </View>
+        </Modal>
       </View>
     </GestureHandlerRootView>
   );

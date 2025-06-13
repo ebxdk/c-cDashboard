@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -32,16 +33,21 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="cohort" options={{ headerShown: false }} />
-        <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
-        <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <BottomNavBar />
-      <StatusBar style="dark" hidden={true} />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="cohort" options={{ headerShown: false }} />
+          <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
+          <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
+          <Stack.Screen name="calendar" options={{ headerShown: false }} />
+          <Stack.Screen name="event-detail" options={{ headerShown: false }} />
+          <Stack.Screen name="habits" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <BottomNavBar />
+        <StatusBar style="dark" hidden={true} />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

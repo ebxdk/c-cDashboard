@@ -416,21 +416,31 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
 };
 
 export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
   const today = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDay = dayNames[today.getDay()];
   const currentDate = today.getDate().toString().padStart(2, '0');
 
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/calendar');
+  };
+
   return (
-    <View style={[
-      baseWidgetStyle, 
-      { 
-        backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
-        padding: 16,
-        paddingTop: 12,
-        position: 'relative',
-      }
-    ]}>
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+          padding: 16,
+          paddingTop: 12,
+          position: 'relative',
+        }
+      ]}
+    >
       {/* Red notification bubble */}
       <View style={{
         position: 'absolute',
@@ -564,11 +574,18 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
 export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/habits');
+  };
+
   // Calculate progress percentage (3 out of 5 = 60%)
   const progress = 3;
   const total = 5;
@@ -825,7 +842,11 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   });
 
   return (
-    <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}>
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}
+    >
       <Animated.ScrollView
         ref={scrollViewRef}
         horizontal
@@ -861,7 +882,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           <DotComponent key={index} index={index} />
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
