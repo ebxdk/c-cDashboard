@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 140,
-    marginTop: 50,
+    marginTop: 30,
     gap: 8,
     paddingHorizontal: 20,
   },
