@@ -125,8 +125,8 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             marginVertical: 8,
           }}>
             <View style={{
-              paddingVertical: 16,
-              paddingHorizontal: 12,
+              paddingVertical: 20,
+              paddingHorizontal: 16,
               backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
               borderRadius: 8,
               borderLeftWidth: 3,
@@ -134,17 +134,19 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
+              minHeight: 60,
             }}>
               <Text
                 style={{
                   color: '#4A90E2',
                   fontWeight: '600',
-                  fontSize: 18,
-                  lineHeight: 26,
+                  fontSize: 20,
+                  lineHeight: 32,
                   textAlign: 'right', // RTL alignment for Arabic
                   fontFamily: 'System',
                   width: '100%',
                   flexShrink: 1,
+                  flexWrap: 'wrap',
                 }}
                 numberOfLines={0}
               >
