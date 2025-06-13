@@ -153,8 +153,18 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
   const handleRingPress = () => {
-    // Haptic feedback first for immediate response
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Enhanced bouncy haptic feedback sequence for satisfying feel
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    
+    // Add a bouncy secondary feedback after a short delay
+    setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 80);
+    
+    // And a third subtle one for the bouncy effect
+    setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 150);
 
     // Super responsive sound handling
     try {
@@ -180,7 +190,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   };
 
   return (
-    
+    <TouchableOpacity onPress={handleRingPress} activeOpacity={0.8} style={styles.mainRingContainer}>
       <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
         {/* Background ring */}
         <Circle
@@ -237,8 +247,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
           <IconSymbol name="chevron.right" size={16} color="#000" />
         </View>
       )}
-      </TouchableOpacity>
-    
+    </TouchableOpacity>
   );
 };
 
