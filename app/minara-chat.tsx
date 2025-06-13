@@ -122,12 +122,15 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginVertical: 12,
-            marginBottom: 16, // Extra bottom margin to prevent overlap with next content
+            marginTop: 20,
+            marginBottom: 28, // Increased bottom margin to prevent overlap
+            paddingVertical: 8, // Additional padding around the entire container
+            zIndex: 1, // Ensure Arabic containers are above other content
+            position: 'relative', // Establish stacking context
           }}>
             <View style={{
-              paddingVertical: 20,
-              paddingHorizontal: 20,
+              paddingVertical: 24,
+              paddingHorizontal: 24,
               backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
               borderRadius: 12,
               borderLeftWidth: 4,
@@ -135,29 +138,32 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
-              // Remove fixed minHeight to allow dynamic expansion
-              // Ensure proper spacing and no overlap
               marginHorizontal: 0,
+              minHeight: 60, // Ensure minimum height to prevent collapsing
               shadowColor: isDarkMode ? '#000000' : '#87CEEB',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: isDarkMode ? 0.3 : 0.1,
               shadowRadius: 4,
               elevation: 2,
+              // Force clear any floating elements
+              overflow: 'visible',
             }}>
               <Text
                 style={{
                   color: '#4A90E2',
                   fontWeight: '600',
                   fontSize: 20,
-                  lineHeight: 36, // Increased line height for better Arabic text spacing
+                  lineHeight: 40, // Increased line height for better Arabic text spacing
                   textAlign: 'right', // RTL alignment for Arabic
                   fontFamily: 'System',
                   width: '100%',
                   flexShrink: 1,
                   flexWrap: 'wrap',
-                  paddingVertical: 4,
-                  // Enable proper text wrapping for lengthy Arabic text
+                  paddingVertical: 8,
+                  paddingBottom: 12, // Extra bottom padding within text
                   textAlignVertical: 'top',
+                  // Ensure text doesn't overflow container
+                  includeFontPadding: false,
                 }}
                 numberOfLines={0} // Allow unlimited lines for dynamic height
                 ellipsizeMode="clip" // Don't truncate, let it wrap naturally
@@ -177,9 +183,10 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`english-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: needsTopMargin ? 16 : 4,
-            marginBottom: needsBottomMargin ? 12 : 4,
-            paddingVertical: 2,
+            marginTop: needsTopMargin ? 24 : 8, // Increased margins around Arabic
+            marginBottom: needsBottomMargin ? 20 : 8,
+            paddingVertical: 4,
+            zIndex: 0, // Lower z-index than Arabic containers
           }}>
             <Text style={{ 
               color: colors.primaryText,
@@ -187,7 +194,8 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               flexShrink: 1,
               fontSize: 16,
               lineHeight: 24,
-              paddingHorizontal: 2,
+              paddingHorizontal: 4,
+              paddingVertical: 2,
             }}>
               {segment.text}
             </Text>
@@ -1413,8 +1421,9 @@ export default function MinaraChatScreen() {
               <View key={msg.id} style={[
                 styles.aiMessageContainer,
                 { 
-                  marginTop: isConsecutive ? 12 : 28,
-                  marginBottom: 8, // Add bottom margin to prevent overlap
+                  marginTop: isConsecutive ? 16 : 32,
+                  marginBottom: 16, // Increased bottom margin to prevent overlap
+                  paddingBottom: 8, // Additional padding at container level
                 }
               ]}>
                 <Animated.View style={[
@@ -1423,7 +1432,9 @@ export default function MinaraChatScreen() {
                     backgroundColor: 'transparent',
                     paddingHorizontal: 0,
                     maxWidth: '100%',
-                    paddingBottom: 8, // Extra padding at bottom
+                    paddingBottom: 16, // Increased padding at bottom
+                    minHeight: 20, // Ensure minimum height
+                    overflow: 'visible', // Allow content to be fully visible
                   },
                   messageAnimation && {
                     transform: [
@@ -1446,9 +1457,10 @@ export default function MinaraChatScreen() {
                     styles.aiMessageText,
                     {
                       paddingHorizontal: 0,
-                      paddingVertical: 4,
+                      paddingVertical: 8,
                       maxWidth: '100%',
                       flexShrink: 1,
+                      marginBottom: 8, // Extra margin at text container level
                     }
                   ]}>
                     {formatAIResponse(msg.text, colors, isDarkMode, isGenerating, cursorAnimation)}
@@ -1456,7 +1468,8 @@ export default function MinaraChatScreen() {
                       <Animated.View style={{ 
                         opacity: cursorAnimation,
                         marginLeft: 6,
-                        marginTop: 4,
+                        marginTop: 8,
+                        marginBottom: 4,
                       }}>
                         <View style={{
                           width: 16,
