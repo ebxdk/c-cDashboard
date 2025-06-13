@@ -154,30 +154,21 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Generate satisfying click sound using Web Audio API
+    // Play click sound from local file
     try {
-      if (typeof window !== 'undefined' && window.AudioContext) {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        
-        // Create a short, crisp click sound
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Configure for a satisfying click sound
-        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
-        
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.1);
-      }
+      const { sound } = await Audio.Sound.createAsync(
+        require('@/assets/clicksound.mp3'),
+        { shouldPlay: true, volume: 0.6 }
+      );
+      
+      // Clean up sound after playing
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch (error) {
-      console.log('Sound generation failed:', error);
+      console.log('Sound playback failed:', error);
     }
   };
 
