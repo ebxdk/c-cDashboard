@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { AudioPlayer } from 'expo-audio';
+import { useAudioPlayer } from 'expo-audio';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -141,28 +141,7 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
 const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
-  const audioPlayerRef = useRef<AudioPlayer | null>(null);
-
-  // Initialize audio player
-  useEffect(() => {
-    const initAudioPlayer = async () => {
-      try {
-        const player = new AudioPlayer(require('../assets/clicksound.mp3'));
-        await player.load();
-        audioPlayerRef.current = player;
-      } catch (error) {
-        console.log('Failed to initialize audio player:', error);
-      }
-    };
-
-    initAudioPlayer();
-
-    return () => {
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.release();
-      }
-    };
-  }, []);
+  const player = useAudioPlayer(require('../assets/clicksound.mp3'));
   
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -172,22 +151,13 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
-  const handleRingPress = async () => {
+  const handleRingPress = () => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play sound instantly - create new instance each time to ensure it plays
+    // Play sound
     try {
-      if (audioPlayerRef.current) {
-        // Stop any currently playing sound and restart
-        await audioPlayerRef.current.seekTo(0);
-        await audioPlayerRef.current.play();
-      } else {
-        // Fallback: create new player instance
-        const player = new AudioPlayer(require('../assets/clicksound.mp3'));
-        await player.load();
-        await player.play();
-      }
+      player.replay();
     } catch (error) {
       console.log('Error playing sound:', error);
     }
