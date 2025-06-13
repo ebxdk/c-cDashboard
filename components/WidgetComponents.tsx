@@ -876,7 +876,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
         const marginTop = 3; // Same marginTop for all pages for consistent centering
         
         generatedPages.push(
-          <PageView key={`${copy}-${i}`} index={pageIndex}>
+          <PageView key={`habit-${habit.id}-copy-${copy}-index-${i}-page-${pageIndex}`} index={pageIndex}>
             {createPageContent(habit, marginTop)}
           </PageView>
         );
@@ -957,8 +957,8 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           right: 0,
           gap: 6,
         }}>
-          {habits.map((_, index) => (
-            <DotComponent key={index} index={index} />
+          {habits.map((habit, index) => (
+            <DotComponent key={`dot-${habit.id}-${index}`} index={index} />
           ))}
         </View>
       </View>
