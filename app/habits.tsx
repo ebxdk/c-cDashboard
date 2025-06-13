@@ -154,21 +154,29 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play satisfying sound
+    // Play satisfying click sound immediately
     try {
       const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav' },
-        { shouldPlay: true, volume: 0.3 }
+        require('expo-av/build/Audio/recording-success.m4a'),
+        { shouldPlay: true, volume: 0.6 }
       );
       // Clean up sound after playing
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync();
-        }
-      });
+      setTimeout(() => {
+        sound.unloadAsync();
+      }, 500);
     } catch (error) {
-      // Fallback to just haptic if sound fails
-      console.log('Sound playback failed:', error);
+      // Try alternative built-in sound
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAaBC17zvLAczEGJ3vN8dx/QwoUXrPo66lUFAxEnt/wvmEaBUB3yfLNeSsFJH3Q8t2NOwgUYrTq7aZXEw1Nodz1xWQcBStuzfE1bB4C' },
+          { shouldPlay: true, volume: 0.4 }
+        );
+        setTimeout(() => {
+          sound.unloadAsync();
+        }, 300);
+      } catch (fallbackError) {
+        console.log('All sound playback failed:', fallbackError);
+      }
     }
   };
 
