@@ -135,7 +135,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
-              minHeight: 70,
+              // Remove fixed minHeight to allow dynamic expansion
               // Ensure proper spacing and no overlap
               marginHorizontal: 0,
               shadowColor: isDarkMode ? '#000000' : '#87CEEB',
@@ -149,15 +149,18 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
                   color: '#4A90E2',
                   fontWeight: '600',
                   fontSize: 20,
-                  lineHeight: 34,
+                  lineHeight: 36, // Increased line height for better Arabic text spacing
                   textAlign: 'right', // RTL alignment for Arabic
                   fontFamily: 'System',
                   width: '100%',
                   flexShrink: 1,
                   flexWrap: 'wrap',
-                  paddingVertical: 2,
+                  paddingVertical: 4,
+                  // Enable proper text wrapping for lengthy Arabic text
+                  textAlignVertical: 'top',
                 }}
-                numberOfLines={0}
+                numberOfLines={0} // Allow unlimited lines for dynamic height
+                ellipsizeMode="clip" // Don't truncate, let it wrap naturally
               >
                 {segment.text}
               </Text>
