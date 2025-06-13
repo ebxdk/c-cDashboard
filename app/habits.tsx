@@ -3,7 +3,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -150,25 +150,13 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
-  const handleRingPress = async () => {
+  const handleRingPress = () => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play click sound from local file
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('@/assets/clicksound.mp3'),
-        { shouldPlay: true, volume: 0.6 }
-      );
-      
-      // Clean up sound after playing
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync();
-        }
-      });
-    } catch (error) {
-      console.log('Sound playback failed:', error);
+    // Play preloaded sound instantly
+    if (soundRef.current) {
+      soundRef.current.replayAsync();
     }
   };
 
@@ -244,6 +232,31 @@ export default function HabitsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
+  const soundRef = useRef<any>(null);
+
+  // Preload sound for instant playback
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('@/assets/clicksound.mp3'),
+          { volume: 0.6 }
+        );
+        soundRef.current = sound;
+      } catch (error) {
+        console.log('Failed to preload sound:', error);
+      }
+    };
+    
+    loadSound();
+    
+    // Cleanup on unmount
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, []);
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
