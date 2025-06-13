@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { AudioPlayer } from 'expo-audio';
+import { useAudioPlayer, AudioSource } from 'expo-audio';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -141,29 +141,9 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
 const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
-  const soundRef = useRef<any>(null);
-
-  // Preload sound for instant playback
-  useEffect(() => {
-    const loadSound = async () => {
-      try {
-        const player = new AudioPlayer(require('../assets/clicksound.mp3'));
-        await player.load();
-        soundRef.current = player;
-      } catch (error) {
-        console.log('Failed to preload sound:', error);
-      }
-    };
-    
-    loadSound();
-    
-    // Cleanup on unmount
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.release();
-      }
-    };
-  }, []);
+  
+  // Use the expo-audio hook
+  const player = useAudioPlayer(require('../assets/clicksound.mp3') as AudioSource);
   
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -177,10 +157,8 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play preloaded sound instantly
-    if (soundRef.current) {
-      soundRef.current.play();
-    }
+    // Play sound instantly
+    player.replay();
   };
 
   return (
