@@ -141,6 +141,31 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
 const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
+  const soundRef = useRef<any>(null);
+
+  // Preload sound for instant playback
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('@/assets/clicksound.mp3'),
+          { volume: 0.6 }
+        );
+        soundRef.current = sound;
+      } catch (error) {
+        console.log('Failed to preload sound:', error);
+      }
+    };
+    
+    loadSound();
+    
+    // Cleanup on unmount
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, []);
   
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -232,31 +257,6 @@ export default function HabitsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
-  const soundRef = useRef<any>(null);
-
-  // Preload sound for instant playback
-  useEffect(() => {
-    const loadSound = async () => {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          require('@/assets/clicksound.mp3'),
-          { volume: 0.6 }
-        );
-        soundRef.current = sound;
-      } catch (error) {
-        console.log('Failed to preload sound:', error);
-      }
-    };
-    
-    loadSound();
-    
-    // Cleanup on unmount
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
-    };
-  }, []);
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
