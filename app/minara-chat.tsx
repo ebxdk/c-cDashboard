@@ -43,19 +43,19 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   // Optimized Arabic text processing with performance improvements
   const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = elementKey * 1000;
+    let segmentKey = elementKey * 1000 + Math.random() * 1000; // Add randomness to prevent duplicate keys
     
     // Skip processing for very short text during streaming to improve performance
     if (text.length < 10 && isGenerating) {
       return [
-        <Text key={`arabic-simple-${elementKey}`} style={{ color: colors.primaryText }}>
+        <Text key={`arabic-simple-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>
           {text}
         </Text>
       ];
     }
     
     // Optimized Arabic detection - simpler regex for better performance
-    const arabicRegex = /[\u0600-\u06FF]+/g;
+    const arabicRegex = /[\u0600-\u06FF\s]+/g; // Include spaces to capture complete Arabic phrases
     let lastIndex = 0;
     let match;
     
@@ -64,7 +64,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     
     if (!shouldHighlightArabic) {
       return [
-        <Text key={`arabic-basic-${elementKey}`} style={{ color: colors.primaryText }}>
+        <Text key={`arabic-basic-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>
           {text}
         </Text>
       ];
@@ -76,29 +76,41 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         const beforeText = text.slice(lastIndex, match.index);
         if (beforeText.trim()) {
           segments.push(
-            <Text key={`arabic-before-${segmentKey++}`} style={{ color: colors.primaryText }}>
+            <Text key={`arabic-before-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
               {beforeText}
             </Text>
           );
         }
       }
       
-      // Add Arabic text with highlighting
-      segments.push(
-        <Text
-          key={`arabic-text-${segmentKey++}`}
-          style={{
-            color: isDarkMode ? '#10b981' : '#059669',
-            fontWeight: '600',
-            backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
-            paddingHorizontal: 4,
-            paddingVertical: 2,
-            borderRadius: 4,
-          }}
-        >
-          {match[0]}
-        </Text>
-      );
+      // Add Arabic text with enhanced styling and line breaks
+      const arabicText = match[0].trim();
+      if (arabicText) {
+        segments.push(
+          <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
+            marginVertical: 12,
+            paddingVertical: 16,
+            paddingHorizontal: 12,
+            backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
+            borderRadius: 8,
+            borderLeftWidth: 3,
+            borderLeftColor: '#87CEEB', // Sky blue color from screenshot
+          }}>
+            <Text
+              style={{
+                color: '#4A90E2', // Sky blue color similar to screenshot
+                fontWeight: '600',
+                fontSize: 18, // Larger than regular text
+                lineHeight: 26,
+                textAlign: 'right', // RTL alignment for Arabic
+                fontFamily: 'System',
+              }}
+            >
+              {arabicText}
+            </Text>
+          </View>
+        );
+      }
       
       lastIndex = match.index + match[0].length;
     }
@@ -108,7 +120,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       const remainingText = text.slice(lastIndex);
       if (remainingText.trim()) {
         segments.push(
-          <Text key={`arabic-remaining-${segmentKey++}`} style={{ color: colors.primaryText }}>
+          <Text key={`arabic-remaining-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
             {remainingText}
           </Text>
         );
@@ -116,7 +128,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     }
     
     return segments.length > 0 ? segments : [
-      <Text key={`arabic-fallback-${elementKey}`} style={{ color: colors.primaryText }}>{text}</Text>
+      <Text key={`arabic-fallback-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>{text}</Text>
     ];
   };
   
