@@ -89,7 +89,7 @@ const MOCK_HABITS: Habit[] = [
 const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => void }> = ({ habit, isActive, onPress }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2);
-  
+
   let progress = 0;
   if (habit.goal !== 'infinite') {
     progress = Math.min(habit.current / habit.goal, 1);
@@ -143,7 +143,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
   const isPlayingRef = useRef(false);
-  
+
   let progress = 0;
   if (habit.goal !== 'infinite') {
     progress = Math.min(habit.current / habit.goal, 1);
@@ -155,24 +155,24 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const handleRingPress = () => {
     // Haptic feedback first for immediate response
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     // Super responsive sound handling
     try {
       // Force stop current playback and reset immediately
       if (isPlayingRef.current) {
         player.pause();
       }
-      
+
       // Reset to start and play - no await for maximum responsiveness
       player.seekTo(0);
       player.play();
       isPlayingRef.current = true;
-      
+
       // Reset flag after sound should be done (typical click sound is very short)
       setTimeout(() => {
         isPlayingRef.current = false;
       }, 200);
-      
+
     } catch (error) {
       console.log('Error playing sound:', error);
       isPlayingRef.current = false;
@@ -180,11 +180,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   };
 
   return (
-    <TouchableOpacity 
-      style={styles.mainRingContainer}
-      onPress={handleRingPress}
-      activeOpacity={0.9}
-    >
+    
       <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
         {/* Background ring */}
         <Circle
@@ -209,7 +205,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
           transform={`rotate(-90 ${MAIN_RING_SIZE / 2} ${MAIN_RING_SIZE / 2})`}
         />
       </Svg>
-      
+
       {/* Centered wave emoji in the middle of the ring */}
       <View style={{
         position: 'absolute',
@@ -241,7 +237,8 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
           <IconSymbol name="chevron.right" size={16} color="#000" />
         </View>
       )}
-    </TouchableOpacity>
+      </TouchableOpacity>
+    
   );
 };
 
@@ -261,9 +258,9 @@ export default function HabitsScreen() {
     if (event.nativeEvent.state === 5) { // END state
       const { translationX, velocityX } = event.nativeEvent;
       const threshold = SCREEN_WIDTH * 0.3;
-      
+
       let newIndex = currentIndex;
-      
+
       if (translationX > threshold || velocityX > 500) {
         // Swipe right - go to previous habit
         newIndex = Math.max(0, currentIndex - 1);
@@ -271,12 +268,12 @@ export default function HabitsScreen() {
         // Swipe left - go to next habit
         newIndex = Math.min(MOCK_HABITS.length - 1, currentIndex + 1);
       }
-      
+
       if (newIndex !== currentIndex) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setCurrentIndex(newIndex);
       }
-      
+
       // Reset animation
       Animated.spring(translateX, {
         toValue: 0,
@@ -302,7 +299,7 @@ export default function HabitsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
+
       {/* Header with back button */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -477,4 +474,4 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
-}); 
+});
