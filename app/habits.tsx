@@ -3,25 +3,27 @@ import { Colors } from '@/constants/Colors';
 import { Habit, useHabits } from '@/contexts/HabitsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAudioPlayer } from 'expo-audio';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import React, { useRef, useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MAIN_RING_SIZE = 280;
-const MAIN_RING_STROKE_WIDTH = 56;
+const MAIN_RING_SIZE = 260;
+const MAIN_RING_STROKE_WIDTH = 52;
 const PREVIEW_RING_SIZE = 70;
 const PREVIEW_RING_STROKE_WIDTH = 16;
 
@@ -37,9 +39,16 @@ const HABIT_COLORS = [
   '#00C7BE', // Teal
 ];
 
-const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => void }> = ({ habit, isActive, onPress }) => {
+const PreviewRing: React.FC<{ 
+  habit: Habit; 
+  isActive: boolean; 
+  onPress: () => void; 
+  onDelete: () => void;
+  onShowDeleteBubble: (position: { x: number; y: number }) => void;
+}> = ({ habit, isActive, onPress, onDelete, onShowDeleteBubble }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2);
+  const ringRef = useRef<View>(null);
 
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -49,43 +58,63 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
+  const handleLongPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    
+    // Measure the ring position on screen
+    ringRef.current?.measureInWindow((x, y, width, height) => {
+      // Position bubble at top-right corner of the ring
+      onShowDeleteBubble({
+        x: x + width - 8,
+        y: y - 8
+      });
+    });
+  };
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.previewRingContainer}>
-      <View style={[
-        styles.previewRingWrapper, 
-        isActive && [styles.activePreviewRing, { 
-          backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' 
-        }]
-      ]}>
-        <Svg width={PREVIEW_RING_SIZE} height={PREVIEW_RING_SIZE}>
-          {/* Background ring */}
-          <Circle
-            cx={PREVIEW_RING_SIZE / 2}
-            cy={PREVIEW_RING_SIZE / 2}
-            r={PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2}
-            stroke={colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
-            strokeWidth={PREVIEW_RING_STROKE_WIDTH}
-            fill="transparent"
-          />
-          {/* Progress ring */}
-          <Circle
-            cx={PREVIEW_RING_SIZE / 2}
-            cy={PREVIEW_RING_SIZE / 2}
-            r={PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2}
-            stroke={habit.color}
-            strokeWidth={PREVIEW_RING_STROKE_WIDTH}
-            fill="transparent"
-            strokeLinecap="round"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            transform={`rotate(-90 ${PREVIEW_RING_SIZE / 2} ${PREVIEW_RING_SIZE / 2})`}
-          />
-        </Svg>
-      </View>
-      <Text style={[styles.previewDay, { color: Colors[colorScheme].text }]}>
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][parseInt(habit.id) % 7]}
-      </Text>
-    </TouchableOpacity>
+    <View style={styles.previewRingContainer} ref={ringRef}>
+      <TouchableOpacity 
+        onPress={onPress} 
+        onLongPress={handleLongPress}
+        activeOpacity={0.7} 
+        style={styles.previewRingTouchable}
+      >
+        <View style={[
+          styles.previewRingWrapper, 
+          isActive && [styles.activePreviewRing, { 
+            backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' 
+          }]
+        ]}>
+          <Svg width={PREVIEW_RING_SIZE} height={PREVIEW_RING_SIZE}>
+            {/* Background ring */}
+            <Circle
+              cx={PREVIEW_RING_SIZE / 2}
+              cy={PREVIEW_RING_SIZE / 2}
+              r={PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2}
+              stroke={colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+              strokeWidth={PREVIEW_RING_STROKE_WIDTH}
+              fill="transparent"
+            />
+            {/* Progress ring */}
+            <Circle
+              cx={PREVIEW_RING_SIZE / 2}
+              cy={PREVIEW_RING_SIZE / 2}
+              r={PREVIEW_RING_SIZE / 2 - PREVIEW_RING_STROKE_WIDTH / 2}
+              stroke={habit.color}
+              strokeWidth={PREVIEW_RING_STROKE_WIDTH}
+              fill="transparent"
+              strokeLinecap="round"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={strokeDashoffset}
+              transform={`rotate(-90 ${PREVIEW_RING_SIZE / 2} ${PREVIEW_RING_SIZE / 2})`}
+            />
+          </Svg>
+        </View>
+        <Text style={[styles.previewDay, { color: Colors[colorScheme].text }]}>
+          {habit.name}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -116,6 +145,22 @@ const MainRing: React.FC<{
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
+  // Ensure audio player is ready
+  useEffect(() => {
+    const prepareAudio = async () => {
+      try {
+        // Load the audio if needed
+        if (player) {
+          console.log('Audio player initialized');
+        }
+      } catch (error) {
+        console.log('Error preparing audio:', error);
+      }
+    };
+    
+    prepareAudio();
+  }, [player]);
+
   // Check if habit just completed and start pulse animation
   useEffect(() => {
     const habitWasComplete = wasComplete.current[habit.id] || false;
@@ -126,6 +171,8 @@ const MainRing: React.FC<{
       // Start continuous pulse animation
       startPulseAnimation();
     } else if (progress < 1 && habitWasComplete) {
+      // When progress drops below 1, reset the completion tracking
+      // This ensures celebration will trigger again when reaching the goal
       wasComplete.current[habit.id] = false;
       // Stop pulse animation
       pulseAnimation.stopAnimation();
@@ -138,7 +185,7 @@ const MainRing: React.FC<{
       pulseAnimation.stopAnimation();
       pulseAnimation.setValue(1);
     }
-  }, [progress, habit.id]);
+  }, [progress, habit.id, habit.current]);
 
   const startPulseAnimation = () => {
     const pulse = Animated.loop(
@@ -275,27 +322,55 @@ const MainRing: React.FC<{
       ]),
     ]).start();
 
-    // Super responsive sound handling
-    try {
-      // Force stop current playback and reset immediately
-      if (isPlayingRef.current) {
-        player.pause();
-      }
+    // Improved sound handling
+    const playSound = async () => {
+      try {
+        console.log('Attempting to play sound...');
+        
+        // Check if player exists
+        if (!player) {
+          console.log('Player not available');
+          return;
+        }
 
-      // Reset to start and play - no await for maximum responsiveness
-      player.seekTo(0);
-      player.play();
-      isPlayingRef.current = true;
+        // Stop any current playback
+        if (isPlayingRef.current) {
+          console.log('Stopping current playback...');
+          await player.pause();
+          isPlayingRef.current = false;
+          // Small delay to ensure stop is processed
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
 
-      // Reset flag after sound should be done (typical click sound is very short)
-      setTimeout(() => {
+        // Reset to beginning and play
+        console.log('Seeking to start and playing...');
+        await player.seekTo(0);
+        await player.play();
+        isPlayingRef.current = true;
+        console.log('Sound should be playing now');
+
+        // Reset flag after sound duration
+        setTimeout(() => {
+          isPlayingRef.current = false;
+          console.log('Sound playback finished');
+        }, 300);
+
+      } catch (error) {
+        console.log('Error playing sound:', error);
         isPlayingRef.current = false;
-      }, 200);
+        
+        // Fallback: try a simpler approach
+        try {
+          console.log('Trying fallback sound approach...');
+          player?.play();
+        } catch (fallbackError) {
+          console.log('Fallback sound also failed:', fallbackError);
+        }
+      }
+    };
 
-    } catch (error) {
-      console.log('Error playing sound:', error);
-      isPlayingRef.current = false;
-    }
+    // Call the async function
+    playSound();
   };
 
   return (
@@ -337,14 +412,14 @@ const MainRing: React.FC<{
           strokeWidth={MAIN_RING_STROKE_WIDTH}
           fill="transparent"
           strokeLinecap="round"
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset}
+          strokeDasharray={habit.goal === 'infinite' ? undefined : strokeDasharray}
+          strokeDashoffset={habit.goal === 'infinite' ? undefined : strokeDashoffset}
           transform={`rotate(-90 ${MAIN_RING_SIZE / 2} ${MAIN_RING_SIZE / 2})`}
         />
       </Svg>
       </Animated.View>
 
-      {/* Centered wave emoji in the middle of the ring with bouncy animation */}
+      {/* Centered emoji in the middle of the ring with bouncy animation */}
       <Animated.View style={{
         position: 'absolute',
         justifyContent: 'center',
@@ -364,28 +439,9 @@ const MainRing: React.FC<{
         <Text style={{
           fontSize: 64,
           textAlign: 'center',
-        }}>👋</Text>
+        }}>{habit.goal === 'infinite' ? '♾️' : '👋'}</Text>
       </Animated.View>
 
-      {/* Arrow indicator at progress point */}
-      {progress > 0 && (
-        <View 
-          style={[
-            styles.progressIndicator,
-            {
-              backgroundColor: habit.color,
-              transform: [
-                { rotate: `${progress * 360 - 90}deg` },
-                { translateY: -(MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2) },
-              ],
-            },
-          ]}
-        >
-          <IconSymbol name="chevron.right" size={16} color="#000" />
-        </View>
-      )}
-
-    
     </TouchableOpacity>
   );
 };
@@ -393,11 +449,33 @@ const MainRing: React.FC<{
 export default function HabitsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
-  const { habits, updateHabit } = useHabits();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const params = useLocalSearchParams();
+  const { habits, updateHabit, deleteHabit } = useHabits();
+  
+  // Get the habit index from params, default to 0
+  const initialHabitIndex = params.habitIndex ? parseInt(params.habitIndex as string, 10) : 0;
+  const validInitialIndex = Math.max(0, Math.min(initialHabitIndex, habits.length - 1));
+  
+  const [currentIndex, setCurrentIndex] = useState(validInitialIndex);
   const [showCelebration, setShowCelebration] = useState(false);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
+  
+  // Delete bubble state
+  const [showDeleteBubble, setShowDeleteBubble] = useState(false);
+  const [deleteBubblePosition, setDeleteBubblePosition] = useState({ x: 0, y: 0 });
+  const [habitToDelete, setHabitToDelete] = useState<{ id: string; index: number } | null>(null);
+  const bubbleScale = useRef(new Animated.Value(0)).current;
+  const bubbleOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Update current index when habits change or when we get a new habitIndex param
+  useEffect(() => {
+    if (params.habitIndex) {
+      const newIndex = parseInt(params.habitIndex as string, 10);
+      const validIndex = Math.max(0, Math.min(newIndex, habits.length - 1));
+      setCurrentIndex(validIndex);
+    }
+  }, [params.habitIndex, habits.length]);
   
   // Celebration animations for background
   const celebrationEmojis = ['🎉', '🥳', '🎊', '🎈', '🎁'];
@@ -453,6 +531,71 @@ export default function HabitsScreen() {
   const handlePreviewPress = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentIndex(index);
+  };
+
+  const handleShowDeleteBubble = (position: { x: number; y: number }, habitId: string, habitIndex: number) => {
+    setDeleteBubblePosition(position);
+    setHabitToDelete({ id: habitId, index: habitIndex });
+    setShowDeleteBubble(true);
+    
+    // Animate bubble in
+    Animated.parallel([
+      Animated.spring(bubbleScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 200,
+        friction: 10,
+      }),
+      Animated.timing(bubbleOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const hideBubble = () => {
+    Animated.parallel([
+      Animated.spring(bubbleScale, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 200,
+        friction: 10,
+      }),
+      Animated.timing(bubbleOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowDeleteBubble(false);
+      setHabitToDelete(null);
+    });
+  };
+
+  const handleDeleteHabit = (habitId: string, deletedIndex: number) => {
+    deleteHabit(habitId);
+    
+    // Adjust current index if necessary
+    if (deletedIndex < currentIndex) {
+      // If we deleted a habit before the current one, shift current index back
+      setCurrentIndex(currentIndex - 1);
+    } else if (deletedIndex === currentIndex) {
+      // If we deleted the current habit, adjust to a valid index
+      const newIndex = Math.min(currentIndex, habits.length - 2); // -2 because we're about to delete one
+      setCurrentIndex(Math.max(0, newIndex));
+    }
+    // If deletedIndex > currentIndex, no adjustment needed
+  };
+
+  const handleConfirmDelete = () => {
+    if (habitToDelete) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hideBubble();
+      setTimeout(() => {
+        handleDeleteHabit(habitToDelete.id, habitToDelete.index);
+      }, 150);
+    }
   };
 
   const currentHabit = habits[currentIndex];
@@ -541,6 +684,10 @@ export default function HabitsScreen() {
               habit={habit}
               isActive={index === currentIndex}
               onPress={() => handlePreviewPress(index)}
+              onDelete={() => {
+                handleDeleteHabit(habit.id, index);
+              }}
+              onShowDeleteBubble={(position) => handleShowDeleteBubble(position, habit.id, index)}
             />
           ))}
         </ScrollView>
@@ -607,9 +754,101 @@ export default function HabitsScreen() {
           {currentHabit.name}
         </Text>
         <Text style={[styles.habitStats, { color: currentHabit.color }]}>
-          {currentHabit.current}/{currentHabit.goal}{currentHabit.unit}
+          {currentHabit.goal === 'infinite' 
+            ? `${currentHabit.current} ${currentHabit.unit}` 
+            : `${currentHabit.current}/${currentHabit.goal} ${currentHabit.unit}`
+          }
         </Text>
       </View>
+
+      {/* Action buttons */}
+      <View style={styles.actionButtonsContainer}>
+        {/* Rewind button */}
+        <TouchableOpacity 
+          style={[styles.actionButton, { 
+            backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            opacity: currentHabit.current > 0 ? 1 : 0.3,
+          }]}
+          onPress={() => {
+            if (currentHabit.current > 0) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              updateHabit(currentHabit.id, { current: currentHabit.current - 1 });
+            }
+          }}
+          activeOpacity={0.7}
+          disabled={currentHabit.current <= 0}
+        >
+          <IconSymbol name="arrow.uturn.backward" size={24} color={Colors[colorScheme].text} />
+        </TouchableOpacity>
+
+        {/* Reset button */}
+        <TouchableOpacity 
+          style={[styles.actionButton, { 
+            backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            opacity: currentHabit.current > 0 ? 1 : 0.3,
+          }]}
+          onPress={() => {
+            if (currentHabit.current > 0) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              // Reset habit progress to 0 - this will trigger the useEffect
+              // to reset completion tracking, allowing celebrations on next completion
+              updateHabit(currentHabit.id, { current: 0 });
+            }
+          }}
+          activeOpacity={0.7}
+          disabled={currentHabit.current <= 0}
+        >
+          <IconSymbol name="arrow.clockwise" size={24} color={Colors[colorScheme].text} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Screen-level Delete Bubble Modal */}
+      <Modal
+        visible={showDeleteBubble}
+        transparent={true}
+        animationType="none"
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalContainer}>
+          {/* Frosted glass blur overlay like Apple 3D Touch */}
+          <Animated.View style={[styles.blurContainer, { opacity: bubbleOpacity }]}>
+            <BlurView 
+              intensity={20}
+              style={styles.blurOverlay}
+              tint={colorScheme === 'dark' ? 'dark' : 'light'}
+            />
+          </Animated.View>
+          
+          {/* Invisible touchable overlay to catch taps anywhere to dismiss */}
+          <TouchableOpacity 
+            onPress={hideBubble}
+            style={styles.modalOverlay}
+            activeOpacity={1}
+          />
+          
+          {/* Delete Bubble positioned absolutely */}
+          <Animated.View 
+            style={[
+              styles.modalDeleteBubble,
+              {
+                backgroundColor: colorScheme === 'dark' ? '#FF453A' : '#FF3B30',
+                transform: [{ scale: bubbleScale }],
+                opacity: bubbleOpacity,
+                left: deleteBubblePosition.x,
+                top: deleteBubblePosition.y,
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              onPress={handleConfirmDelete}
+              style={styles.modalDeleteButton}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalDeleteIcon}>🗑️</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -645,6 +884,11 @@ const styles = StyleSheet.create({
   previewRingContainer: {
     alignItems: 'center',
     gap: 10,
+    position: 'relative',
+  },
+  previewRingTouchable: {
+    alignItems: 'center',
+    gap: 10,
   },
   previewRingWrapper: {
     padding: 6,
@@ -654,9 +898,9 @@ const styles = StyleSheet.create({
     // Dynamic background color applied inline
   },
   previewDay: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
     textAlign: 'center',
   },
   content: {
@@ -664,7 +908,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: -50,
+    marginTop: -25,
   },
   mainRingContainer: {
     justifyContent: 'center',
@@ -686,7 +930,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 140,
+    marginBottom: 20,
     marginTop: 15,
     gap: 8,
     paddingHorizontal: 20,
@@ -744,5 +988,101 @@ const styles = StyleSheet.create({
   },
   celebrationEmojiText: {
     fontSize: 32,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 120,
+    gap: 40,
+  },
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteBubble3D: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 999999, // Maximum elevation for Android
+    zIndex: 999999, // Maximum z-index to ensure it's on top of everything
+  },
+  deleteBubbleButton3D: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  deleteBubbleIcon: {
+    fontSize: 16,
+  },
+  fullScreenOverlay: {
+    position: 'absolute',
+    top: -1000, // Cover entire screen including status bar area
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 999998, // Just below the delete bubble
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  blurContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  blurOverlay: {
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  modalDeleteBubble: {
+    position: 'absolute',
+    width: 60, // Made even bigger
+    height: 60, // Made even bigger
+    borderRadius: 30, // Adjusted for new size
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalDeleteButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 30, // Adjusted for new size
+  },
+  modalDeleteIcon: {
+    fontSize: 28, // Made bigger to match new bubble size
   },
 });

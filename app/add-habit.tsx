@@ -52,9 +52,10 @@ export default function AddHabitScreen() {
   const [habitGoal, setHabitGoal] = useState('');
   const [selectedColor, setSelectedColor] = useState(HABIT_COLORS[0]);
   const [selectedUnit, setSelectedUnit] = useState(HABIT_UNITS[0]);
+  const [isInfinite, setIsInfinite] = useState(false);
 
   const handleSave = () => {
-    if (!habitName.trim() || !habitGoal.trim()) {
+    if (!habitName.trim() || (!isInfinite && !habitGoal.trim())) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -62,7 +63,7 @@ export default function AddHabitScreen() {
     const newHabit = {
       id: Date.now().toString(),
       name: habitName.trim(),
-      goal: parseInt(habitGoal) || 1,
+      goal: isInfinite ? ('infinite' as const) : (parseInt(habitGoal) || 1),
       current: 0,
       color: selectedColor,
       streak: 0,
@@ -83,6 +84,15 @@ export default function AddHabitScreen() {
   const handleUnitSelect = (unit: typeof HABIT_UNITS[0]) => {
     setSelectedUnit(unit);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleToggleInfinite = () => {
+    setIsInfinite(!isInfinite);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Clear goal when switching to infinite
+    if (!isInfinite) {
+      setHabitGoal('');
+    }
   };
 
   return (
@@ -108,11 +118,11 @@ export default function AddHabitScreen() {
         <TouchableOpacity 
           style={[styles.headerButton, { 
             backgroundColor: selectedColor,
-            opacity: (!habitName.trim() || !habitGoal.trim()) ? 0.5 : 1,
+            opacity: (!habitName.trim() || (!isInfinite && !habitGoal.trim())) ? 0.5 : 1,
           }]}
           onPress={handleSave}
           activeOpacity={0.7}
-          disabled={!habitName.trim() || !habitGoal.trim()}
+          disabled={!habitName.trim() || (!isInfinite && !habitGoal.trim())}
         >
           <IconSymbol name="checkmark" size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -148,43 +158,126 @@ export default function AddHabitScreen() {
             />
           </View>
 
-          {/* Goal */}
+          {/* Habit Type Toggle */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme].text }]}>
-              Daily Goal
+              Habit Type
             </Text>
-            <View style={styles.goalContainer}>
-              <TextInput
-                style={[styles.goalInput, { 
-                  backgroundColor: colorScheme === 'dark' ? '#2C2C2E' : '#F2F2F7',
-                  color: Colors[colorScheme].text,
-                  borderColor: selectedColor,
-                  borderWidth: habitGoal.trim() ? 2 : 0,
-                }]}
-                placeholder="30"
-                placeholderTextColor={colorScheme === 'dark' ? '#8E8E93' : '#8E8E93'}
-                value={habitGoal}
-                onChangeText={setHabitGoal}
-                keyboardType="numeric"
-                maxLength={4}
-              />
+            <View style={styles.toggleContainer}>
               <TouchableOpacity
-                style={[styles.unitSelector, {
-                  backgroundColor: selectedColor,
+                style={[styles.toggleOption, {
+                  backgroundColor: !isInfinite ? selectedColor : (colorScheme === 'dark' ? '#2C2C2E' : '#F2F2F7'),
+                  borderColor: selectedColor,
+                  borderWidth: 2,
+                }]}
+                onPress={() => !isInfinite ? null : handleToggleInfinite()}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.toggleText, {
+                  color: !isInfinite ? '#FFFFFF' : Colors[colorScheme].text,
+                  fontWeight: !isInfinite ? '600' : '400',
+                }]}>
+                  🎯 Goal-based
+                </Text>
+                <Text style={[styles.toggleSubtext, {
+                  color: !isInfinite ? 'rgba(255,255,255,0.8)' : Colors[colorScheme].text,
+                  opacity: !isInfinite ? 1 : 0.6,
+                }]}>
+                  Complete a daily target
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.toggleOption, {
+                  backgroundColor: isInfinite ? selectedColor : (colorScheme === 'dark' ? '#2C2C2E' : '#F2F2F7'),
+                  borderColor: selectedColor,
+                  borderWidth: 2,
+                }]}
+                onPress={() => isInfinite ? null : handleToggleInfinite()}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.toggleText, {
+                  color: isInfinite ? '#FFFFFF' : Colors[colorScheme].text,
+                  fontWeight: isInfinite ? '600' : '400',
+                }]}>
+                  ♾️ Counter
+                </Text>
+                <Text style={[styles.toggleSubtext, {
+                  color: isInfinite ? 'rgba(255,255,255,0.8)' : Colors[colorScheme].text,
+                  opacity: isInfinite ? 1 : 0.6,
+                }]}>
+                  Track unlimited progress
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Goal - Only show for finite habits */}
+          {!isInfinite && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: Colors[colorScheme].text }]}>
+                Daily Goal
+              </Text>
+              <View style={styles.goalContainer}>
+                <TextInput
+                  style={[styles.goalInput, { 
+                    backgroundColor: colorScheme === 'dark' ? '#2C2C2E' : '#F2F2F7',
+                    color: Colors[colorScheme].text,
+                    borderColor: selectedColor,
+                    borderWidth: habitGoal.trim() ? 2 : 0,
+                  }]}
+                  placeholder="30"
+                  placeholderTextColor={colorScheme === 'dark' ? '#8E8E93' : '#8E8E93'}
+                  value={habitGoal}
+                  onChangeText={setHabitGoal}
+                  keyboardType="numeric"
+                  maxLength={4}
+                />
+                <TouchableOpacity
+                  style={[styles.unitSelector, {
+                    backgroundColor: selectedColor,
+                  }]}
+                  onPress={() => {
+                    // Could open a picker here, for now just cycle through
+                    const currentIndex = HABIT_UNITS.indexOf(selectedUnit);
+                    const nextIndex = (currentIndex + 1) % HABIT_UNITS.length;
+                    handleUnitSelect(HABIT_UNITS[nextIndex]);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.unitText}>{selectedUnit.label}</Text>
+                  <IconSymbol name="chevron.down" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Unit - Only show for infinite habits */}
+          {isInfinite && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: Colors[colorScheme].text }]}>
+                Unit
+              </Text>
+              <TouchableOpacity
+                style={[styles.unitOnlySelector, {
+                  backgroundColor: colorScheme === 'dark' ? '#2C2C2E' : '#F2F2F7',
+                  borderColor: selectedColor,
+                  borderWidth: 2,
                 }]}
                 onPress={() => {
-                  // Could open a picker here, for now just cycle through
                   const currentIndex = HABIT_UNITS.indexOf(selectedUnit);
                   const nextIndex = (currentIndex + 1) % HABIT_UNITS.length;
                   handleUnitSelect(HABIT_UNITS[nextIndex]);
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.unitText}>{selectedUnit.label}</Text>
-                <IconSymbol name="chevron.down" size={16} color="#FFFFFF" />
+                <Text style={[styles.unitOnlyText, { color: Colors[colorScheme].text }]}>
+                  {selectedUnit.label}
+                </Text>
+                <IconSymbol name="chevron.down" size={16} color={Colors[colorScheme].text} />
               </TouchableOpacity>
             </View>
-          </View>
+          )}
 
           {/* Color Selection */}
           <View style={styles.section}>
@@ -221,15 +314,23 @@ export default function AddHabitScreen() {
               borderColor: selectedColor,
               borderWidth: 2,
             }]}>
-              <View style={[styles.previewRing, { borderColor: selectedColor }]}>
-                <Text style={{ fontSize: 24 }}>🎯</Text>
+              <View style={[styles.previewRing, { 
+                borderColor: selectedColor,
+                backgroundColor: isInfinite ? selectedColor : 'transparent',
+              }]}>
+                <Text style={{ fontSize: 24 }}>
+                  {isInfinite ? '♾️' : '🎯'}
+                </Text>
               </View>
               <View style={styles.previewText}>
                 <Text style={[styles.previewName, { color: Colors[colorScheme].text }]}>
                   {habitName || 'Habit Name'}
                 </Text>
                 <Text style={[styles.previewGoal, { color: selectedColor }]}>
-                  0/{habitGoal || '0'} {selectedUnit.value}
+                  {isInfinite 
+                    ? `0 ${selectedUnit.value}` 
+                    : `0/${habitGoal || '0'} ${selectedUnit.value}`
+                  }
                 </Text>
               </View>
             </View>
@@ -269,7 +370,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   section: {
     marginBottom: 32,
@@ -358,5 +459,39 @@ const styles = StyleSheet.create({
   previewGoal: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  toggleOption: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  toggleSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  unitOnlySelector: {
+    height: 56,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  unitOnlyText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

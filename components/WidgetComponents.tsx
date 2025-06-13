@@ -1,9 +1,10 @@
+import { useHabits } from '@/contexts/HabitsContext';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useRef } from 'react';
 import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
 import { State, TapGestureHandler } from 'react-native-gesture-handler';
-import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 
@@ -581,24 +582,65 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
 
 export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const router = useRouter();
+  const { habits } = useHabits();
+
+  // Track current habit index in the widget
+  const [currentHabitIndex, setCurrentHabitIndex] = React.useState(0);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/habits');
+    // Navigate to habits page with the current habit index
+    router.push(`/habits?habitIndex=${currentHabitIndex}`);
   };
 
-  // Calculate progress percentage (3 out of 5 = 60%)
-  const progress = 3;
-  const total = 5;
-  const progressPercentage = (progress / total) * 100;
-  
+  // If no habits exist, show empty state
+  if (habits.length === 0) {
+    return (
+      <TapGestureHandler onHandlerStateChange={(event) => {
+        if (event.nativeEvent.state === State.END) {
+          handlePress();
+        }
+      }}>
+        <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 20 }]}>
+          <View style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <Text style={{
+              fontSize: 32,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}>🎯</Text>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: colors.primaryText,
+              textAlign: 'center',
+              marginBottom: 4,
+              fontFamily: 'System',
+            }}>
+              No Habits Yet
+            </Text>
+            <Text style={{
+              fontSize: 12,
+              color: colors.secondaryText,
+              textAlign: 'center',
+              fontFamily: 'System',
+            }}>
+              Tap to add habits
+            </Text>
+          </View>
+        </View>
+      </TapGestureHandler>
+    );
+  }
+
   // SVG circle parameters - bigger and much thicker ring
   const size = 100;
   const strokeWidth = 22;
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
   // Calculate the proper page width for the ScrollView
   const { width: screenWidth } = Dimensions.get('window');
@@ -612,14 +654,13 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   // The available width for each page should be the full widget width
   const pageWidth = smallWidgetSize;
 
-  // Optimized infinite scroll setup - use fewer copies for better performance
-  const originalPages = ['prayer', 'reading', 'exercise'] as const;
+  // Use actual habits instead of hardcoded pages
   const copiesPerSide = 5; // Reduced from 50 to 5 for better performance
   const totalCopies = copiesPerSide * 2 + 1;
   const startIndex = copiesPerSide;
 
   // Scroll animation values
-  const scrollX = useSharedValue(startIndex * originalPages.length * pageWidth);
+  const scrollX = useSharedValue(startIndex * habits.length * pageWidth);
   const scrollViewRef = useRef<Animated.ScrollView>(null);
 
   // Track scroll state to distinguish between scrolling and tapping
@@ -630,8 +671,16 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
+      
+      // Calculate current habit index based on scroll position
+      const currentPageFloat = event.contentOffset.x / pageWidth;
+      const currentPageIndex = Math.round(currentPageFloat) % habits.length;
+      const normalizedPage = currentPageIndex < 0 ? currentPageIndex + habits.length : currentPageIndex;
+      
+      // Update current habit index on main thread
+      runOnJS(setCurrentHabitIndex)(normalizedPage);
     },
-  }, []);
+  }, [pageWidth, habits.length]);
 
   // Handle scroll begin and end
   const handleScrollBeginDrag = () => {
@@ -666,12 +715,12 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       scrollViewRef.current?.scrollTo({ 
-        x: startIndex * originalPages.length * pageWidth, 
+        x: startIndex * habits.length * pageWidth, 
         animated: false 
       });
     }, 50); // Reduced timeout for faster initialization
     return () => clearTimeout(timer);
-  }, [pageWidth]);
+  }, [pageWidth, habits.length]);
 
   // Simplified Page component with reduced animations for better performance
   const PageView = React.memo(({ children, index }: { children: React.ReactNode; index: number }) => {
@@ -719,23 +768,21 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
     );
   });
 
-  // Memoized page content to prevent unnecessary re-renders
-  const createPageContent = React.useCallback((pageType: 'prayer' | 'reading' | 'exercise', marginTop: number) => {
-    // Define different colors for each page using theme colors
-    const getPageColors = (pageType: 'prayer' | 'reading' | 'exercise') => {
-      switch (pageType) {
-        case 'prayer':
-          return '#1E90FF'; // Vibrant dodger blue (more pop than light sky blue)
-        case 'reading':
-          return '#FF1744'; // More vibrant red (brighter than theme red)
-        case 'exercise':
-          return '#9370DB'; // Vibrant medium purple (much more pop than pastel)
-        default:
-          return colors.redDot;
-      }
-    };
+  // Memoized page content to prevent unnecessary re-renders - now uses actual habit data
+  const createPageContent = React.useCallback((habit: any, marginTop: number) => {
+    // Calculate progress
+    let progress = 0;
+    let progressPercentage = 0;
+    if (habit.goal !== 'infinite') {
+      progress = Math.min(habit.current / habit.goal, 1);
+      progressPercentage = progress * 100;
+    } else {
+      // For infinite goals, show current value but no progress ring
+      progressPercentage = 0;
+    }
 
-    const pageColor = getPageColors(pageType);
+    const strokeDasharray = circumference;
+    const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
     return (
       <>
@@ -755,23 +802,25 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
               cx={size / 2}
               cy={size / 2}
               r={radius}
-              stroke={colors.habitBackground}
+              stroke={colors.habitBackground || (isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)')}
               strokeWidth={strokeWidth}
               fill="transparent"
             />
             
-            {/* Progress Ring */}
-            <Circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke={pageColor}
-              strokeWidth={strokeWidth}
-              fill="transparent"
-              strokeDasharray={strokeDasharray}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-            />
+            {/* Progress Ring - only show if not infinite goal */}
+            {habit.goal !== 'infinite' && (
+              <Circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke={habit.color}
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+              />
+            )}
           </Svg>
           
           {/* Centered emoji in the middle of the ring */}
@@ -785,7 +834,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
             <Text style={{
               fontSize: 28,
               textAlign: 'center',
-            }}>👋</Text>
+            }}>🎯</Text>
           </View>
         </View>
 
@@ -799,61 +848,58 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           fontFamily: 'System',
           letterSpacing: 0.5,
         }}>
-          {pageType === 'prayer' ? 'Prayer' : pageType === 'reading' ? 'Reading' : 'Exercise'}
+          {habit.name}
         </Text>
 
         {/* Progress Stats - Combined in one line */}
         <Text style={{
           fontSize: 16,
           fontWeight: '700',
-          color: pageColor,
+          color: habit.color,
           textAlign: 'center',
           fontFamily: 'System',
         }}>
-          {progress}/{total} per day
+          {habit.goal === 'infinite' ? `${habit.current} ${habit.unit}` : `${habit.current}/${habit.goal} ${habit.unit}`}
         </Text>
       </>
     );
-  }, [size, strokeWidth, radius, strokeDasharray, strokeDashoffset, colors, progress, total]);
+  }, [size, strokeWidth, radius, circumference, colors, isDarkMode]);
 
-  // Optimized page generation with memoization
+  // Optimized page generation with memoization - now uses actual habits
   const pages = React.useMemo(() => {
     const generatedPages = [];
     let pageIndex = 0;
 
     for (let copy = 0; copy < totalCopies; copy++) {
-      for (let i = 0; i < originalPages.length; i++) {
-        const pageType = originalPages[i];
+      for (let i = 0; i < habits.length; i++) {
+        const habit = habits[i];
         const marginTop = 3; // Same marginTop for all pages for consistent centering
         
         generatedPages.push(
           <PageView key={`${copy}-${i}`} index={pageIndex}>
-            {createPageContent(pageType, marginTop)}
+            {createPageContent(habit, marginTop)}
           </PageView>
         );
         pageIndex++;
       }
     }
     return generatedPages;
-  }, [pageWidth, createPageContent]);
+  }, [pageWidth, createPageContent, habits]);
 
-  // Simplified dot animation with reduced complexity
+  // Simplified dot animation with reduced complexity - now uses actual habits
   const DotComponent = React.memo(({ index }: { index: number }) => {
     const animatedDotStyle = useAnimatedStyle(() => {
       'worklet';
       
       // Simplified calculation for better performance and stability
       const currentPageFloat = scrollX.value / pageWidth;
-      const currentPageIndex = Math.round(currentPageFloat) % originalPages.length;
-      const normalizedPage = currentPageIndex < 0 ? currentPageIndex + originalPages.length : currentPageIndex;
+      const currentPageIndex = Math.round(currentPageFloat) % habits.length;
+      const normalizedPage = currentPageIndex < 0 ? currentPageIndex + habits.length : currentPageIndex;
       const isActive = normalizedPage === index;
       
-      // Define colors directly in worklet for stability
-      let activeColor = '#1E90FF'; // Default vibrant blue
-      if (index === 0) activeColor = '#1E90FF'; // Prayer - vibrant dodger blue
-      else if (index === 1) activeColor = '#FF1744'; // Reading - vibrant red  
-      else if (index === 2) activeColor = '#9370DB'; // Exercise - vibrant purple
-      
+      // Use the actual habit color for the active dot
+      const habit = habits[index];
+      const activeColor = habit ? habit.color : '#1E90FF';
       const inactiveColor = isDarkMode ? '#48484A' : '#8E8E93';
       
       return {
@@ -861,7 +907,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
         opacity: isActive ? 1 : 0.4,
         backgroundColor: isActive ? activeColor : inactiveColor,
       };
-    }, [scrollX, pageWidth, isDarkMode]);
+    }, [scrollX, pageWidth, isDarkMode, habits]);
 
     return (
       <Animated.View style={[
@@ -900,7 +946,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           {pages}
         </Animated.ScrollView>
 
-        {/* Simplified page indicator dots */}
+        {/* Simplified page indicator dots - now shows dots for actual habits */}
         <View style={{
           flexDirection: 'row',
           justifyContent: 'center',
@@ -911,7 +957,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           right: 0,
           gap: 6,
         }}>
-          {[0, 1, 2].map((index) => (
+          {habits.map((_, index) => (
             <DotComponent key={index} index={index} />
           ))}
         </View>
