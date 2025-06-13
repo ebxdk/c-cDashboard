@@ -89,7 +89,7 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
   );
 };
 
-const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
+const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Partial<Habit>) => void }> = ({ habit, updateHabit }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
@@ -121,6 +121,16 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 150);
+
+    // Update habit progress
+    if (habit.goal !== 'infinite') {
+      // Increment by 1 unit, but don't exceed the goal
+      const newCurrent = Math.min(habit.current + 1, habit.goal);
+      updateHabit(habit.id, { current: newCurrent });
+    } else {
+      // For infinite goals, just increment
+      updateHabit(habit.id, { current: habit.current + 1 });
+    }
 
     // Bouncy ring animation
     Animated.sequence([
@@ -266,7 +276,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
 export default function HabitsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
-  const { habits } = useHabits();
+  const { habits, updateHabit } = useHabits();
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
@@ -421,7 +431,7 @@ export default function HabitsScreen() {
             },
           ]}
         >
-          <MainRing habit={currentHabit} />
+          <MainRing habit={currentHabit} updateHabit={updateHabit} />
         </Animated.View>
       </PanGestureHandler>
 
