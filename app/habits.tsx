@@ -142,6 +142,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
+  const isPlayingRef = useRef(false);
   
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -151,24 +152,30 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
-  const handleRingPress = async () => {
-    // Haptic feedback
+  const handleRingPress = () => {
+    // Haptic feedback first for immediate response
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play sound with proper mobile handling
+    // Super responsive sound handling
     try {
-      // Ensure we're at the beginning of the track
+      // Force stop current playback and reset immediately
+      if (isPlayingRef.current) {
+        player.pause();
+      }
+      
+      // Reset to start and play - no await for maximum responsiveness
       player.seekTo(0);
-      await player.play();
+      player.play();
+      isPlayingRef.current = true;
+      
+      // Reset flag after sound should be done (typical click sound is very short)
+      setTimeout(() => {
+        isPlayingRef.current = false;
+      }, 200);
+      
     } catch (error) {
       console.log('Error playing sound:', error);
-      // Fallback: try to replay from beginning
-      try {
-        player.seekTo(0);
-        player.play();
-      } catch (retryError) {
-        console.log('Retry failed:', retryError);
-      }
+      isPlayingRef.current = false;
     }
   };
 
