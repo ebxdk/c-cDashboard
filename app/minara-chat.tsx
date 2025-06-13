@@ -74,7 +74,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       // Add text before Arabic
       if (match.index > lastIndex) {
         const beforeText = text.slice(lastIndex, match.index);
-        if (beforeText.trim()) {
+        if (beforeText) { // Remove .trim() to preserve spaces
           segments.push(
             <Text key={`arabic-before-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
               {beforeText}
@@ -118,7 +118,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     // Add remaining text
     if (lastIndex < text.length) {
       const remainingText = text.slice(lastIndex);
-      if (remainingText.trim()) {
+      if (remainingText) { // Remove .trim() to preserve spaces
         segments.push(
           <Text key={`arabic-remaining-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
             {remainingText}
@@ -182,7 +182,9 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       // Add text before match
       if (match.start > currentIndex) {
         const beforeText = text.slice(currentIndex, match.start);
-        segments.push(...processArabicText(beforeText));
+        if (beforeText) { // Ensure we don't skip empty strings that might contain spaces
+          segments.push(...processArabicText(beforeText));
+        }
         segmentKey += 100;
       }
       
@@ -241,7 +243,9 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     // Add remaining text
     if (currentIndex < text.length) {
       const remainingText = text.slice(currentIndex);
-      segments.push(...processArabicText(remainingText));
+      if (remainingText) { // Ensure we process remaining text including spaces
+        segments.push(...processArabicText(remainingText));
+      }
     }
     
     return segments.length > 0 ? segments : processArabicText(text);
