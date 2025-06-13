@@ -105,6 +105,7 @@ const MainRing: React.FC<{
   const ringScale = useRef(new Animated.Value(1)).current;
   const emojiScale = useRef(new Animated.Value(1)).current;
   const emojiRotation = useRef(new Animated.Value(0)).current;
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
 
   let progress = 0;
   const wasComplete = useRef(false);
@@ -115,15 +116,38 @@ const MainRing: React.FC<{
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
-  // Check if habit just completed
+  // Check if habit just completed and start pulse animation
   useEffect(() => {
     if (habit.goal !== 'infinite' && progress >= 1 && !wasComplete.current) {
       wasComplete.current = true;
       triggerCelebration();
+      // Start continuous pulse animation
+      startPulseAnimation();
     } else if (progress < 1) {
       wasComplete.current = false;
+      // Stop pulse animation
+      pulseAnimation.stopAnimation();
+      pulseAnimation.setValue(1);
     }
   }, [progress]);
+
+  const startPulseAnimation = () => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimation, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+  };
 
   const triggerCelebration = () => {
     setShowCelebration(true);
@@ -268,7 +292,12 @@ const MainRing: React.FC<{
   return (
     <TouchableOpacity onPress={handleRingPress} activeOpacity={0.8} style={styles.mainRingContainer}>
       <Animated.View style={[
-        { transform: [{ scale: ringScale }] },
+        { 
+          transform: [
+            { scale: ringScale },
+            ...(progress >= 1 ? [{ scale: pulseAnimation }] : [])
+          ] 
+        },
         progress >= 1 && {
           shadowColor: habit.color,
           shadowOffset: {
