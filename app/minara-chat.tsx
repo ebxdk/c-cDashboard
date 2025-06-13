@@ -31,332 +31,128 @@ interface ChatHistory {
   timestamp: string;
 }
 
-// Function to format AI responses with markdown-like styling in real-time
+// Clean ChatGPT-style formatting for AI responses
 const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGenerating: boolean) => {
   if (!text) return null;
   
-  // Debounce complex processing during streaming to prevent freezing
-  const isStreaming = isGenerating && text.length < 500; // Only apply optimization during initial streaming
-  
-  // Process text line by line to maintain proper formatting
-  const lines = text.split('\n');
+  // Split text into paragraphs for proper spacing
+  const paragraphs = text.split(/\n\s*\n/);
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Optimized Arabic processing with reduced complexity
-  const processTextWithArabic = (text: string, startKey: number, colors: any, isDarkMode: boolean): React.ReactElement[] => {
+  // Process Arabic text with clean highlighting
+  const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = startKey;
+    let segmentKey = 0;
+    
+    // Simple Arabic detection - just for highlighting, not complex processing
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
     let lastIndex = 0;
-
-    // Strict regex: only match segments that are entirely Arabic (no English, no numbers, no Latin punctuation)
-    const arabicRegex = /([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF،؟\.\s]+)/g;
     let match;
-
-    // During streaming, render as plain text for performance
-    if (isStreaming && text.length > 200) {
-      segments.push(
-        <Text key={segmentKey++} style={{
-          fontSize: 18,
-          color: colors.primaryText,
-          fontFamily: 'System',
-        }}>
-          {text}
-        </Text>
-      );
-      return segments;
-    }
-
+    
     while ((match = arabicRegex.exec(text)) !== null) {
-      // Add any non-Arabic text before this match
+      // Add text before Arabic
       if (match.index > lastIndex) {
         const beforeText = text.slice(lastIndex, match.index);
         if (beforeText.trim()) {
           segments.push(
-            <Text key={segmentKey++} style={{
-              fontSize: 18,
-              color: colors.primaryText,
-              fontFamily: 'System',
-            }}>
+            <Text key={segmentKey++} style={{ color: colors.primaryText }}>
               {beforeText}
             </Text>
           );
         }
       }
-      const arabicText = match[0].trim();
-      // Only wrap if the segment is strictly Arabic (no English, no numbers, no Latin punctuation)
-      if (
-        arabicText &&
-        /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF،؟\.\s]+$/.test(arabicText)
-      ) {
-        segments.push(
-          <View
-            key={segmentKey++}
-            style={{
-              backgroundColor: isDarkMode
-                ? 'rgba(30, 41, 59, 0.55)'
-                : 'rgba(203, 213, 225, 0.45)',
-              borderRadius: 18,
-              paddingHorizontal: 24,
-              paddingVertical: 18,
-              marginVertical: 12,
-              marginHorizontal: 0,
-              borderWidth: 2,
-              borderColor: isDarkMode ? '#0fffc3' : '#6366f1',
-              shadowColor: isDarkMode ? '#0fffc3' : '#6366f1',
-              shadowOpacity: 0.18,
-              shadowRadius: 16,
-              alignSelf: 'stretch',
-              overflow: 'hidden',
-              minWidth: '100%',
-              flexDirection: 'row',
-              alignItems: 'center',
-              position: 'relative',
-              maxWidth: '100%',
-            }}
-          >
-            {/* Futuristic accent bar */}
-            <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: 6,
-                height: '100%',
-                backgroundColor: isDarkMode ? '#0fffc3' : '#6366f1',
-                opacity: 0.7,
-                borderTopLeftRadius: 18,
-                borderBottomLeftRadius: 18,
-              }}
-            />
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 20,
-                fontWeight: '700',
-                color: isDarkMode ? '#fff' : '#18181b',
-                textAlign: 'right',
-                lineHeight: 32,
-                letterSpacing: 0.5,
-                writingDirection: 'rtl',
-                textShadowColor: isDarkMode ? '#0fffc3' : '#6366f1',
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 8,
-                paddingLeft: 16,
-                paddingRight: 0,
-                flexShrink: 1,
-                flexWrap: 'wrap',
-                minWidth: 0,
-                maxWidth: '100%',
-              }}
-              numberOfLines={0}
-              ellipsizeMode="tail"
-            >
-              {arabicText}
-            </Text>
-          </View>
-        );
-      } else if (arabicText) {
-        // If not pure Arabic, render as normal text
-        segments.push(
-          <Text key={segmentKey++} style={{
-            fontSize: 18,
-            color: colors.primaryText,
-            fontFamily: 'System',
-          }}>
-            {arabicText}
-          </Text>
-        );
-      }
+      
+      // Add Arabic text with highlighting
+      segments.push(
+        <Text
+          key={segmentKey++}
+          style={{
+            color: isDarkMode ? '#10b981' : '#059669',
+            fontWeight: '600',
+            backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
+            paddingHorizontal: 4,
+            paddingVertical: 2,
+            borderRadius: 4,
+          }}
+        >
+          {match[0]}
+        </Text>
+      );
+      
       lastIndex = match.index + match[0].length;
     }
-    // Add any remaining non-Arabic text
+    
+    // Add remaining text
     if (lastIndex < text.length) {
       const remainingText = text.slice(lastIndex);
       if (remainingText.trim()) {
         segments.push(
-          <Text key={segmentKey++} style={{
-            fontSize: 18,
-            color: colors.primaryText,
-            fontFamily: 'System',
-          }}>
+          <Text key={segmentKey++} style={{ color: colors.primaryText }}>
             {remainingText}
           </Text>
         );
       }
     }
-    // If no segments found, return the original text
-    if (segments.length === 0) {
-      segments.push(
-        <Text key={segmentKey++} style={{
-          fontSize: 18,
-          color: colors.primaryText,
-          fontFamily: 'System',
-        }}>
-          {text}
-        </Text>
-      );
-    }
-    return segments;
+    
+    return segments.length > 0 ? segments : [
+      <Text key={0} style={{ color: colors.primaryText }}>{text}</Text>
+    ];
   };
   
-  lines.forEach((line, lineIndex) => {
-    if (!line.trim()) {
-      // Empty line - add minimal spacing (ChatGPT style)
-      if (lineIndex > 0 && lineIndex < lines.length - 1) {
-        formattedElements.push(
-          <Text key={elementKey++} style={{ fontSize: 18, lineHeight: 8 }}>{'\n'}</Text>
-        );
-      }
-      return;
-    }
+  // Process inline markdown formatting
+  const processInlineFormatting = (text: string): React.ReactElement[] => {
+    const segments: React.ReactElement[] = [];
+    let segmentKey = 0;
+    let currentIndex = 0;
     
-    // Check for headers (ChatGPT-like sizing)
-    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    if (headerMatch) {
-      const level = headerMatch[1].length;
-      const headerText = headerMatch[2];
-      
-      // ChatGPT-like header sizing with enhanced styling - BIGGER SIZES
-      let fontSize = 18;
-      let fontWeight: '600' | '700' | '800' = '600';
-      let marginTop = 20;
-      let marginBottom = 12;
-      let letterSpacing = 0;
-      
-      switch (level) {
-        case 1:
-          fontSize = 32; // Bigger, more prominent
-          fontWeight = '800';
-          marginTop = 24;
-          marginBottom = 16;
-          letterSpacing = -0.5;
-          break;
-        case 2:
-          fontSize = 28; // Bigger H2
-          fontWeight = '700';
-          marginTop = 22;
-          marginBottom = 14;
-          letterSpacing = -0.3;
-          break;
-        case 3:
-          fontSize = 24; // Bigger H3
-          fontWeight = '700';
-          marginTop = 20;
-          marginBottom = 12;
-          letterSpacing = -0.2;
-          break;
-        case 4:
-          fontSize = 22; // Bigger H4
-          fontWeight = '600';
-          marginTop = 18;
-          marginBottom = 10;
-          letterSpacing = -0.1;
-          break;
-        default:
-          fontSize = 20; // Bigger H5/H6
-          fontWeight = '600';
-          marginTop = 16;
-          marginBottom = 8;
-      }
-      
-      // Process header text for Arabic highlighting
-      const headerElements = processTextWithArabic(headerText, 0, colors, isDarkMode);
-      
-      formattedElements.push(
-        <Text key={elementKey++} style={{
-          fontSize,
-          fontWeight,
-          color: colors.primaryText,
-          marginTop: lineIndex === 0 ? 0 : marginTop,
-          marginBottom,
-          fontFamily: 'System',
-          lineHeight: fontSize * 1.3,
-          letterSpacing,
-          // Add subtle glow effect for headers
-          textShadowColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
-        }}>
-          {headerElements}
-        </Text>
-      );
-      return; // IMPORTANT: Return here to prevent duplicate processing
-    }
+    // Find all markdown patterns
+    const patterns = [
+      { regex: /\*\*([^*\n]+)\*\*/g, type: 'bold' },
+      { regex: /\*([^*\n]+)\*/g, type: 'italic' },
+      { regex: /`([^`\n]+)`/g, type: 'code' },
+      { regex: /~~([^~\n]+)~~/g, type: 'strikethrough' },
+    ];
     
-    // Process regular text with inline formatting - optimized for streaming
-    const processInlineFormatting = (text: string): React.ReactElement[] => {
-      const segments: React.ReactElement[] = [];
-      let segmentKey = 0;
-      let currentIndex = 0;
-      
-      // Simplified processing during streaming to prevent freeze
-      if (isStreaming && text.length > 150) {
-        // During streaming, use basic Arabic processing without complex formatting
-        return processTextWithArabic(text, 0, colors, isDarkMode);
+    const matches: Array<{
+      start: number;
+      end: number;
+      content: string;
+      type: string;
+    }> = [];
+    
+    patterns.forEach(pattern => {
+      let match;
+      const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+      while ((match = regex.exec(text)) !== null) {
+        matches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          content: match[1],
+          type: pattern.type
+        });
+      }
+    });
+    
+    // Sort matches by position
+    matches.sort((a, b) => a.start - b.start);
+    
+    // Process text with formatting
+    matches.forEach(match => {
+      // Add text before match
+      if (match.start > currentIndex) {
+        const beforeText = text.slice(currentIndex, match.start);
+        segments.push(...processArabicText(beforeText));
+        segmentKey += 10;
       }
       
-      // Find all formatting patterns with enhanced regex
-      const patterns = [
-        { regex: /\*\*([^*]+)\*\*/g, type: 'bold' },
-        { regex: /\*([^*]+)\*/g, type: 'italic' },
-        { regex: /`([^`]+)`/g, type: 'code' },
-        { regex: /~~([^~]+)~~/g, type: 'strikethrough' },
-        { regex: /__([^_]+)__/g, type: 'underline' },
-      ];
-      
-      const matches: Array<{
-        start: number;
-        end: number;
-        content: string;
-        type: string;
-      }> = [];
-      
-      // Limit pattern matching during heavy processing
-      const maxMatches = isStreaming ? 5 : 50;
-      let matchCount = 0;
-      
-      patterns.forEach(pattern => {
-        if (matchCount >= maxMatches) return;
-        
-        let match;
-        const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
-        while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
-          matches.push({
-            start: match.index,
-            end: match.index + match[0].length,
-            content: match[1],
-            type: pattern.type
-          });
-          matchCount++;
-        }
-      });
-      
-      // Sort matches by position
-      matches.sort((a, b) => a.start - b.start);
-      
-      // Process matches and text between them
-      matches.forEach(match => {
-        // Add text before match
-        if (match.start > currentIndex) {
-          const beforeText = text.slice(currentIndex, match.start);
-          segments.push(...processTextWithArabic(beforeText, segmentKey, colors, isDarkMode));
-          segmentKey += 10; // Leave room for Arabic segments
-        }
-      
-      // Add formatted match with enhanced styling
+      // Add formatted text
       switch (match.type) {
         case 'bold':
           segments.push(
             <Text key={segmentKey++} style={{
-              fontWeight: '700',
-              fontSize: 18, // Bigger bold text
+              fontWeight: 'bold',
               color: colors.primaryText,
-              fontFamily: 'System',
-              // Add subtle glow for bold text
-              textShadowColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-              textShadowOffset: { width: 0, height: 0.5 },
-              textShadowRadius: 1,
             }}>
               {match.content}
             </Text>
@@ -366,10 +162,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           segments.push(
             <Text key={segmentKey++} style={{
               fontStyle: 'italic',
-              fontSize: 18, // Bigger italic text
-              color: isDarkMode ? '#E8E8E8' : '#2C2C2C',
-              fontFamily: 'System',
-              letterSpacing: 0.2,
+              color: colors.primaryText,
             }}>
               {match.content}
             </Text>
@@ -379,19 +172,12 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           segments.push(
             <Text key={segmentKey++} style={{
               fontFamily: 'Courier',
-              fontSize: 17, // Bigger code text
-              color: isDarkMode ? '#FF6B9D' : '#E91E63',
-              backgroundColor: isDarkMode ? 'rgba(255, 107, 157, 0.15)' : 'rgba(233, 30, 99, 0.08)',
+              fontSize: 14,
+              color: isDarkMode ? '#f472b6' : '#ec4899',
+              backgroundColor: isDarkMode ? 'rgba(244, 114, 182, 0.1)' : 'rgba(236, 72, 153, 0.1)',
               paddingHorizontal: 6,
-              paddingVertical: 3,
-              borderRadius: 6,
-              // Add subtle border and shadow
-              borderWidth: 1,
-              borderColor: isDarkMode ? 'rgba(255, 107, 157, 0.3)' : 'rgba(233, 30, 99, 0.2)',
-              shadowColor: isDarkMode ? '#FF6B9D' : '#E91E63',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.2,
-              shadowRadius: 2,
+              paddingVertical: 2,
+              borderRadius: 4,
             }}>
               {match.content}
             </Text>
@@ -401,21 +187,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           segments.push(
             <Text key={segmentKey++} style={{
               textDecorationLine: 'line-through',
-              fontSize: 18, // Bigger strikethrough text
-              color: isDarkMode ? '#888888' : '#666666',
-              fontFamily: 'System',
-            }}>
-              {match.content}
-            </Text>
-          );
-          break;
-        case 'underline':
-          segments.push(
-            <Text key={segmentKey++} style={{
-              textDecorationLine: 'underline',
-              fontSize: 18, // Bigger underline text
-              color: isDarkMode ? '#64B5F6' : '#1976D2',
-              fontFamily: 'System',
+              color: isDarkMode ? '#9ca3af' : '#6b7280',
             }}>
               {match.content}
             </Text>
@@ -424,40 +196,165 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       }
       
       currentIndex = match.end;
-      });
+    });
+    
+    // Add remaining text
+    if (currentIndex < text.length) {
+      const remainingText = text.slice(currentIndex);
+      segments.push(...processArabicText(remainingText));
+    }
+    
+    return segments.length > 0 ? segments : processArabicText(text);
+  };
+  
+  paragraphs.forEach((paragraph, paragraphIndex) => {
+    if (!paragraph.trim()) return;
+    
+    const lines = paragraph.split('\n');
+    
+    lines.forEach((line, lineIndex) => {
+      if (!line.trim()) return;
       
-      // Add remaining text
-      if (currentIndex < text.length) {
-        const remainingText = text.slice(currentIndex);
-        segments.push(...processTextWithArabic(remainingText, segmentKey, colors, isDarkMode));
+      // Handle headers
+      const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headerMatch) {
+        const level = headerMatch[1].length;
+        const headerText = headerMatch[2];
+        
+        let fontSize = 16;
+        let fontWeight: 'normal' | 'bold' | '600' | '700' | '800' = '600';
+        let marginTop = 16;
+        let marginBottom = 8;
+        
+        switch (level) {
+          case 1:
+            fontSize = 24;
+            fontWeight = '800';
+            marginTop = 20;
+            marginBottom = 12;
+            break;
+          case 2:
+            fontSize = 20;
+            fontWeight = '700';
+            marginTop = 18;
+            marginBottom = 10;
+            break;
+          case 3:
+            fontSize = 18;
+            fontWeight = '700';
+            marginTop = 16;
+            marginBottom = 8;
+            break;
+          default:
+            fontSize = 16;
+            fontWeight = '600';
+            marginTop = 14;
+            marginBottom = 6;
+        }
+        
+        formattedElements.push(
+          <View key={elementKey++} style={{ marginTop, marginBottom }}>
+            <Text style={{
+              fontSize,
+              fontWeight,
+              color: colors.primaryText,
+              lineHeight: fontSize * 1.3,
+            }}>
+              {processInlineFormatting(headerText)}
+            </Text>
+          </View>
+        );
+        return;
       }
       
-      return segments;
-    };
-    
-    // Process the line
-    const lineElements = processInlineFormatting(line);
-    
-    formattedElements.push(
-      <Text key={elementKey++} style={{
-        fontSize: 18, // Bigger body text size (was 16px)
-        lineHeight: 28, // Better line spacing for bigger text (was 26px)
-        fontFamily: 'System',
-        marginBottom: 4, // Tighter spacing between paragraphs
-        letterSpacing: 0.1, // Subtle letter spacing for better readability
-      }}>
-        {lineElements}
-      </Text>
-    );
+      // Handle bullet points
+      const bulletMatch = line.match(/^[\s]*[-*+]\s+(.+)$/);
+      if (bulletMatch) {
+        const bulletText = bulletMatch[1];
+        formattedElements.push(
+          <View key={elementKey++} style={{ 
+            flexDirection: 'row', 
+            marginVertical: 2,
+            paddingLeft: 16,
+          }}>
+            <Text style={{ 
+              color: colors.primaryText, 
+              marginRight: 8,
+              lineHeight: 22,
+            }}>•</Text>
+            <Text style={{
+              flex: 1,
+              fontSize: 16,
+              lineHeight: 22,
+              color: colors.primaryText,
+            }}>
+              {processInlineFormatting(bulletText)}
+            </Text>
+          </View>
+        );
+        return;
+      }
+      
+      // Handle numbered lists
+      const numberedMatch = line.match(/^[\s]*(\d+)\.\s+(.+)$/);
+      if (numberedMatch) {
+        const number = numberedMatch[1];
+        const listText = numberedMatch[2];
+        formattedElements.push(
+          <View key={elementKey++} style={{ 
+            flexDirection: 'row', 
+            marginVertical: 2,
+            paddingLeft: 16,
+          }}>
+            <Text style={{ 
+              color: colors.primaryText, 
+              marginRight: 8,
+              lineHeight: 22,
+              minWidth: 20,
+            }}>{number}.</Text>
+            <Text style={{
+              flex: 1,
+              fontSize: 16,
+              lineHeight: 22,
+              color: colors.primaryText,
+            }}>
+              {processInlineFormatting(listText)}
+            </Text>
+          </View>
+        );
+        return;
+      }
+      
+      // Regular paragraph text
+      formattedElements.push(
+        <Text key={elementKey++} style={{
+          fontSize: 16,
+          lineHeight: 22,
+          color: colors.primaryText,
+          marginBottom: lineIndex === lines.length - 1 && paragraphIndex < paragraphs.length - 1 ? 12 : 0,
+        }}>
+          {processInlineFormatting(line)}
+        </Text>
+      );
+    });
   });
   
   return (
-    <View style={{ 
-      flex: 1,
-      // Add subtle background gradient effect
-      backgroundColor: 'transparent',
-    }}>
+    <View style={{ flex: 1 }}>
       {formattedElements}
+      {isGenerating && (
+        <Animated.View style={{ 
+          opacity: cursorAnimation,
+          marginTop: 8,
+        }}>
+          <View style={{
+            width: 8,
+            height: 20,
+            backgroundColor: colors.primaryText,
+            opacity: 0.7,
+          }} />
+        </Animated.View>
+      )}
     </View>
   );
 };
