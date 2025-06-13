@@ -3,18 +3,18 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Easing,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Animated,
+  Easing,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface Message {
@@ -48,43 +48,85 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     // Skip processing for very short text during streaming to improve performance
     if (text.length < 10 && isGenerating) {
       return [
-        <Text key={`arabic-simple-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>
+        <Text key={`arabic-simple-${elementKey}-${segmentKey}`} style={{ 
+          color: colors.primaryText,
+          width: '100%',
+          flexShrink: 1,
+        }}>
           {text}
         </Text>
       ];
     }
     
-    // Optimized Arabic detection - simpler regex for better performance
-    const arabicRegex = /[\u0600-\u06FF\s]+/g; // Include spaces to capture complete Arabic phrases
+    // Check if text actually contains Arabic characters before processing
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    
+    // If no Arabic text, return as-is to preserve spacing
+    if (!hasArabic) {
+      return [
+        <Text key={`no-arabic-${elementKey}-${segmentKey}`} style={{ 
+          color: colors.primaryText,
+          width: '100%',
+          flexShrink: 1,
+        }}>
+          {text}
+        </Text>
+      ];
+    }
+    
+    // Improved Arabic detection - capture Arabic text with surrounding punctuation and brackets
+    // This regex captures: optional opening brackets/parentheses + Arabic characters + optional closing brackets/parentheses
+    const arabicRegex = /[\(\[\{\"\']*[\u0600-\u06FF][\u0600-\u06FF\s\u060C\u061B\u061F\u0640\u064B-\u065F\u0670\u06D6-\u06ED\u06F0-\u06F9\u0750-\u077F\(\)\[\]\{\}\"\']*[\)\]\}\"\']*|[\u0600-\u06FF]+/g;
     let lastIndex = 0;
     let match;
+    let foundMatches = [];
+    
+    // Collect all matches first to avoid overlapping
+    while ((match = arabicRegex.exec(text)) !== null) {
+      foundMatches.push({
+        text: match[0],
+        start: match.index,
+        end: match.index + match[0].length
+      });
+    }
+    
+    // Reset regex
+    arabicRegex.lastIndex = 0;
     
     // Limit Arabic processing during active generation to improve speed
     const shouldHighlightArabic = !isGenerating || text.length > 50;
     
     if (!shouldHighlightArabic) {
       return [
-        <Text key={`arabic-basic-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>
+        <Text key={`arabic-basic-${elementKey}-${segmentKey}`} style={{ 
+          color: colors.primaryText,
+          width: '100%',
+          flexShrink: 1,
+        }}>
           {text}
         </Text>
       ];
     }
     
-    while ((match = arabicRegex.exec(text)) !== null) {
-      // Add text before Arabic
-      if (match.index > lastIndex) {
-        const beforeText = text.slice(lastIndex, match.index);
-        if (beforeText.trim()) {
+    foundMatches.forEach((match) => {
+      // Add text before Arabic - PRESERVE SPACES
+      if (match.start > lastIndex) {
+        const beforeText = text.slice(lastIndex, match.start);
+        if (beforeText) { // Changed from beforeText.trim() to preserve spaces
           segments.push(
-            <Text key={`arabic-before-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
+            <Text key={`arabic-before-${elementKey}-${segmentKey++}`} style={{ 
+              color: colors.primaryText,
+              width: '100%',
+              flexShrink: 1,
+            }}>
               {beforeText}
             </Text>
           );
         }
       }
       
-      // Add Arabic text with enhanced styling and line breaks
-      const arabicText = match[0].trim();
+      // Add Arabic text with enhanced styling and proper text wrapping
+      const arabicText = match.text.trim();
       if (arabicText) {
         segments.push(
           <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
@@ -95,6 +137,9 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             borderRadius: 8,
             borderLeftWidth: 3,
             borderLeftColor: '#87CEEB', // Sky blue color from screenshot
+            width: '100%', // Ensure full width
+            maxWidth: '100%', // Prevent overflow
+            alignSelf: 'stretch', // Stretch to container width
           }}>
             <Text
               style={{
@@ -104,7 +149,10 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
                 lineHeight: 26,
                 textAlign: 'right', // RTL alignment for Arabic
                 fontFamily: 'System',
+                width: '100%', // Take full width
+                flexShrink: 1, // Allow shrinking if needed
               }}
+              numberOfLines={0} // Allow unlimited lines
             >
               {arabicText}
             </Text>
@@ -112,15 +160,19 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         );
       }
       
-      lastIndex = match.index + match[0].length;
-    }
+      lastIndex = match.end;
+    });
     
-    // Add remaining text
+    // Add remaining text - PRESERVE SPACES
     if (lastIndex < text.length) {
       const remainingText = text.slice(lastIndex);
-      if (remainingText.trim()) {
+      if (remainingText) { // Changed from remainingText.trim() to preserve spaces
         segments.push(
-          <Text key={`arabic-remaining-${elementKey}-${segmentKey++}`} style={{ color: colors.primaryText }}>
+          <Text key={`arabic-remaining-${elementKey}-${segmentKey++}`} style={{ 
+            color: colors.primaryText,
+            width: '100%',
+            flexShrink: 1,
+          }}>
             {remainingText}
           </Text>
         );
@@ -128,7 +180,11 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     }
     
     return segments.length > 0 ? segments : [
-      <Text key={`arabic-fallback-${elementKey}-${segmentKey}`} style={{ color: colors.primaryText }}>{text}</Text>
+      <Text key={`arabic-fallback-${elementKey}-${segmentKey}`} style={{ 
+        color: colors.primaryText,
+        width: '100%',
+        flexShrink: 1,
+      }}>{text}</Text>
     ];
   };
   
@@ -174,16 +230,23 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       }
     });
     
+    // If no formatting patterns found, return text as-is to preserve spacing
+    if (matches.length === 0) {
+      return processArabicText(text);
+    }
+    
     // Sort matches by position
     matches.sort((a, b) => a.start - b.start);
     
     // Process text with formatting
     matches.forEach(match => {
-      // Add text before match
+      // Add text before match - PRESERVE SPACES
       if (match.start > currentIndex) {
         const beforeText = text.slice(currentIndex, match.start);
-        segments.push(...processArabicText(beforeText));
-        segmentKey += 100;
+        if (beforeText) { // Don't trim to preserve spaces
+          segments.push(...processArabicText(beforeText));
+          segmentKey += 100;
+        }
       }
       
       // Add formatted text
@@ -193,6 +256,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             <Text key={`bold-${segmentKey++}`} style={{
               fontWeight: 'bold',
               color: colors.primaryText,
+              flexShrink: 1,
             }}>
               {match.content}
             </Text>
@@ -203,6 +267,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             <Text key={`italic-${segmentKey++}`} style={{
               fontStyle: 'italic',
               color: colors.primaryText,
+              flexShrink: 1,
             }}>
               {match.content}
             </Text>
@@ -218,6 +283,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               paddingHorizontal: 6,
               paddingVertical: 2,
               borderRadius: 4,
+              flexShrink: 1,
             }}>
               {match.content}
             </Text>
@@ -228,6 +294,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             <Text key={`strike-${segmentKey++}`} style={{
               textDecorationLine: 'line-through',
               color: isDarkMode ? '#9ca3af' : '#6b7280',
+              flexShrink: 1,
             }}>
               {match.content}
             </Text>
@@ -238,10 +305,12 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       currentIndex = match.end;
     });
     
-    // Add remaining text
+    // Add remaining text - PRESERVE SPACES
     if (currentIndex < text.length) {
       const remainingText = text.slice(currentIndex);
-      segments.push(...processArabicText(remainingText));
+      if (remainingText) { // Don't trim to preserve spaces
+        segments.push(...processArabicText(remainingText));
+      }
     }
     
     return segments.length > 0 ? segments : processArabicText(text);
@@ -293,12 +362,14 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         }
         
         formattedElements.push(
-          <View key={`header-${elementKey++}`} style={{ marginTop, marginBottom }}>
+          <View key={`header-${elementKey++}`} style={{ marginTop, marginBottom, width: '100%' }}>
             <Text style={{
               fontSize,
               fontWeight,
               color: colors.primaryText,
               lineHeight: fontSize * 1.3,
+              width: '100%',
+              flexShrink: 1,
             }}>
               {processInlineFormatting(headerText)}
             </Text>
@@ -308,7 +379,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       }
       
       // Handle bullet points
-      const bulletMatch = line.match(/^[\s]*[-*+]\s+(.+)$/);
+      const bulletMatch = line.match(/^[\s]*[-*•]\s+(.+)$/);
       if (bulletMatch) {
         const bulletText = bulletMatch[1];
         formattedElements.push(
@@ -316,6 +387,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             flexDirection: 'row', 
             marginVertical: 2,
             paddingLeft: 16,
+            width: '100%',
           }}>
             <Text style={{ 
               color: colors.primaryText, 
@@ -327,6 +399,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               fontSize: 16,
               lineHeight: 22,
               color: colors.primaryText,
+              flexShrink: 1,
             }}>
               {processInlineFormatting(bulletText)}
             </Text>
@@ -372,6 +445,8 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           lineHeight: 22,
           color: colors.primaryText,
           marginBottom: lineIndex === lines.length - 1 && paragraphIndex < paragraphs.length - 1 ? 12 : 0,
+          width: '100%',
+          flexShrink: 1,
         }}>
           {processInlineFormatting(line)}
         </Text>
@@ -380,7 +455,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   });
   
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, width: '100%', maxWidth: '100%' }}>
       {formattedElements}
     </View>
   );
@@ -1327,6 +1402,7 @@ export default function MinaraChatScreen() {
                   {
                     backgroundColor: 'transparent',
                     paddingHorizontal: 0,
+                    maxWidth: '100%',
                   },
                   messageAnimation && {
                     transform: [
@@ -1350,6 +1426,8 @@ export default function MinaraChatScreen() {
                     {
                       paddingHorizontal: 0,
                       paddingVertical: 0,
+                      maxWidth: '100%',
+                      flexShrink: 1,
                     }
                   ]}>
                     {formatAIResponse(msg.text, colors, isDarkMode, isGenerating, cursorAnimation)}
@@ -1830,9 +1908,12 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 16,
     paddingHorizontal: 0,
+    maxWidth: '100%',
   },
   aiMessageText: {
     width: '100%',
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   stopButton: {
     width: 32,
