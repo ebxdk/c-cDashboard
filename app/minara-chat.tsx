@@ -32,7 +32,7 @@ interface ChatHistory {
 }
 
 // Clean ChatGPT-style formatting for AI responses
-const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGenerating: boolean) => {
+const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGenerating: boolean, cursorAnimation: Animated.Value) => {
   if (!text) return null;
   
   // Split text into paragraphs for proper spacing
@@ -363,6 +363,7 @@ export default function MinaraChatScreen() {
   const router = useRouter();
   const systemColorScheme = useColorScheme();
   const isDarkMode = systemColorScheme === 'dark';
+  const [cursorAnimation] = useState(new Animated.Value(1)); // Move this to the top
   const [message, setMessage] = useState('');
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [sideMenuAnimation] = useState(new Animated.Value(340));
@@ -375,7 +376,6 @@ export default function MinaraChatScreen() {
   const [allChats, setAllChats] = useState<{[key: string]: Message[]}>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
-  const [cursorAnimation] = useState(new Animated.Value(1));
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -1325,7 +1325,7 @@ export default function MinaraChatScreen() {
                       paddingVertical: 0,
                     }
                   ]}>
-                    {formatAIResponse(msg.text, colors, isDarkMode, isGenerating)}
+                    {formatAIResponse(msg.text, colors, isDarkMode, isGenerating, cursorAnimation)}
                     {isGenerating && currentGenerationId === msg.id.toString() && (
                       <Animated.View style={{ 
                         opacity: cursorAnimation,
