@@ -108,7 +108,7 @@ const MainRing: React.FC<{
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
   let progress = 0;
-  const wasComplete = useRef(false);
+  const wasComplete = useRef<{[key: string]: boolean}>({});
   if (habit.goal !== 'infinite') {
     progress = Math.min(habit.current / habit.goal, 1);
   }
@@ -118,18 +118,27 @@ const MainRing: React.FC<{
 
   // Check if habit just completed and start pulse animation
   useEffect(() => {
-    if (habit.goal !== 'infinite' && progress >= 1 && !wasComplete.current) {
-      wasComplete.current = true;
+    const habitWasComplete = wasComplete.current[habit.id] || false;
+    
+    if (habit.goal !== 'infinite' && progress >= 1 && !habitWasComplete) {
+      wasComplete.current[habit.id] = true;
       triggerCelebration();
       // Start continuous pulse animation
       startPulseAnimation();
-    } else if (progress < 1) {
-      wasComplete.current = false;
+    } else if (progress < 1 && habitWasComplete) {
+      wasComplete.current[habit.id] = false;
       // Stop pulse animation
       pulseAnimation.stopAnimation();
       pulseAnimation.setValue(1);
+    } else if (progress >= 1 && habitWasComplete) {
+      // Already complete, just start pulse animation without celebration
+      startPulseAnimation();
+    } else if (progress < 1) {
+      // Not complete, stop pulse animation
+      pulseAnimation.stopAnimation();
+      pulseAnimation.setValue(1);
     }
-  }, [progress]);
+  }, [progress, habit.id]);
 
   const startPulseAnimation = () => {
     const pulse = Animated.loop(
