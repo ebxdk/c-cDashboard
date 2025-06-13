@@ -176,6 +176,20 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
         />
       </Svg>
       
+      {/* Centered wave emoji in the middle of the ring */}
+      <View style={{
+        position: 'absolute',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: MAIN_RING_SIZE,
+        height: MAIN_RING_SIZE,
+      }}>
+        <Text style={{
+          fontSize: 64,
+          textAlign: 'center',
+        }}>👋</Text>
+      </View>
+
       {/* Arrow indicator at progress point */}
       {progress > 0 && (
         <View 
