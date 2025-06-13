@@ -43,7 +43,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   // Process Arabic text with clean highlighting
   const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = 0;
+    let segmentKey = elementKey * 1000; // Use elementKey as base to ensure uniqueness
     
     // Simple Arabic detection - just for highlighting, not complex processing
     const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
@@ -56,7 +56,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         const beforeText = text.slice(lastIndex, match.index);
         if (beforeText.trim()) {
           segments.push(
-            <Text key={segmentKey++} style={{ color: colors.primaryText }}>
+            <Text key={`arabic-before-${segmentKey++}`} style={{ color: colors.primaryText }}>
               {beforeText}
             </Text>
           );
@@ -66,7 +66,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       // Add Arabic text with highlighting
       segments.push(
         <Text
-          key={segmentKey++}
+          key={`arabic-text-${segmentKey++}`}
           style={{
             color: isDarkMode ? '#10b981' : '#059669',
             fontWeight: '600',
@@ -88,7 +88,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       const remainingText = text.slice(lastIndex);
       if (remainingText.trim()) {
         segments.push(
-          <Text key={segmentKey++} style={{ color: colors.primaryText }}>
+          <Text key={`arabic-remaining-${segmentKey++}`} style={{ color: colors.primaryText }}>
             {remainingText}
           </Text>
         );
@@ -96,14 +96,14 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     }
     
     return segments.length > 0 ? segments : [
-      <Text key={0} style={{ color: colors.primaryText }}>{text}</Text>
+      <Text key={`arabic-fallback-${elementKey}`} style={{ color: colors.primaryText }}>{text}</Text>
     ];
   };
   
   // Process inline markdown formatting
   const processInlineFormatting = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = 0;
+    let segmentKey = elementKey * 10000; // Use elementKey as base to ensure uniqueness
     let currentIndex = 0;
     
     // Find all markdown patterns
@@ -143,14 +143,14 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       if (match.start > currentIndex) {
         const beforeText = text.slice(currentIndex, match.start);
         segments.push(...processArabicText(beforeText));
-        segmentKey += 10;
+        segmentKey += 100; // Increase by larger increment to avoid conflicts
       }
       
       // Add formatted text
       switch (match.type) {
         case 'bold':
           segments.push(
-            <Text key={segmentKey++} style={{
+            <Text key={`bold-${segmentKey++}`} style={{
               fontWeight: 'bold',
               color: colors.primaryText,
             }}>
@@ -160,7 +160,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           break;
         case 'italic':
           segments.push(
-            <Text key={segmentKey++} style={{
+            <Text key={`italic-${segmentKey++}`} style={{
               fontStyle: 'italic',
               color: colors.primaryText,
             }}>
@@ -170,7 +170,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           break;
         case 'code':
           segments.push(
-            <Text key={segmentKey++} style={{
+            <Text key={`code-${segmentKey++}`} style={{
               fontFamily: 'Courier',
               fontSize: 14,
               color: isDarkMode ? '#f472b6' : '#ec4899',
@@ -185,7 +185,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           break;
         case 'strikethrough':
           segments.push(
-            <Text key={segmentKey++} style={{
+            <Text key={`strike-${segmentKey++}`} style={{
               textDecorationLine: 'line-through',
               color: isDarkMode ? '#9ca3af' : '#6b7280',
             }}>
@@ -253,7 +253,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         }
         
         formattedElements.push(
-          <View key={elementKey++} style={{ marginTop, marginBottom }}>
+          <View key={`header-${elementKey++}`} style={{ marginTop, marginBottom }}>
             <Text style={{
               fontSize,
               fontWeight,
@@ -272,7 +272,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       if (bulletMatch) {
         const bulletText = bulletMatch[1];
         formattedElements.push(
-          <View key={elementKey++} style={{ 
+          <View key={`bullet-${elementKey++}`} style={{ 
             flexDirection: 'row', 
             marginVertical: 2,
             paddingLeft: 16,
@@ -301,7 +301,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         const number = numberedMatch[1];
         const listText = numberedMatch[2];
         formattedElements.push(
-          <View key={elementKey++} style={{ 
+          <View key={`numbered-${elementKey++}`} style={{ 
             flexDirection: 'row', 
             marginVertical: 2,
             paddingLeft: 16,
@@ -327,7 +327,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       
       // Regular paragraph text
       formattedElements.push(
-        <Text key={elementKey++} style={{
+        <Text key={`paragraph-${elementKey++}`} style={{
           fontSize: 16,
           lineHeight: 22,
           color: colors.primaryText,
