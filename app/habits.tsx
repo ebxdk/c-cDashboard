@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { Audio } from 'expo-audio';
+import { AudioPlayer } from 'expo-audio';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -147,14 +147,9 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   useEffect(() => {
     const loadSound = async () => {
       try {
-        const sound = await Audio.Sound.createAsync(
-          require('../assets/clicksound.mp3'),
-          { 
-            initialIsLoaded: true,
-            initialVolume: 0.6 
-          }
-        );
-        soundRef.current = sound;
+        const player = new AudioPlayer(require('../assets/clicksound.mp3'));
+        await player.load();
+        soundRef.current = player;
       } catch (error) {
         console.log('Failed to preload sound:', error);
       }
@@ -165,7 +160,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     // Cleanup on unmount
     return () => {
       if (soundRef.current) {
-        soundRef.current.unloadAsync();
+        soundRef.current.release();
       }
     };
   }, []);
@@ -184,7 +179,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     
     // Play preloaded sound instantly
     if (soundRef.current) {
-      soundRef.current.playAsync();
+      soundRef.current.play();
     }
   };
 
