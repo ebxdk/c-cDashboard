@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewContainer: {
-    marginBottom: 35,
+    marginBottom: 50,
     alignItems: 'center',
   },
   previewScrollContent: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: -80,
+    marginTop: -50,
   },
   mainRingContainer: {
     justifyContent: 'center',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 140,
-    marginTop: 15,
+    marginTop: 50,
     gap: 8,
     paddingHorizontal: 20,
   },
