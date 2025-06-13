@@ -143,6 +143,11 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
   const isPlayingRef = useRef(false);
+  
+  // Animation values for bouncy effects
+  const ringScale = useRef(new Animated.Value(1)).current;
+  const emojiScale = useRef(new Animated.Value(1)).current;
+  const emojiRotation = useRef(new Animated.Value(0)).current;
 
   let progress = 0;
   if (habit.goal !== 'infinite') {
@@ -165,6 +170,51 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 150);
+
+    // Bouncy ring animation
+    Animated.sequence([
+      Animated.timing(ringScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(ringScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Bouncy emoji animation with rotation
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(emojiScale, {
+          toValue: 1.2,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.spring(emojiScale, {
+          toValue: 1,
+          friction: 4,
+          tension: 300,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.sequence([
+        Animated.timing(emojiRotation, {
+          toValue: 15,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.spring(emojiRotation, {
+          toValue: 0,
+          friction: 5,
+          tension: 300,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
     // Super responsive sound handling
     try {
@@ -191,7 +241,8 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
 
   return (
     <TouchableOpacity onPress={handleRingPress} activeOpacity={0.8} style={styles.mainRingContainer}>
-      <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
+      <Animated.View style={{ transform: [{ scale: ringScale }] }}>
+        <Svg width={MAIN_RING_SIZE} height={MAIN_RING_SIZE}>
         {/* Background ring */}
         <Circle
           cx={MAIN_RING_SIZE / 2}
@@ -215,20 +266,30 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
           transform={`rotate(-90 ${MAIN_RING_SIZE / 2} ${MAIN_RING_SIZE / 2})`}
         />
       </Svg>
+      </Animated.View>
 
-      {/* Centered wave emoji in the middle of the ring */}
-      <View style={{
+      {/* Centered wave emoji in the middle of the ring with bouncy animation */}
+      <Animated.View style={{
         position: 'absolute',
         justifyContent: 'center',
         alignItems: 'center',
         width: MAIN_RING_SIZE,
         height: MAIN_RING_SIZE,
+        transform: [
+          { scale: emojiScale },
+          { 
+            rotate: emojiRotation.interpolate({
+              inputRange: [0, 360],
+              outputRange: ['0deg', '360deg'],
+            }),
+          },
+        ],
       }}>
         <Text style={{
           fontSize: 64,
           textAlign: 'center',
         }}>👋</Text>
-      </View>
+      </Animated.View>
 
       {/* Arrow indicator at progress point */}
       {progress > 0 && (
