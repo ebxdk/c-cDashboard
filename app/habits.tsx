@@ -154,29 +154,30 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play satisfying click sound immediately
+    // Generate satisfying click sound using Web Audio API
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('expo-av/build/Audio/recording-success.m4a'),
-        { shouldPlay: true, volume: 0.6 }
-      );
-      // Clean up sound after playing
-      setTimeout(() => {
-        sound.unloadAsync();
-      }, 500);
-    } catch (error) {
-      // Try alternative built-in sound
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAaBC17zvLAczEGJ3vN8dx/QwoUXrPo66lUFAxEnt/wvmEaBUB3yfLNeSsFJH3Q8t2NOwgUYrTq7aZXEw1Nodz1xWQcBStuzfE1bB4C' },
-          { shouldPlay: true, volume: 0.4 }
-        );
-        setTimeout(() => {
-          sound.unloadAsync();
-        }, 300);
-      } catch (fallbackError) {
-        console.log('All sound playback failed:', fallbackError);
+      if (typeof window !== 'undefined' && window.AudioContext) {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Create a short, crisp click sound
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configure for a satisfying click sound
+        oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
       }
+    } catch (error) {
+      console.log('Sound generation failed:', error);
     }
   };
 
