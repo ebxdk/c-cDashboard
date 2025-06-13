@@ -40,28 +40,15 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Optimized Arabic text processing with performance improvements
+  // Strict Arabic text processing with enforced line separation
   const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = elementKey * 1000 + Math.random() * 1000; // Add randomness to prevent duplicate keys
-    
-    // Skip processing for very short text during streaming to improve performance
-    if (text.length < 10 && isGenerating) {
-      return [
-        <Text key={`arabic-simple-${elementKey}-${segmentKey}`} style={{ 
-          color: colors.primaryText,
-          width: '100%',
-          flexShrink: 1,
-        }}>
-          {text}
-        </Text>
-      ];
-    }
+    let segmentKey = elementKey * 1000 + Math.random() * 1000;
     
     // Check if text actually contains Arabic characters before processing
     const hasArabic = /[\u0600-\u06FF]/.test(text);
     
-    // If no Arabic text, return as-is to preserve spacing
+    // If no Arabic text, return as-is
     if (!hasArabic) {
       return [
         <Text key={`no-arabic-${elementKey}-${segmentKey}`} style={{ 
@@ -74,110 +61,121 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       ];
     }
     
-    // Improved Arabic detection - capture Arabic text with surrounding punctuation and brackets
-    // This regex captures: optional opening brackets/parentheses + Arabic characters + optional closing brackets/parentheses
-    const arabicRegex = /[\(\[\{\"\']*[\u0600-\u06FF][\u0600-\u06FF\s\u060C\u061B\u061F\u0640\u064B-\u065F\u0670\u06D6-\u06ED\u06F0-\u06F9\u0750-\u077F\(\)\[\]\{\}\"\']*[\)\]\}\"\']*|[\u0600-\u06FF]+/g;
+    // More comprehensive Arabic detection with word boundaries
+    // This will capture Arabic phrases more accurately
+    const arabicRegex = /[\u0600-\u06FF][\u0600-\u06FF\s\u060C\u061B\u061F\u0640\u064B-\u065F\u0670\u06D6-\u06ED\u06F0-\u06F9\u0750-\u077F\(\)\[\]\{\}\"\']*[\u0600-\u06FF]/g;
+    
+    // Split text into segments at Arabic boundaries
     let lastIndex = 0;
     let match;
-    let foundMatches = [];
+    const segments_data = [];
     
-    // Collect all matches first to avoid overlapping
+    // Collect all Arabic matches
     while ((match = arabicRegex.exec(text)) !== null) {
-      foundMatches.push({
-        text: match[0],
-        start: match.index,
-        end: match.index + match[0].length
-      });
+      // Add any English text before this Arabic match
+      if (match.index > lastIndex) {
+        const englishText = text.slice(lastIndex, match.index).trim();
+        if (englishText) {
+          segments_data.push({
+            type: 'english',
+            text: englishText,
+            start: lastIndex,
+            end: match.index
+          });
+        }
+      }
+      
+      // Add the Arabic text
+      const arabicText = match[0].trim();
+      if (arabicText) {
+        segments_data.push({
+          type: 'arabic',
+          text: arabicText,
+          start: match.index,
+          end: match.index + match[0].length
+        });
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining English text
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex).trim();
+      if (remainingText) {
+        segments_data.push({
+          type: 'english',
+          text: remainingText,
+          start: lastIndex,
+          end: text.length
+        });
+      }
     }
     
     // Reset regex
     arabicRegex.lastIndex = 0;
     
-    // Limit Arabic processing during active generation to improve speed
-    const shouldHighlightArabic = !isGenerating || text.length > 50;
-    
-    if (!shouldHighlightArabic) {
-      return [
-        <Text key={`arabic-basic-${elementKey}-${segmentKey}`} style={{ 
-          color: colors.primaryText,
-          width: '100%',
-          flexShrink: 1,
-        }}>
-          {text}
-        </Text>
-      ];
-    }
-    
-    foundMatches.forEach((match) => {
-      // Add text before Arabic - PRESERVE SPACES
-      if (match.start > lastIndex) {
-        const beforeText = text.slice(lastIndex, match.start);
-        if (beforeText) { // Changed from beforeText.trim() to preserve spaces
-          segments.push(
-            <Text key={`arabic-before-${elementKey}-${segmentKey++}`} style={{ 
+    // Render segments with strict line separation
+    segments_data.forEach((segment, index) => {
+      if (segment.type === 'arabic') {
+        // Arabic text gets its own styled container with line breaks
+        segments.push(
+          <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
+            width: '100%',
+            marginVertical: 8,
+          }}>
+            <View style={{
+              paddingVertical: 16,
+              paddingHorizontal: 12,
+              backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
+              borderRadius: 8,
+              borderLeftWidth: 3,
+              borderLeftColor: '#87CEEB',
+              width: '100%',
+              maxWidth: '100%',
+              alignSelf: 'stretch',
+            }}>
+              <Text
+                style={{
+                  color: '#4A90E2',
+                  fontWeight: '600',
+                  fontSize: 18,
+                  lineHeight: 26,
+                  textAlign: 'right', // RTL alignment for Arabic
+                  fontFamily: 'System',
+                  width: '100%',
+                  flexShrink: 1,
+                }}
+                numberOfLines={0}
+              >
+                {segment.text}
+              </Text>
+            </View>
+          </View>
+        );
+      } else {
+        // English text gets normal styling with line break after Arabic
+        const prevSegment = segments_data[index - 1];
+        const needsTopMargin = prevSegment && prevSegment.type === 'arabic';
+        
+        segments.push(
+          <View key={`english-container-${elementKey}-${segmentKey++}`} style={{
+            width: '100%',
+            marginTop: needsTopMargin ? 8 : 0,
+          }}>
+            <Text style={{ 
               color: colors.primaryText,
               width: '100%',
               flexShrink: 1,
+              fontSize: 16,
+              lineHeight: 22,
             }}>
-              {beforeText}
-            </Text>
-          );
-        }
-      }
-      
-      // Add Arabic text with enhanced styling and proper text wrapping
-      const arabicText = match.text.trim();
-      if (arabicText) {
-        segments.push(
-          <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
-            marginVertical: 12,
-            paddingVertical: 16,
-            paddingHorizontal: 12,
-            backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
-            borderRadius: 8,
-            borderLeftWidth: 3,
-            borderLeftColor: '#87CEEB', // Sky blue color from screenshot
-            width: '100%', // Ensure full width
-            maxWidth: '100%', // Prevent overflow
-            alignSelf: 'stretch', // Stretch to container width
-          }}>
-            <Text
-              style={{
-                color: '#4A90E2', // Sky blue color similar to screenshot
-                fontWeight: '600',
-                fontSize: 18, // Larger than regular text
-                lineHeight: 26,
-                textAlign: 'right', // RTL alignment for Arabic
-                fontFamily: 'System',
-                width: '100%', // Take full width
-                flexShrink: 1, // Allow shrinking if needed
-              }}
-              numberOfLines={0} // Allow unlimited lines
-            >
-              {arabicText}
+              {segment.text}
             </Text>
           </View>
         );
       }
-      
-      lastIndex = match.end;
     });
-    
-    // Add remaining text - PRESERVE SPACES
-    if (lastIndex < text.length) {
-      const remainingText = text.slice(lastIndex);
-      if (remainingText) { // Changed from remainingText.trim() to preserve spaces
-        segments.push(
-          <Text key={`arabic-remaining-${elementKey}-${segmentKey++}`} style={{ 
-            color: colors.primaryText,
-            width: '100%',
-            flexShrink: 1,
-          }}>
-            {remainingText}
-          </Text>
-        );
-      }
-    }
     
     return segments.length > 0 ? segments : [
       <Text key={`arabic-fallback-${elementKey}-${segmentKey}`} style={{ 
