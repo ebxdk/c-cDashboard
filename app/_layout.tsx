@@ -12,6 +12,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomNavBar from '../components/BottomNavBar';
+import { HabitsProvider } from '../contexts/HabitsContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -34,20 +35,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="cohort" options={{ headerShown: false }} />
-          <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
-          <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
-          <Stack.Screen name="calendar" options={{ headerShown: false }} />
-          <Stack.Screen name="event-detail" options={{ headerShown: false }} />
-          <Stack.Screen name="habits" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <BottomNavBar />
-        <StatusBar style="dark" hidden={true} />
-      </ThemeProvider>
+      <HabitsProvider>
+        <ThemeProvider value={DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="cohort" options={{ headerShown: false }} />
+            <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
+            <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
+            <Stack.Screen name="calendar" options={{ headerShown: false }} />
+            <Stack.Screen name="event-detail" options={{ headerShown: false }} />
+            <Stack.Screen name="habits" options={{ headerShown: false }} />
+            <Stack.Screen name="add-habit" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <BottomNavBar />
+          <StatusBar style="dark" hidden={true} />
+        </ThemeProvider>
+      </HabitsProvider>
     </GestureHandlerRootView>
   );
 }

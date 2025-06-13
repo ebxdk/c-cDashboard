@@ -1,9 +1,11 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
+import { Habit, useHabits } from '@/contexts/HabitsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -14,7 +16,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useAudioPlayer } from 'expo-audio';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -34,56 +35,6 @@ const HABIT_COLORS = [
   '#5856D6', // Purple
   '#FF2D92', // Pink
   '#00C7BE', // Teal
-];
-
-interface Habit {
-  id: string;
-  name: string;
-  goal: number | 'infinite';
-  current: number;
-  color: string;
-  streak: number;
-  unit: string;
-}
-
-// Mock data
-const MOCK_HABITS: Habit[] = [
-  {
-    id: '1',
-    name: 'Move',
-    goal: 110,
-    current: 0,
-    color: HABIT_COLORS[0],
-    streak: 5,
-    unit: 'CAL',
-  },
-  {
-    id: '2',
-    name: 'Exercise',
-    goal: 30,
-    current: 22,
-    color: HABIT_COLORS[1],
-    streak: 12,
-    unit: 'MIN',
-  },
-  {
-    id: '3',
-    name: 'Stand',
-    goal: 12,
-    current: 8,
-    color: HABIT_COLORS[2],
-    streak: 8,
-    unit: 'HRS',
-  },
-  {
-    id: '4',
-    name: 'Water',
-    goal: 8,
-    current: 5,
-    color: HABIT_COLORS[3],
-    streak: 3,
-    unit: 'CUPS',
-  },
 ];
 
 const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => void }> = ({ habit, isActive, onPress }) => {
@@ -132,7 +83,7 @@ const PreviewRing: React.FC<{ habit: Habit; isActive: boolean; onPress: () => vo
         </Svg>
       </View>
       <Text style={[styles.previewDay, { color: Colors[colorScheme].text }]}>
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][MOCK_HABITS.indexOf(habit) % 7]}
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][parseInt(habit.id) % 7]}
       </Text>
     </TouchableOpacity>
   );
@@ -315,6 +266,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
 export default function HabitsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
+  const { habits } = useHabits();
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const panRef = useRef<PanGestureHandler>(null);
@@ -336,7 +288,7 @@ export default function HabitsScreen() {
         newIndex = Math.max(0, currentIndex - 1);
       } else if (translationX < -threshold || velocityX < -500) {
         // Swipe left - go to next habit
-        newIndex = Math.min(MOCK_HABITS.length - 1, currentIndex + 1);
+        newIndex = Math.min(habits.length - 1, currentIndex + 1);
       }
 
       if (newIndex !== currentIndex) {
@@ -356,7 +308,7 @@ export default function HabitsScreen() {
 
   const handleAddHabit = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('Add new habit');
+    router.push('/add-habit');
   };
 
   const handlePreviewPress = (index: number) => {
@@ -364,7 +316,50 @@ export default function HabitsScreen() {
     setCurrentIndex(index);
   };
 
-  const currentHabit = MOCK_HABITS[currentIndex];
+  const currentHabit = habits[currentIndex];
+
+  // If no habits exist, show empty state
+  if (habits.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
+        <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+        
+        {/* Header with back button */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={[styles.backButton, { 
+              backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' 
+            }]}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="chevron.left" size={24} color={Colors[colorScheme].text} />
+          </TouchableOpacity>
+
+          {/* Add button */}
+          <TouchableOpacity 
+            style={[styles.addButton, { 
+              backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' 
+            }]}
+            onPress={handleAddHabit}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="plus" size={24} color={Colors[colorScheme].text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Empty state */}
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyStateTitle, { color: Colors[colorScheme].text }]}>
+            No Habits Yet
+          </Text>
+          <Text style={[styles.emptyStateSubtitle, { color: Colors[colorScheme].text, opacity: 0.6 }]}>
+            Tap the + button to create your first habit
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
@@ -381,6 +376,17 @@ export default function HabitsScreen() {
         >
           <IconSymbol name="chevron.left" size={24} color={Colors[colorScheme].text} />
         </TouchableOpacity>
+
+        {/* Add button */}
+        <TouchableOpacity 
+          style={[styles.addButton, { 
+            backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' 
+          }]}
+          onPress={handleAddHabit}
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="plus" size={24} color={Colors[colorScheme].text} />
+        </TouchableOpacity>
       </View>
 
       {/* Top preview rings */}
@@ -390,7 +396,7 @@ export default function HabitsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.previewScrollContent}
         >
-          {MOCK_HABITS.map((habit, index) => (
+          {habits.map((habit, index) => (
             <PreviewRing
               key={habit.id}
               habit={habit}
@@ -428,18 +434,6 @@ export default function HabitsScreen() {
           {currentHabit.current}/{currentHabit.goal}{currentHabit.unit}
         </Text>
       </View>
-
-      {/* Add button */}
-      <TouchableOpacity 
-        style={[styles.addButton, { 
-          backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
-          shadowColor: colorScheme === 'dark' ? '#FFF' : '#000',
-        }]}
-        onPress={handleAddHabit}
-        activeOpacity={0.7}
-      >
-        <IconSymbol name="plus" size={20} color={Colors[colorScheme].text} />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -452,6 +446,9 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     marginBottom: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
     width: 44,
@@ -531,17 +528,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addButton: {
-    position: 'absolute',
-    bottom: 110,
-    right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 12,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -1,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    fontWeight: '400',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    opacity: 0.6,
   },
 });

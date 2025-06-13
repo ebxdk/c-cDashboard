@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useRef } from 'react';
 import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
+import { State, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -621,12 +622,45 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const scrollX = useSharedValue(startIndex * originalPages.length * pageWidth);
   const scrollViewRef = useRef<Animated.ScrollView>(null);
 
+  // Track scroll state to distinguish between scrolling and tapping
+  const isScrolling = useRef(false);
+  const scrollStartTime = useRef(0);
+
   // Optimized scroll handler with throttling
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
     },
   }, []);
+
+  // Handle scroll begin and end
+  const handleScrollBeginDrag = () => {
+    isScrolling.current = true;
+    scrollStartTime.current = Date.now();
+  };
+
+  const handleScrollEndDrag = () => {
+    // Allow a small delay before considering scroll ended
+    setTimeout(() => {
+      isScrolling.current = false;
+    }, 100);
+  };
+
+  // Handle tap on the widget - only navigate if not scrolling
+  const handleWidgetTap = () => {
+    const timeSinceScrollStart = Date.now() - scrollStartTime.current;
+    // Only navigate if we're not currently scrolling and haven't scrolled recently
+    if (!isScrolling.current && timeSinceScrollStart > 200) {
+      handlePress();
+    }
+  };
+
+  // Handle tap gesture state changes
+  const onTapHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      handleWidgetTap();
+    }
+  };
 
   // Initialize scroll position after component mounts
   React.useEffect(() => {
@@ -842,47 +876,47 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   });
 
   return (
-    <TouchableOpacity 
-      onPress={handlePress}
-      activeOpacity={0.8}
-      style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}
-    >
-      <Animated.ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        decelerationRate="fast"
-        contentInsetAdjustmentBehavior="never"
-        directionalLockEnabled={true}
-        scrollEventThrottle={8} // Reduced from 16 for better performance
-        disableIntervalMomentum={true}
-        disableScrollViewPanResponder={false}
-        onScroll={onScroll}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexDirection: 'row', height: '100%' }}
-        removeClippedSubviews={true} // Enable view recycling for better performance
-      >
-        {pages}
-      </Animated.ScrollView>
+    <TapGestureHandler onHandlerStateChange={onTapHandlerStateChange}>
+      <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}>
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          decelerationRate="fast"
+          contentInsetAdjustmentBehavior="never"
+          directionalLockEnabled={true}
+          scrollEventThrottle={8} // Reduced from 16 for better performance
+          disableIntervalMomentum={true}
+          disableScrollViewPanResponder={false}
+          onScroll={onScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollEndDrag}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexDirection: 'row', height: '100%' }}
+          removeClippedSubviews={true} // Enable view recycling for better performance
+        >
+          {pages}
+        </Animated.ScrollView>
 
-      {/* Simplified page indicator dots */}
-      <View style={{
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: -12,
-        left: 0,
-        right: 0,
-        gap: 6,
-      }}>
-        {[0, 1, 2].map((index) => (
-          <DotComponent key={index} index={index} />
-        ))}
+        {/* Simplified page indicator dots */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'absolute',
+          bottom: -12,
+          left: 0,
+          right: 0,
+          gap: 6,
+        }}>
+          {[0, 1, 2].map((index) => (
+            <DotComponent key={index} index={index} />
+          ))}
+        </View>
       </View>
-    </TouchableOpacity>
+    </TapGestureHandler>
   );
 };
 
