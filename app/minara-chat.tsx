@@ -40,15 +40,35 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Process Arabic text with clean highlighting
+  // Optimized Arabic text processing with performance improvements
   const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = elementKey * 1000; // Use elementKey as base to ensure uniqueness
+    let segmentKey = elementKey * 1000;
     
-    // Simple Arabic detection - just for highlighting, not complex processing
-    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g;
+    // Skip processing for very short text during streaming to improve performance
+    if (text.length < 10 && isGenerating) {
+      return [
+        <Text key={`arabic-simple-${elementKey}`} style={{ color: colors.primaryText }}>
+          {text}
+        </Text>
+      ];
+    }
+    
+    // Optimized Arabic detection - simpler regex for better performance
+    const arabicRegex = /[\u0600-\u06FF]+/g;
     let lastIndex = 0;
     let match;
+    
+    // Limit Arabic processing during active generation to improve speed
+    const shouldHighlightArabic = !isGenerating || text.length > 50;
+    
+    if (!shouldHighlightArabic) {
+      return [
+        <Text key={`arabic-basic-${elementKey}`} style={{ color: colors.primaryText }}>
+          {text}
+        </Text>
+      ];
+    }
     
     while ((match = arabicRegex.exec(text)) !== null) {
       // Add text before Arabic
@@ -100,14 +120,22 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     ];
   };
   
-  // Process inline markdown formatting
+  // Optimized inline markdown formatting with performance improvements
   const processInlineFormatting = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
-    let segmentKey = elementKey * 10000; // Use elementKey as base to ensure uniqueness
+    let segmentKey = elementKey * 10000;
     let currentIndex = 0;
     
-    // Find all markdown patterns
-    const patterns = [
+    // Skip complex formatting during active generation for small text chunks
+    if (isGenerating && text.length < 30) {
+      return processArabicText(text);
+    }
+    
+    // Simplified patterns for better performance during streaming
+    const patterns = isGenerating ? [
+      { regex: /\*\*([^*\n]+)\*\*/g, type: 'bold' },
+      { regex: /`([^`\n]+)`/g, type: 'code' },
+    ] : [
       { regex: /\*\*([^*\n]+)\*\*/g, type: 'bold' },
       { regex: /\*([^*\n]+)\*/g, type: 'italic' },
       { regex: /`([^`\n]+)`/g, type: 'code' },
@@ -143,7 +171,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       if (match.start > currentIndex) {
         const beforeText = text.slice(currentIndex, match.start);
         segments.push(...processArabicText(beforeText));
-        segmentKey += 100; // Increase by larger increment to avoid conflicts
+        segmentKey += 100;
       }
       
       // Add formatted text
@@ -711,8 +739,8 @@ export default function MinaraChatScreen() {
             // Only collect content from content type messages
             if (parsed.type === 'content' && parsed.content) {
               hasContent = true;
-              // Throttle updates to prevent freezing during heavy Arabic processing
-              if (i % 3 === 0 || i === lines.length - 1) {
+              // Increased throttling for better performance with Arabic text
+              if (i % 5 === 0 || i === lines.length - 1) {
                 // Update the message in batches
                 setMessages(prev => prev.map(msg => 
                   msg.id === parseInt(aiMessageId)
@@ -720,9 +748,9 @@ export default function MinaraChatScreen() {
                     : msg
                 ));
                 
-                // Add throttled haptic feedback for meaningful content
+                // Reduced haptic feedback frequency for better performance
                 const trimmedContent = parsed.content.trim();
-                if (trimmedContent.length > 5) {
+                if (trimmedContent.length > 10 && i % 10 === 0) {
                   try {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   } catch (error) {
@@ -731,14 +759,14 @@ export default function MinaraChatScreen() {
                   }
                 }
                 
-                // Auto-scroll as content comes in
+                // Auto-scroll with less frequency
                 setTimeout(() => {
                   if (scrollViewRef.current && !isUserScrolling) {
                     scrollViewRef.current.scrollToEnd({ 
                       animated: true 
                     });
                   }
-                }, 200);
+                }, 300);
               } else {
                 // Still accumulate content but don't trigger UI update
                 setMessages(prev => prev.map(msg => 
@@ -748,8 +776,8 @@ export default function MinaraChatScreen() {
                 ));
               }
               
-              // Small delay for better performance
-              await new Promise(resolve => setTimeout(resolve, 10));
+              // Reduced delay for better streaming speed
+              await new Promise(resolve => setTimeout(resolve, 5));
             }
           } catch (parseError) {
             // Skip lines that can't be parsed as JSON
