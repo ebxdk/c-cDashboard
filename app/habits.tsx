@@ -157,7 +157,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     
     // Play sound
     try {
-      player.replay();
+      player.play();
     } catch (error) {
       console.log('Error playing sound:', error);
     }
