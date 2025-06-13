@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: -20,
+    marginTop: -80,
   },
   mainRingContainer: {
     justifyContent: 'center',
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 45,
+    marginBottom: 140,
     marginTop: 15,
     gap: 8,
     paddingHorizontal: 20,
