@@ -122,31 +122,40 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginVertical: 8,
+            marginVertical: 12,
+            marginBottom: 16, // Extra bottom margin to prevent overlap with next content
           }}>
             <View style={{
               paddingVertical: 20,
-              paddingHorizontal: 16,
+              paddingHorizontal: 20,
               backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
-              borderRadius: 8,
-              borderLeftWidth: 3,
+              borderRadius: 12,
+              borderLeftWidth: 4,
               borderLeftColor: '#87CEEB',
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
-              minHeight: 60,
+              minHeight: 70,
+              // Ensure proper spacing and no overlap
+              marginHorizontal: 0,
+              shadowColor: isDarkMode ? '#000000' : '#87CEEB',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isDarkMode ? 0.3 : 0.1,
+              shadowRadius: 4,
+              elevation: 2,
             }}>
               <Text
                 style={{
                   color: '#4A90E2',
                   fontWeight: '600',
                   fontSize: 20,
-                  lineHeight: 32,
+                  lineHeight: 34,
                   textAlign: 'right', // RTL alignment for Arabic
                   fontFamily: 'System',
                   width: '100%',
                   flexShrink: 1,
                   flexWrap: 'wrap',
+                  paddingVertical: 2,
                 }}
                 numberOfLines={0}
               >
@@ -158,19 +167,24 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       } else {
         // English text gets normal styling with line break after Arabic
         const prevSegment = segments_data[index - 1];
+        const nextSegment = segments_data[index + 1];
         const needsTopMargin = prevSegment && prevSegment.type === 'arabic';
+        const needsBottomMargin = nextSegment && nextSegment.type === 'arabic';
         
         segments.push(
           <View key={`english-container-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: needsTopMargin ? 8 : 0,
+            marginTop: needsTopMargin ? 16 : 4,
+            marginBottom: needsBottomMargin ? 12 : 4,
+            paddingVertical: 2,
           }}>
             <Text style={{ 
               color: colors.primaryText,
               width: '100%',
               flexShrink: 1,
               fontSize: 16,
-              lineHeight: 22,
+              lineHeight: 24,
+              paddingHorizontal: 2,
             }}>
               {segment.text}
             </Text>
@@ -1395,7 +1409,10 @@ export default function MinaraChatScreen() {
             return (
               <View key={msg.id} style={[
                 styles.aiMessageContainer,
-                { marginTop: isConsecutive ? 8 : 24 }
+                { 
+                  marginTop: isConsecutive ? 12 : 28,
+                  marginBottom: 8, // Add bottom margin to prevent overlap
+                }
               ]}>
                 <Animated.View style={[
                   styles.aiMessageContent,
@@ -1403,6 +1420,7 @@ export default function MinaraChatScreen() {
                     backgroundColor: 'transparent',
                     paddingHorizontal: 0,
                     maxWidth: '100%',
+                    paddingBottom: 8, // Extra padding at bottom
                   },
                   messageAnimation && {
                     transform: [
@@ -1425,7 +1443,7 @@ export default function MinaraChatScreen() {
                     styles.aiMessageText,
                     {
                       paddingHorizontal: 0,
-                      paddingVertical: 0,
+                      paddingVertical: 4,
                       maxWidth: '100%',
                       flexShrink: 1,
                     }
