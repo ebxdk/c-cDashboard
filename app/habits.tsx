@@ -158,7 +158,7 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     // Play sound instantly
-    player.replay();
+    player.play();
   };
 
   return (
