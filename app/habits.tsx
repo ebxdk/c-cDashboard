@@ -151,15 +151,24 @@ const MainRing: React.FC<{ habit: Habit }> = ({ habit }) => {
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
-  const handleRingPress = () => {
+  const handleRingPress = async () => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Play sound
+    // Play sound with proper mobile handling
     try {
-      player.play();
+      // Ensure we're at the beginning of the track
+      player.seekTo(0);
+      await player.play();
     } catch (error) {
       console.log('Error playing sound:', error);
+      // Fallback: try to replay from beginning
+      try {
+        player.seekTo(0);
+        player.play();
+      } catch (retryError) {
+        console.log('Retry failed:', retryError);
+      }
     }
   };
 
