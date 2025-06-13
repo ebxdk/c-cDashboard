@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     Animated,
     Dimensions,
@@ -94,13 +94,26 @@ const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Part
   const circumference = 2 * Math.PI * (MAIN_RING_SIZE / 2 - MAIN_RING_STROKE_WIDTH / 2);
   const player = useAudioPlayer(require('../assets/clicksound.mp3'));
   const isPlayingRef = useRef(false);
-  
+
   // Animation values for bouncy effects
   const ringScale = useRef(new Animated.Value(1)).current;
   const emojiScale = useRef(new Animated.Value(1)).current;
   const emojiRotation = useRef(new Animated.Value(0)).current;
 
+  // Celebration state and animation setup
+  const [showCelebration, setShowCelebration] = useState(false);
+  const celebrationEmojis = ['🎉', '🥳', '🎊', '🎈', '🎁'];
+  const celebrationAnimations = useRef(
+    Array.from({ length: 20 }, () => ({
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(SCREEN_HEIGHT),
+      rotation: new Animated.Value(0),
+      scale: new Animated.Value(0),
+    }))
+  ).current;
+
   let progress = 0;
+  const wasComplete = useRef(false);
   if (habit.goal !== 'infinite') {
     progress = Math.min(habit.current / habit.goal, 1);
   }
@@ -108,15 +121,73 @@ const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Part
   const strokeDasharray = habit.goal === 'infinite' ? undefined : circumference;
   const strokeDashoffset = habit.goal === 'infinite' ? undefined : circumference * (1 - progress);
 
+  // Check if habit just completed
+  useEffect(() => {
+    if (habit.goal !== 'infinite' && progress >= 1 && !wasComplete.current) {
+      wasComplete.current = true;
+      triggerCelebration();
+    } else if (progress < 1) {
+      wasComplete.current = false;
+    }
+  }, [progress]);
+
+  const triggerCelebration = () => {
+    setShowCelebration(true);
+
+    // Enhanced celebration haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 200);
+
+    // Animate celebration emojis falling from top
+    const animations = celebrationAnimations.map((emoji, index) => {
+      // Reset positions
+      emoji.translateY.setValue(SCREEN_HEIGHT);
+      emoji.translateX.setValue(Math.random() * SCREEN_WIDTH);
+      emoji.rotation.setValue(0);
+      emoji.scale.setValue(0.5 + Math.random() * 0.5);
+
+      return Animated.parallel([
+        Animated.timing(emoji.translateY, {
+          toValue: -100,
+          duration: 3000 + Math.random() * 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(emoji.rotation, {
+          toValue: 360 * (Math.random() > 0.5 ? 1 : -1),
+          duration: 3000 + Math.random() * 1000,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(emoji.scale, {
+            toValue: 1 + Math.random() * 0.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(emoji.scale, {
+            toValue: 0,
+            duration: 500,
+            delay: 2000 + Math.random() * 1000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]);
+    });
+
+    Animated.stagger(100, animations).start(() => {
+      setShowCelebration(false);
+    });
+  };
+
   const handleRingPress = () => {
     // Enhanced bouncy haptic feedback sequence for satisfying feel
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    
+
     // Add a bouncy secondary feedback after a short delay
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 80);
-    
+
     // And a third subtle one for the bouncy effect
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -269,6 +340,37 @@ const MainRing: React.FC<{ habit: Habit; updateHabit: (id: string, updates: Part
           <IconSymbol name="chevron.right" size={16} color="#000" />
         </View>
       )}
+
+    {/* Celebration Animation Overlay */}
+    {showCelebration && (
+      <View style={styles.celebrationOverlay} pointerEvents="none">
+        {celebrationAnimations.map((emoji, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              styles.celebrationEmoji,
+              {
+                transform: [
+                  { translateX: emoji.translateX },
+                  { translateY: emoji.translateY },
+                  { 
+                    rotate: emoji.rotation.interpolate({
+                      inputRange: [0, 360],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                  { scale: emoji.scale },
+                ],
+              },
+            ]}
+          >
+            <Text style={styles.celebrationEmojiText}>
+              {celebrationEmojis[index % celebrationEmojis.length]}
+            </Text>
+          </Animated.View>
+        ))}
+      </View>
+    )}
     </TouchableOpacity>
   );
 };
@@ -333,7 +435,7 @@ export default function HabitsScreen() {
     return (
       <View style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-        
+
         {/* Header with back button */}
         <View style={styles.header}>
           <TouchableOpacity 
@@ -563,5 +665,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
     opacity: 0.6,
+  },
+  celebrationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 10,
+    backgroundColor: 'transparent',
+  },
+  celebrationEmoji: {
+    position: 'absolute',
+  },
+  celebrationEmojiText: {
+    fontSize: 32,
   },
 });
