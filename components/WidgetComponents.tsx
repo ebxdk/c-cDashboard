@@ -1,11 +1,14 @@
+import { useCalendar } from '@/contexts/CalendarContext';
 import { useHabits } from '@/contexts/HabitsContext';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useRef } from 'react';
-import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, Animated as RNAnimated, Text, TouchableOpacity, View } from 'react-native';
 import { State, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, { interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { IconSymbol } from './ui/IconSymbol';
 
 
 interface WidgetProps {
@@ -51,13 +54,51 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
           elevation: 8,
           padding: 20, // Adjusted padding for larger circles
           paddingBottom: 0, // Reduced bottom padding specifically
+          overflow: 'hidden', // Ensure gradient doesn't exceed bounds
         }
       ]}
     >
+    {/* Darker blue section on the left */}
+    <View style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '40%',
+      height: '100%',
+      backgroundColor: '#7BA8D1', // Darker blue
+      opacity: 0.8,
+    }} />
+    
+    {/* Additional gradient for smooth transition */}
+    <View style={{
+      position: 'absolute',
+      top: 0,
+      left: '30%',
+      width: '30%',
+      height: '100%',
+      backgroundColor: '#8FB5D6', // Medium blue for transition
+      opacity: 0.6,
+    }} />
+    
+    {/* Heavy blur overlay */}
+    <BlurView
+      intensity={60}
+      tint="light"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 30,
+      }}
+    />
+    
     <View style={{
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      zIndex: 1, // Ensure content is above the gradient
     }}>
       {/* Single row of contacts */}
       <View style={{
@@ -308,7 +349,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
         baseWidgetStyle, 
         { 
           backgroundColor: isDarkMode ? '#1C1C1E' : '#F8F9FA',
-          padding: 16,
+          padding: 20,
           shadowColor: isDarkMode ? '#000000' : '#000000',
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: isDarkMode ? 0.15 : 0.08,
@@ -324,94 +365,32 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 60,
-        paddingVertical: 4,
+        gap: 16,
       }}>
-        {/* Main circular chat input */}
+        {/* Sparkling Logo - Single Large Sparkle */}
         <View style={{
-          width: 152,
-          height: 65,
-          borderRadius: 32,
-          backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginBottom: 6,
-          borderWidth: isDarkMode ? 0.5 : 1,
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-          paddingHorizontal: 16,
-          shadowColor: isDarkMode ? '#000000' : '#000000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDarkMode ? 0.25 : 0.04,
-          shadowRadius: 4,
-          elevation: 2,
-        }}>
-          <Text style={{
-            fontSize: 22,
-            marginRight: 10,
-          }}>💬</Text>
-          <Text style={{
-            fontSize: 12,
-            color: isDarkMode ? '#8E8E93' : '#8E8E93',
-            fontFamily: 'System',
-            flex: 1,
-            textAlign: 'center',
-          }}>Ask Minara AI</Text>
-        </View>
-
-        {/* Two smaller circular buttons */}
-        <View style={{
-          flexDirection: 'row',
           justifyContent: 'center',
           alignItems: 'center',
-          width: '100%',
-          paddingHorizontal: 8,
-          gap: 16,
         }}>
-          {/* Camera button */}
-          <View style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderWidth: isDarkMode ? 0.5 : 1,
-            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-            shadowColor: isDarkMode ? '#000000' : '#000000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isDarkMode ? 0.25 : 0.04,
-            shadowRadius: 4,
-            elevation: 2,
-          }}>
-            <Text style={{
-              fontSize: 24,
-              textAlign: 'center',
-            }}>📷</Text>
-          </View>
-
-          {/* Microphone button */}
-          <View style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            backgroundColor: isDarkMode ? '#2A2A2C' : '#F0F1F3',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderWidth: isDarkMode ? 0.5 : 1,
-            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-            shadowColor: isDarkMode ? '#000000' : '#000000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isDarkMode ? 0.25 : 0.04,
-            shadowRadius: 4,
-            elevation: 2,
-          }}>
-            <Text style={{
-              fontSize: 24,
-              textAlign: 'center',
-            }}>🎤</Text>
-          </View>
+          {/* Single sparkle like in nav bar */}
+          <IconSymbol
+            name="sparkles"
+            size={80}
+            color="#3B82F6"
+          />
         </View>
 
+        {/* Ask Minara AI Text */}
+        <Text style={{
+          fontSize: 16,
+          fontWeight: '600',
+          color: isDarkMode ? '#FFFFFF' : '#000000',
+          fontFamily: 'System',
+          textAlign: 'center',
+          letterSpacing: 0.2,
+        }}>
+          Ask Minara AI
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -419,6 +398,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
 
 export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const router = useRouter();
+  const { getNextUpcomingEvent, events } = useCalendar();
   const today = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDay = dayNames[today.getDay()];
@@ -429,6 +409,60 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
     router.push('/calendar');
   };
 
+  // Get the next upcoming event
+  const nextEvent = getNextUpcomingEvent();
+
+  // Format event date and time for widget display
+  const formatEventForWidget = (event: any) => {
+    if (!event) return null;
+
+    const startDate = event.start.dateTime || event.start.date;
+    if (!startDate) return null;
+
+    const start = new Date(startDate);
+    const end = new Date(event.end.dateTime || event.end.date || startDate);
+    
+    // Check if it's an all-day event
+    if (event.start.date && !event.start.dateTime) {
+      return {
+        title: event.summary,
+        location: event.location || '',
+        time: 'All day',
+        duration: '',
+      };
+    }
+
+    // Calculate duration
+    const durationMs = end.getTime() - start.getTime();
+    const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+    const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    let duration = '';
+    if (durationHours > 0) {
+      duration = `(${durationHours}h`;
+      if (durationMinutes > 0) {
+        duration += ` ${durationMinutes}m)`;
+      } else {
+        duration += ')';
+      }
+    } else if (durationMinutes > 0) {
+      duration = `(${durationMinutes}m)`;
+    }
+
+    return {
+      title: event.summary,
+      location: event.location || '',
+      time: start.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }),
+      duration,
+    };
+  };
+
+  const formattedEvent = formatEventForWidget(nextEvent);
+
   return (
     <TouchableOpacity 
       onPress={handlePress}
@@ -436,14 +470,77 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
       style={[
         baseWidgetStyle, 
         { 
-          backgroundColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+          backgroundColor: '#1B2951', // Navy blue background
           padding: 16,
           paddingTop: 12,
           position: 'relative',
+          overflow: 'hidden',
+          shadowColor: '#0F1A3A',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          elevation: 8,
         }
       ]}
     >
-      {/* Red notification bubble */}
+      {/* Darker blue section in top-right corner with graduation */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '65%', // Slightly larger for better blending
+        height: '55%',
+        backgroundColor: '#2A4F7A', // Darkest blue
+        opacity: 0.9,
+      }} />
+      
+      {/* Gradient layer 1 - Medium dark transition */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '50%',
+        width: '40%',
+        height: '45%',
+        backgroundColor: '#3A6B8A', // Medium dark blue
+        opacity: 0.7,
+      }} />
+      
+      {/* Gradient layer 2 - Light transition */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '35%',
+        width: '30%',
+        height: '35%',
+        backgroundColor: '#4A7BA7', // Lighter transition
+        opacity: 0.5,
+      }} />
+      
+      {/* Gradient layer 3 - Final blend */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '25%',
+        width: '25%',
+        height: '25%',
+        backgroundColor: '#5A8BC4', // Final blend color
+        opacity: 0.3,
+      }} />
+      
+      {/* Enhanced frosty blur overlay ON TOP of everything */}
+      <BlurView
+        intensity={120} // Dramatically increased from 70 for much more blur
+        tint="light"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      />
+      
+      {/* Red notification bubble - show count of events */}
       <View style={{
         position: 'absolute',
         top: 14,
@@ -461,7 +558,8 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         shadowRadius: 3,
         elevation: 3,
         borderWidth: 2,
-        borderColor: isDarkMode ? '#2C2C2E' : '#F2F2F7',
+        borderColor: '#1B2951',
+        zIndex: 2,
       }}>
         <Text style={{
           fontSize: 11,
@@ -471,12 +569,13 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
           letterSpacing: -0.3,
           lineHeight: 14,
           textAlign: 'center',
-        }}>3</Text>
+        }}>{events.length}</Text>
       </View>
 
       <View style={{
         flex: 1,
         justifyContent: 'flex-start',
+        zIndex: 1,
       }}>
         {/* Day of week */}
         <Text style={{
@@ -494,7 +593,7 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
         <Text style={{
           fontSize: 44,
           fontWeight: 'bold',
-          color: isDarkMode ? '#FFFFFF' : '#000000',
+          color: '#FFFFFF',
           fontFamily: 'System',
           lineHeight: 48,
           marginBottom: 12,
@@ -513,13 +612,13 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
             width: 6,
             height: 6,
             borderRadius: 3,
-            backgroundColor: isDarkMode ? '#8E8E93' : '#8E8E93',
+            backgroundColor: '#FFFFFF',
             marginRight: 6,
           }} />
           <Text style={{
             fontSize: 12,
             fontWeight: 'bold',
-            color: isDarkMode ? '#8E8E93' : '#8E8E93',
+            color: '#FFFFFF',
             fontFamily: 'System',
           }}>
             Upcoming
@@ -528,52 +627,96 @@ export const CalendarWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) =>
 
         {/* Events list */}
         <View style={{ flex: 1 }}>
-          {/* Event 1 */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            marginBottom: 6,
-          }}>
+          {formattedEvent ? (
+            /* Next upcoming event */
             <View style={{
-              width: 4,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: '#FF453A',
-              marginRight: 6,
-              marginTop: 4,
-            }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 12,
-                fontWeight: 'bold',
-                color: isDarkMode ? '#FFFFFF' : '#000000',
-                fontFamily: 'System',
-                marginBottom: 1,
-                lineHeight: 14,
-              }}>
-                Iftar Outing
-              </Text>
-              <Text style={{
-                fontSize: 10,
-                fontWeight: 'normal',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'System',
-                marginBottom: 1,
-                lineHeight: 12,
-              }}>
-                Revert Reach Iftar @ GC Ridgeway
-              </Text>
-              <Text style={{
-                fontSize: 10,
-                fontWeight: 'normal',
-                color: isDarkMode ? '#8E8E93' : '#8E8E93',
-                fontFamily: 'System',
-                lineHeight: 12,
-              }}>
-                9:00 AM (3 hrs)
-              </Text>
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              marginBottom: 6,
+            }}>
+              <View style={{
+                width: 4,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: '#FF453A',
+                marginRight: 6,
+                marginTop: 4,
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  marginBottom: 1,
+                  lineHeight: 14,
+                }} numberOfLines={1}>
+                  {formattedEvent.title}
+                </Text>
+                {formattedEvent.location && (
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: 'normal',
+                    color: '#FFFFFF',
+                    fontFamily: 'System',
+                    marginBottom: 1,
+                    lineHeight: 12,
+                    opacity: 0.8,
+                  }} numberOfLines={1}>
+                    {formattedEvent.location}
+                  </Text>
+                )}
+                <Text style={{
+                  fontSize: 10,
+                  fontWeight: 'normal',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  lineHeight: 12,
+                  opacity: 0.8,
+                }}>
+                  {formattedEvent.time} {formattedEvent.duration}
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : (
+            /* No upcoming events */
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              marginBottom: 6,
+            }}>
+              <View style={{
+                width: 4,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: '#5AC8FA',
+                marginRight: 6,
+                marginTop: 4,
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  marginBottom: 1,
+                  lineHeight: 14,
+                }}>
+                  No upcoming events
+                </Text>
+                <Text style={{
+                  fontSize: 10,
+                  fontWeight: 'normal',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  lineHeight: 12,
+                  opacity: 0.8,
+                }}>
+                  Enjoy your free time! 🎉
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -966,63 +1109,492 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   );
 };
 
-export const PrayerWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 8,
-    }}>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '600',
-        color: isDarkMode ? '#FFFFFF' : '#000000',
-        textAlign: 'center',
-        marginBottom: 8,
-        fontFamily: 'System',
-      }}>
-        🕌 Prayer
-      </Text>
-      <Text style={{
-        fontSize: 12,
-        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-        textAlign: 'center',
-        fontFamily: 'System',
-      }}>
-        Prayer times
-      </Text>
-    </View>
-  </View>
-);
+export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const [currentQuoteIndex, setCurrentQuoteIndex] = React.useState(0);
+  const fadeAnim = React.useRef(new RNAnimated.Value(1)).current;
+  const router = useRouter();
 
-export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => (
-  <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF' }]}>
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 8,
-    }}>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '600',
-        color: isDarkMode ? '#FFFFFF' : '#000000',
-        textAlign: 'center',
-        marginBottom: 8,
-        fontFamily: 'System',
+  const islamicQuotes = [
+    {
+      text: "Indeed, with hardship comes ease.",
+      reference: "Quran 94:6"
+    },
+    {
+      text: "Allah is sufficient for us.",
+      reference: "Quran 3:173"
+    },
+    {
+      text: "So remember Me; I will remember you.",
+      reference: "Quran 2:152"
+    },
+    {
+      text: "The best among you are those who have the best character.",
+      reference: "Prophet Muhammad ﷺ"
+    },
+    {
+      text: "Whoever relies upon Allah - He is sufficient for him.",
+      reference: "Quran 65:3"
+    },
+    {
+      text: "Be kind, for kindness beautifies everything.",
+      reference: "Prophet Muhammad ﷺ"
+    },
+    {
+      text: "Verily, in the remembrance of Allah do hearts find rest.",
+      reference: "Quran 13:28"
+    },
+    {
+      text: "The strong person controls himself when angry.",
+      reference: "Prophet Muhammad ﷺ"
+    },
+    {
+      text: "And He is with you wherever you are.",
+      reference: "Quran 57:4"
+    },
+    {
+      text: "Speak good or remain silent.",
+      reference: "Prophet Muhammad ﷺ"
+    }
+  ];
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/inspire');
+  };
+
+  // Function to animate quote transition
+  const animateQuoteChange = (newIndex: number) => {
+    // Fade out
+    RNAnimated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      // Change quote
+      setCurrentQuoteIndex(newIndex);
+      // Fade in
+      RNAnimated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  // Function to render text with translucent key words
+  const renderStyledText = (quote: { text: string; reference: string }) => {
+    const keyWords = ['Allah', 'Me', 'He', 'hardship', 'ease', 'kind', 'kindness', 'hearts', 'strong', 'good'];
+    const words = quote.text.split(' ');
+    
+    return (
+      <>
+        <Text style={{
+          textAlign: 'left',
+          lineHeight: 24,
+          marginBottom: 2,
+        }}>
+          {words.map((word, index) => {
+            const cleanWord = word.replace(/[.,;:!?]/g, ''); // Remove punctuation for comparison
+            const isKeyWord = keyWords.some(keyWord => 
+              cleanWord.toLowerCase() === keyWord.toLowerCase()
+            );
+            
+            return (
+              <Text
+                key={index}
+                style={{
+                  opacity: isKeyWord ? 0.7 : 1,
+                  fontSize: 21,
+                  fontWeight: '800',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  letterSpacing: -0.4,
+                }}
+              >
+                {word}{index < words.length - 1 ? ' ' : ''}
+              </Text>
+            );
+          })}
+        </Text>
+        <Text style={{
+          fontSize: 10,
+          color: '#FFFFFF',
+          opacity: 1,
+          fontFamily: 'System',
+          fontWeight: '500',
+          textAlign: 'left',
+        }}>
+          {quote.reference}
+        </Text>
+      </>
+    );
+  };
+
+  // Rotate quotes every 30 seconds with animation
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const nextIndex = (currentQuoteIndex + 1) % islamicQuotes.length;
+      animateQuoteChange(nextIndex);
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [currentQuoteIndex, islamicQuotes.length]);
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: '#6B9BD1', // Darker blue base
+          padding: 20,
+          shadowColor: '#4A7BA7',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+          elevation: 8,
+          overflow: 'hidden', // Ensure gradient layers don't exceed bounds
+        }
+      ]}
+    >
+      {/* Darker blue section in top-right corner with graduation */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '65%', // Slightly larger for better blending
+        height: '55%',
+        backgroundColor: '#2A4F7A', // Darkest blue
+        opacity: 0.9,
+      }} />
+      
+      {/* Gradient layer 1 - Medium dark transition */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '50%',
+        width: '40%',
+        height: '45%',
+        backgroundColor: '#3A6B8A', // Medium dark blue
+        opacity: 0.7,
+      }} />
+      
+      {/* Gradient layer 2 - Light transition */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '35%',
+        width: '30%',
+        height: '35%',
+        backgroundColor: '#4A7BA7', // Lighter transition
+        opacity: 0.5,
+      }} />
+      
+      {/* Gradient layer 3 - Final blend */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        right: '25%',
+        width: '25%',
+        height: '25%',
+        backgroundColor: '#5A8BC4', // Final blend color
+        opacity: 0.3,
+      }} />
+      
+      {/* Enhanced frosty blur overlay ON TOP of everything */}
+      <BlurView
+        intensity={120} // Dramatically increased from 70 for much more blur
+        tint="light"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      />
+      
+      <RNAnimated.View style={{
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
+        zIndex: 1,
+        opacity: fadeAnim,
       }}>
-        📝 Journal
+        {renderStyledText(islamicQuotes[currentQuoteIndex])}
+      </RNAnimated.View>
+    </TouchableOpacity>
+  );
+};
+
+export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
+  const today = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDay = dayNames[today.getDay()];
+
+  // Journal prompts array - moved outside to prevent recreation
+  const journalPrompts = React.useMemo(() => [
+    "What lessons did you learn today?",
+    "What are you most grateful for?",
+    "How did you grow today?",
+    "What challenged you today?",
+    "What positive impact did you make?",
+    "What would you do differently?",
+    "What brought you joy today?",
+    "How did you practice your faith?",
+    "What are you looking forward to?",
+    "What act of kindness did you see today?"
+  ], []);
+
+  const [currentPromptIndex, setCurrentPromptIndex] = React.useState(0);
+
+  const handlePress = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/journal');
+  }, []);
+
+  const handleRefresh = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentPromptIndex((prevIndex) => (prevIndex + 1) % journalPrompts.length);
+  }, [journalPrompts.length]);
+
+  // Function to render text with translucent unimportant words
+  const renderStyledPrompt = (prompt: string) => {
+    const unimportantWords = ['did', 'you', 'are', 'to', 'a', 'an', 'the', 'of', 'for', 'would', 'do'];
+    const words = prompt.split(' ');
+    
+    return (
+      <Text style={{ textAlign: 'left', lineHeight: 24 }}>
+        {words.map((word, index) => {
+          const cleanWord = word.replace(/[.,;:!?]/g, '').toLowerCase();
+          const isUnimportant = unimportantWords.includes(cleanWord);
+          
+          return (
+            <Text
+              key={index}
+              style={{
+                fontSize: 19,
+                fontWeight: '800',
+                color: '#FFFFFF',
+                fontFamily: 'System',
+                lineHeight: 23,
+                letterSpacing: -0.3,
+                opacity: isUnimportant ? 0.6 : 1,
+              }}
+            >
+              {word}{index < words.length - 1 ? ' ' : ''}
+            </Text>
+          );
+        })}
       </Text>
-      <Text style={{
-        fontSize: 12,
-        color: isDarkMode ? '#8E8E93' : '#6B6B6B',
-        textAlign: 'center',
-        fontFamily: 'System',
+    );
+  };
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: '#6B4C93', // Darker base purple color
+          padding: 22,
+          shadowColor: '#4A3366',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          elevation: 8,
+          overflow: 'hidden',
+        }
+      ]}
+    >
+      {/* Gradient Layer 1 - Smaller and darker bottom effect */}
+      <View style={{
+        position: 'absolute',
+        bottom: -30,
+        left: -30,
+        right: -30,
+        height: '80%', // Reduced from 120% to make it smaller
+        backgroundColor: '#4A3366',
+        opacity: 0.8,
+        borderRadius: 45,
+      }} />
+      
+      {/* Gradient Layer 2 - Smaller additional depth */}
+      <View style={{
+        position: 'absolute',
+        bottom: -20,
+        left: -20,
+        right: -20,
+        height: '60%', // Reduced from 100% to make it smaller
+        backgroundColor: '#3A2952',
+        opacity: 0.6,
+        borderRadius: 35,
+      }} />
+      
+      {/* Increased frosty blur overlay */}
+      <BlurView
+        intensity={45} // Increased from 25 to make it more blurry
+        tint="light"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: 30,
+        }}
+      />
+
+      <View style={{
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        zIndex: 1,
+        paddingTop: 0,
       }}>
-        Daily reflections
-      </Text>
-    </View>
-  </View>
-);
+        {/* Day of week */}
+        <View style={{ width: '100%', alignItems: 'flex-start' }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: '#FFFFFF',
+            fontFamily: 'System',
+            opacity: 0.9,
+            marginBottom: 2,
+          }}>
+            {currentDay}
+          </Text>
+        </View>
+
+        {/* Journal prompt */}
+        <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'flex-start', paddingHorizontal: 0, marginTop: 4 }}>
+          {renderStyledPrompt(journalPrompts[currentPromptIndex])}
+        </View>
+
+        {/* Action buttons */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          gap: 10,
+          paddingHorizontal: 16,
+          marginTop: 3,
+          marginBottom: -4,
+          position: 'absolute',
+          bottom: -4,
+        }}>
+          {/* New button */}
+          <TouchableOpacity
+            onPress={handlePress}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: 22,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+            }}
+          >
+            <Text style={{
+              fontSize: 15,
+              fontWeight: '600',
+              color: '#FFFFFF',
+              fontFamily: 'System',
+              marginRight: 6,
+            }}>
+              ✏️ New
+            </Text>
+          </TouchableOpacity>
+
+          {/* Refresh button */}
+          <TouchableOpacity
+            onPress={handleRefresh}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              borderRadius: 20,
+              width: 40,
+              height: 40,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                stroke="#FFFFFF"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+export const TestWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/affinity-groups');
+  };
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress}
+      activeOpacity={0.8}
+      style={[
+        baseWidgetStyle, 
+        { 
+          backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+          padding: 20,
+        }
+      ]}
+    >
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{
+          fontSize: 32,
+          textAlign: 'center',
+          marginBottom: 8,
+        }}>🧩</Text>
+        <Text style={{
+          fontSize: 16,
+          fontWeight: '600',
+          color: colors.primaryText,
+          textAlign: 'center',
+          marginBottom: 4,
+          fontFamily: 'System',
+        }}>
+          Affinity Groups
+        </Text>
+        <Text style={{
+          fontSize: 12,
+          color: colors.secondaryText,
+          textAlign: 'center',
+          fontFamily: 'System',
+        }}>
+          Find your people
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 

@@ -1,8 +1,7 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     ActivityIndicator,
     ScrollView,
@@ -12,31 +11,13 @@ import {
     View
 } from 'react-native';
 import { Fonts } from '../constants/Fonts';
-
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  description?: string;
-  location?: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  end: {
-    dateTime?: string;
-    date?: string;
-  };
-  htmlLink?: string;
-  hangoutLink?: string;
-}
+import { CalendarEvent, useCalendar } from '../contexts/CalendarContext';
 
 export default function CalendarPage() {
   const router = useRouter();
   const systemColorScheme = useColorScheme();
   const isDarkMode = systemColorScheme === 'dark';
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { events, loading, error, fetchEvents } = useCalendar();
 
   const colors = {
     background: isDarkMode ? '#000000' : '#FFFFFF',
@@ -48,70 +29,6 @@ export default function CalendarPage() {
     shadow: isDarkMode ? '#000000' : '#000000',
     border: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
   };
-
-  // Get current week's start and end dates
-  const getCurrentWeekDates = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - dayOfWeek); // Start from Sunday
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6); // End on Saturday
-    endOfWeek.setHours(23, 59, 59, 999);
-
-    return {
-      start: startOfWeek.toISOString(),
-      end: endOfWeek.toISOString(),
-    };
-  };
-
-  // Fetch events from Google Calendar
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { start, end } = getCurrentWeekDates();
-      
-      // Access environment variables through Expo Constants
-      const apiKey = Constants.expoConfig?.extra?.googleApiKey;
-      const calendarId = Constants.expoConfig?.extra?.googleCalendarId;
-
-      console.log('API Key available:', !!apiKey);
-      console.log('Calendar ID available:', !!calendarId);
-
-      if (!apiKey || !calendarId) {
-        throw new Error('Google Calendar API key or Calendar ID not configured');
-      }
-
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&key=${apiKey}`;
-
-      console.log('Fetching from URL:', url);
-
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`Failed to fetch events: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('Fetched events:', data.items?.length || 0);
-      setEvents(data.items || []);
-    } catch (err) {
-      console.error('Error fetching calendar events:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load events');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
 
   // Format date and time for display
   const formatEventDateTime = (event: CalendarEvent) => {
@@ -398,7 +315,7 @@ export default function CalendarPage() {
             paddingLeft: 4,
           }}
         >
-          Upcoming Events
+          Next 7 Days
         </Text>
 
         {loading ? (
@@ -508,7 +425,7 @@ export default function CalendarPage() {
                 textAlign: 'center',
               }}
             >
-              No events this week
+              No events in the next 7 days
             </Text>
             <Text
               style={{
@@ -551,10 +468,10 @@ export default function CalendarPage() {
                 }}
               >
                 {events.length === 0 
-                  ? "May Allah bless your free time this week! 🤲" 
+                  ? "May Allah bless your free time ahead! 🤲" 
                   : events.length === 1
-                  ? "You have 1 blessed gathering coming up this week, insha'Allah! 🌙"
-                  : `You have ${events.length} blessed gatherings coming up this week, insha'Allah! 🌙`
+                  ? "You have 1 blessed gathering coming up in the next 7 days, insha'Allah! 🌙"
+                  : `You have ${events.length} blessed gatherings coming up in the next 7 days, insha'Allah! 🌙`
                 }
               </Text>
             </View>
