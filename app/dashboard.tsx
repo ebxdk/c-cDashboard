@@ -33,6 +33,7 @@ import {
     getWidgetGridSize,
     rearrangeWidgets
 } from '../utils/gridUtils';
+import PersonalDetails from './PersonalDetails';
 
 export default function Dashboard() {
   const params = useLocalSearchParams();
@@ -73,6 +74,10 @@ export default function Dashboard() {
   // Settings button animation values (copying journal + button pattern)
   const settingsButtonScale = useSharedValue(1);
   const settingsButtonOpacity = useSharedValue(1);
+
+  const [isPersonalDetailsVisible, setIsPersonalDetailsVisible] = useState(false);
+  const [isAppearanceVisible, setIsAppearanceVisible] = useState(false);
+  
 
   useEffect(() => {
     themeTransition.value = withTiming(isDarkMode ? 1 : 0, {
@@ -1307,6 +1312,7 @@ export default function Dashboard() {
                       </View>
                     </View>
                   ) : (
+
                     // Main Settings Content
                     <>
                       {/* Profile Section */}
@@ -1345,22 +1351,35 @@ export default function Dashboard() {
                           }}>
                             your.email@example.com
                           </Text>
+                          
+                          {/* Personals Details */}
                           <TouchableOpacity style={{
                             paddingVertical: 12,
                             paddingHorizontal: 20,
                             backgroundColor: colors.accent,
                             borderRadius: 25,
                             alignSelf: 'flex-start',
-                          }}>
+                          }}
+                          onPress={() => {
+                            // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            setIsPersonalDetailsVisible(true);
+                          }}
+                          activeOpacity={0.8}
+                          >
+
                             <Text style={{
                               fontSize: 15,
                               fontWeight: '600',
                               color: '#FFFFFF',
                               letterSpacing: -0.1,
                             }}>
-                              Edit Profile
+                              Edit Profile    
+                              
                             </Text>
+
                           </TouchableOpacity>
+                          
+
                         </View>
                       </View>
 
@@ -1449,7 +1468,11 @@ export default function Dashboard() {
                                 borderBottomWidth: 0.5,
                                 borderBottomColor: colors.cardBorder,
                               }}
-                              onPress={openBackgroundSelector}
+                              // onPress={openBackgroundSelector}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setIsAppearanceVisible(true);
+                              }}
                               activeOpacity={0.7}
                             >
                               <View style={{
@@ -1574,6 +1597,7 @@ export default function Dashboard() {
                               }}
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                
                               }}
                               activeOpacity={0.7}
                             >
@@ -1838,6 +1862,12 @@ export default function Dashboard() {
             </PanGestureHandler>
           </View>
         </Modal>
+
+        {/* Personal Details */}
+        <PersonalDetails
+          visible={isPersonalDetailsVisible}
+          onClose={() => setIsPersonalDetailsVisible(false)}
+        />
       </View>
     </GestureHandlerRootView>
   );

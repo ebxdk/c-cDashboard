@@ -385,7 +385,7 @@ export const MinaraWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           fontSize: 16,
           fontWeight: '600',
           color: isDarkMode ? '#FFFFFF' : '#000000',
-          fontFamily: 'System',
+          fontFamily: '-apple-system',
           textAlign: 'center',
           letterSpacing: 0.2,
         }}>

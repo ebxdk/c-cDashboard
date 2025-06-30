@@ -76,19 +76,57 @@ export default function BottomNavBar() {
       style={[
         styles.container,
         {
-          backgroundColor: isInspirePage 
-            ? (isDarkMode ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.15)') 
-            : Colors[colorScheme].background,
+          backgroundColor: 'transparent', // Back to transparent for blur effect
           shadowColor: colorScheme === 'dark' ? '#000' : '#000',
           overflow: 'hidden', // Ensure blur effect is contained
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0,0,0,0.04)',
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0,0,0,0.08)',
+          // Add additional shadow layers for more depth
+          ...(Platform.OS === 'ios' && {
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.25,
+            shadowRadius: 32,
+          }),
+          // Add a subtle inner shadow effect
+          ...(Platform.OS === 'android' && {
+            elevation: 20,
+          }),
         },
       ]}
-      lightColor={isInspirePage 
-        ? (isDarkMode ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.15)') 
-        : "#fff"}
-      darkColor={isInspirePage ? 'rgba(0, 0, 0, 0.25)' : "#151718"}
+      lightColor="transparent"
+      darkColor="transparent"
     >
+      {/* Main blur background */}
+      <BlurView
+        intensity={isDarkMode ? 50 : 80}
+        tint={isDarkMode ? "dark" : "light"}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: 40,
+        }}
+      />
+
+      {/* Subtle color overlay for better contrast */}
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: isDarkMode 
+              ? 'rgba(0, 0, 0, 0.15)' 
+              : 'rgba(255, 255, 255, 0.15)',
+            borderRadius: 40,
+          }
+        ]}
+        pointerEvents="none"
+      />
+
       {/* Explicit darkening overlay for modal states */}
       <Animated.View
         style={[
@@ -96,27 +134,13 @@ export default function BottomNavBar() {
           {
             backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
             opacity: overlayOpacity,
-            borderTopLeftRadius: 36,
-            borderTopRightRadius: 36,
+            borderRadius: 40,
           }
         ]}
         pointerEvents="none"
       />
 
-      {/* Add blur effect when on inspire page */}
-      {isInspirePage && (
-        <BlurView
-          intensity={isDarkMode ? 40 : 60}
-          tint={isDarkMode ? "dark" : "light"}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
-      )}
+      {/* Remove the conditional blur for inspire page since we now have blur everywhere */}
       
       {NAV_ITEMS.map((item) => {
         const isActive =
@@ -170,33 +194,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 104,
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 8,
+    left: 20,
+    right: 20,
+    bottom: 25,
+    height: 80,
+    borderRadius: 40,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 32,
+    elevation: 20,
     zIndex: 50,
-    borderTopWidth: 0.5,
-    paddingHorizontal: 32,
-    paddingTop: 18,
-    paddingBottom: 28,
+    borderWidth: 0.5,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    gap: 2,
+    gap: 4,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
     letterSpacing: 0.1,
@@ -208,5 +228,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    borderRadius: 40,
   },
 }); 

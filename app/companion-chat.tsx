@@ -2,45 +2,27 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Fonts } from '@/constants/Fonts';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Dimensions,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Avatar data for cohort members - using memoji images for men only
+// Avatar data for companion chat
 const avatarData: { [key: string]: any } = {
-  'Omar Malik': require('../assets/images/memoji1.png'),
-  'Ahmed Hassan': require('../assets/images/memoji2.png'),
-  'Yusuf Ali': require('../assets/images/memoji3.png'),
-  'Ahmed': require('../assets/images/memoji1.png'),
-  'Omar': require('../assets/images/memoji2.png'),
-  'Tariq Syed': require('../assets/images/memoji3.png'),
-  'Bilal Khan': require('../assets/images/memoji1.png'),
-  'Samir Ali': require('../assets/images/memoji2.png')
+  'Omar Hassan': require('../assets/images/memoji2.png'),
+  'Bilal Ahmed': require('../assets/images/memoji1.png'), // Using memoji1 for the revert
 };
-
-// Cohort members data - only men
-const cohortMembers = [
-  { name: 'Omar Malik', online: true },
-  { name: 'Ahmed Hassan', online: true },
-  { name: 'Yusuf Ali', online: false },
-  { name: 'Ahmed', online: true },
-  { name: 'Omar', online: false },
-  { name: 'Tariq Syed', online: true },
-  { name: 'Bilal Khan', online: false },
-  { name: 'Samir Ali', online: true }
-];
 
 interface Message {
   id: number;
@@ -52,7 +34,7 @@ interface Message {
   isSystemMessage?: boolean;
 }
 
-export default function MyCohortScreen() {
+export default function CompanionChatScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const isDarkMode = colorScheme === 'dark';
@@ -62,166 +44,139 @@ export default function MyCohortScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      sender: 'Omar Malik',
-      message: 'joined #my-cohort.',
-      time: '9:15 AM',
+      sender: 'Omar Hassan',
+      message: 'Assalamu alaikum Bilal! Welcome to your personal companion chat. I\'m here to support you on your Islamic journey.',
+      time: '9:00 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
-      isSystemMessage: true,
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 2,
-      sender: 'Ahmed Hassan',
-      message: 'joined #my-cohort.',
-      time: '9:22 AM',
-      isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
-      isSystemMessage: true,
+      sender: 'Bilal Ahmed',
+      message: 'Wa alaikum assalam Omar! Thank you so much. I\'m still learning and sometimes feel overwhelmed with everything.',
+      time: '9:05 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 3,
-      sender: 'Yusuf Ali',
-      message: 'joined #my-cohort.',
-      time: '10:05 AM',
+      sender: 'Omar Hassan',
+      message: 'That\'s completely normal, brother. Every Muslim\'s journey is unique. What specific area would you like to focus on today?',
+      time: '9:07 AM',
       isMe: false,
-      avatar: avatarData['Yusuf Ali'],
-      isSystemMessage: true,
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 4,
-      sender: 'Omar Malik',
-      message: 'Assalamu alaikum everyone! Hope you\'re all having a blessed day.',
-      time: '10:30 AM',
-      isMe: false,
-      avatar: avatarData['Omar Malik'],
+      sender: 'Bilal Ahmed',
+      message: 'I\'ve been struggling with establishing a consistent prayer routine. Sometimes I miss Fajr because I\'m not used to waking up so early.',
+      time: '9:10 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 5,
-      sender: 'Ahmed Hassan',
-      message: 'Wa alaikum assalam Omar! Alhamdulillah, just finished my morning prayers. How is everyone preparing for Jummah today?',
-      time: '10:35 AM',
+      sender: 'Omar Hassan',
+      message: 'I understand completely. Building the habit of Fajr prayer is challenging even for born Muslims. Let me share some practical tips that have helped many new Muslims.',
+      time: '9:12 AM',
       isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 6,
-      sender: 'Yusuf Ali',
-      message: 'Wa alaikum assalam! I\'m planning to leave work early today to attend the khutbah at the community center. Has anyone been there before?',
-      time: '10:42 AM',
+      sender: 'Omar Hassan',
+      message: 'First, try setting multiple alarms 10 minutes apart. Also, there\'s a beautiful Lantern series called "Establishing Prayer Habits" that addresses exactly this challenge.',
+      time: '9:13 AM',
       isMe: false,
-      avatar: avatarData['Yusuf Ali'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 7,
-      sender: 'Ahmed',
-      message: 'Yes! The imam there gives wonderful khutbahs. Very inspiring and relevant to our daily lives as young Muslims.',
-      time: '10:45 AM',
-      isMe: false,
-      avatar: avatarData['Ahmed'],
+      sender: 'Bilal Ahmed',
+      message: 'That sounds really helpful! I\'ve been trying to go to bed earlier too. Is there a specific time you recommend?',
+      time: '9:15 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 8,
-      sender: 'Omar Malik',
-      message: 'That sounds perfect! I\'ve been looking for a community that understands the challenges we face balancing deen and dunya.',
-      time: '10:48 AM',
+      sender: 'Omar Hassan',
+      message: 'MashAllah, that\'s excellent thinking! The Prophet (PBUH) encouraged sleeping early. Try to sleep by 10 PM if Fajr is around 5 AM. This gives you 7 hours of rest.',
+      time: '9:17 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 9,
-      sender: 'Omar',
-      message: 'Assalamu alaikum brothers! As your companion for this cohort, I wanted to share some exciting Lantern content with you all. Have you checked out the new series on "Balancing Deen and Dunya" yet?',
-      time: '11:15 AM',
-      isMe: false,
-      avatar: avatarData['Omar'],
+      sender: 'Bilal Ahmed',
+      message: 'JazakAllahu khair! I also wanted to ask about making du\'a. Sometimes I feel like I don\'t know the right words to say.',
+      time: '9:20 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 10,
-      sender: 'Tariq Syed',
-      message: 'Wa alaikum assalam Omar! Not yet, but that sounds exactly what I need. Where can we find it?',
-      time: '11:18 AM',
+      sender: 'Omar Hassan',
+      message: 'SubhanAllah, this is such a beautiful question! Allah accepts du\'a in any language, from the heart. You can speak to Allah in English, Arabic, or any language you\'re comfortable with.',
+      time: '9:22 AM',
       isMe: false,
-      avatar: avatarData['Tariq Syed'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 11,
-      sender: 'Omar',
-      message: 'It\'s in our Lantern library under "Personal Development". I highly recommend we all watch Episode 3 together this week - it covers maintaining prayers during busy schedules. Perfect timing, right?',
-      time: '11:20 AM',
+      sender: 'Omar Hassan',
+      message: 'There\'s a wonderful Lantern collection called "Du\'a for New Muslims" that includes both Arabic du\'as with translations and guidance on making personal du\'as.',
+      time: '9:23 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 12,
-      sender: 'Ahmed Hassan',
-      message: 'JazakAllahu khair Omar! I love how you always guide us to the right content. I\'ll watch it tonight insha\'Allah.',
-      time: '11:22 AM',
-      isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
+      sender: 'Bilal Ahmed',
+      message: 'That\'s so comforting to know! Sometimes I worry that I\'m not doing things "correctly" as a new Muslim.',
+      time: '9:25 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 13,
-      sender: 'Bilal Khan',
-      message: 'MashAllah, this is why having a companion is so beneficial. Omar, should we discuss it in our next group session?',
-      time: '11:30 AM',
+      sender: 'Omar Hassan',
+      message: 'Brother, your sincerity and eagerness to learn are exactly what Allah loves. Islam is a journey of growth, not perfection. Take it one step at a time.',
+      time: '9:27 AM',
       isMe: false,
-      avatar: avatarData['Bilal Khan'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 14,
-      sender: 'Omar',
-      message: 'Absolutely! Let\'s plan to discuss it this Friday after Jummah. I\'ll also share the reflection questions from Lantern to help guide our conversation. This will be a great learning opportunity for all of us.',
-      time: '11:33 AM',
-      isMe: false,
-      avatar: avatarData['Omar'],
+      sender: 'Bilal Ahmed',
+      message: 'Ameen! That really puts my mind at ease. Can we schedule a time to go through some of the Lantern content together?',
+      time: '9:30 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 15,
-      sender: 'Samir Ali',
-      message: 'Ameen to that! I\'ve been making du\'a for all of us to grow stronger in our faith together. May Allah bless this group and our companion Omar.',
-      time: '11:35 AM',
+      sender: 'Omar Hassan',
+      message: 'Absolutely! How about we meet here every Tuesday and Friday at 9 AM? We can discuss your progress and explore new topics based on your interests.',
+      time: '9:32 AM',
       isMe: false,
-      avatar: avatarData['Samir Ali'],
+      avatar: avatarData['Omar Hassan'],
     },
     {
       id: 16,
-      sender: 'Yusuf Ali',
-      message: 'That\'s wonderful! Omar, I\'ve been working on memorizing Surah Al-Mulk. Are there any Lantern resources on Quran memorization techniques?',
-      time: '11:40 AM',
-      isMe: false,
-      avatar: avatarData['Yusuf Ali'],
+      sender: 'Bilal Ahmed',
+      message: 'Perfect! I\'m looking forward to it. JazakAllahu khair for being so patient and helpful, Omar.',
+      time: '9:35 AM',
+      isMe: true,
+      avatar: avatarData['Bilal Ahmed'],
     },
     {
       id: 17,
-      sender: 'Omar',
-      message: 'SubhanAllah, great question Yusuf! There\'s an excellent series called "Memorizing with Meaning" in the Quran Studies section. I\'ll send the link to our group chat. It really helps with retention and understanding.',
-      time: '11:43 AM',
+      sender: 'Omar Hassan',
+      message: 'Wa iyyak, brother! Remember, I\'m always here if you need guidance between our scheduled sessions. May Allah make your journey easy and blessed.',
+      time: '9:37 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
-    },
-    {
-      id: 18,
-      sender: 'Ahmed',
-      message: 'JazakAllahu khair Omar! You always know exactly what content we need. This is why our cohort is thriving under your guidance.',
-      time: '11:45 AM',
-      isMe: false,
-      avatar: avatarData['Ahmed'],
-    },
-    {
-      id: 19,
-      sender: 'Omar Malik',
-      message: 'Ameen! Omar, your leadership and the Lantern resources have really transformed how I approach my daily Islamic practices.',
-      time: '11:50 AM',
-      isMe: false,
-      avatar: avatarData['Omar Malik'],
-    },
-    {
-      id: 20,
-      sender: 'Omar',
-      message: 'JazakAllahu khair everyone for this beautiful discussion! Remember, our goal is to support each other\'s spiritual growth. I\'ll share the Lantern content links in our group resources. Let\'s make this week count, brothers!',
-      time: '12:00 PM',
-      isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: avatarData['Omar Hassan'],
     }
   ]);
 
@@ -254,11 +209,11 @@ export default function MyCohortScreen() {
     if (inputText.trim()) {
       const newMessage: Message = {
         id: messages.length + 1,
-        sender: 'You',
+        sender: 'Bilal Ahmed',
         message: inputText.trim(),
         time: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
         isMe: true,
-        avatar: null,
+        avatar: avatarData['Bilal Ahmed'],
       };
       
       setMessages([...messages, newMessage]);
@@ -278,13 +233,14 @@ export default function MyCohortScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: slackColors.background }]}>
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar 
         barStyle="light-content"
         backgroundColor={slackColors.headerBackground}
         translucent={false}
       />
 
-      {/* Header - matching the image design */}
+      {/* Header - matching the companion design */}
       <View style={[styles.header, { backgroundColor: '#FFFFFF' }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity 
@@ -298,17 +254,17 @@ export default function MyCohortScreen() {
           <View style={styles.headerCenter}>
             <View style={styles.headerSubtitleContainer}>
               <View style={styles.titleRowInBox}>
-                <IconSymbol name="lock.fill" size={16} color="#000" style={{ marginRight: 6, marginTop: 3 }} />
-                <Text style={styles.headerTitle}>my-cohort</Text>
+                <IconSymbol name="person.fill" size={16} color="#000" style={{ marginRight: 6, marginTop: 3 }} />
+                <Text style={styles.headerTitle}>Omar Hassan</Text>
               </View>
               <Text style={styles.headerSubtitle}>
-                {cohortMembers.length} members • 2 tabs ▼
+                1-on-1 Islamic guidance • Online ▼
               </Text>
             </View>
           </View>
 
           <TouchableOpacity style={styles.headerRightButton}>
-            <IconSymbol name="headphones" size={18} color="#000" />
+            <IconSymbol name="phone.fill" size={18} color="#000" />
           </TouchableOpacity>
         </View>
       </View>
@@ -321,20 +277,20 @@ export default function MyCohortScreen() {
           contentContainerStyle={[styles.messagesContent, { paddingBottom: 120 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Channel Introduction - Slack style */}
+          {/* Channel Introduction - Companion style */}
           <View style={styles.channelIntro}>
-            <View style={styles.channelIntroIcon}>
-              <Text style={styles.channelIntroIconText}>#</Text>
+            <View style={[styles.channelIntroIcon, { backgroundColor: '#4A90E2' }]}>
+              <Text style={styles.channelIntroIconText}>👤</Text>
             </View>
             <View style={styles.channelIntroContent}>
               <Text style={[styles.channelIntroTitle, { color: slackColors.primaryText }]}>
-                Welcome to #my-cohort!
+                Welcome to Omar Hassan's Personal Companion!
               </Text>
               <Text style={[styles.channelIntroText, { color: slackColors.secondaryText }]}>
-                This channel is for Islamic brotherhood and learning. {cohortMembers.length} members are here.
+                This is your private space for 1-on-1 Islamic guidance with Omar Hassan, your dedicated companion.
               </Text>
               <Text style={[styles.channelIntroSubtext, { color: slackColors.tertiaryText }]}>
-                View channel details
+                All conversations are confidential
               </Text>
             </View>
           </View>
@@ -352,7 +308,7 @@ export default function MyCohortScreen() {
           {messages.map((msg, index) => {
             const prevMessage = messages[index - 1];
             const showSender = !prevMessage || prevMessage.sender !== msg.sender || prevMessage.isSystemMessage !== msg.isSystemMessage;
-            const showAvatar = showSender && !msg.isMe;
+            const showAvatar = showSender;
 
             return (
               <View key={msg.id}>
@@ -406,7 +362,7 @@ export default function MyCohortScreen() {
           
           <TextInput
             style={styles.messageInput}
-            placeholder="Message #my-cohort"
+            placeholder="Message Omar Hassan..."
             placeholderTextColor="#999"
             value={inputText}
             onChangeText={setInputText}

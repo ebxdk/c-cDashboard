@@ -40,7 +40,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   const formattedElements: React.ReactElement[] = [];
   let elementKey = 0;
   
-  // Strict Arabic text processing with enforced line separation
+  // Enhanced Arabic text processing with STRICT line separation
   const processArabicText = (text: string): React.ReactElement[] => {
     const segments: React.ReactElement[] = [];
     let segmentKey = elementKey * 1000 + Math.random() * 1000;
@@ -48,37 +48,51 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     // Check if text actually contains Arabic characters before processing
     const hasArabic = /[\u0600-\u06FF]/.test(text);
     
-    // If no Arabic text, return as-is
+    // If no Arabic text, return as-is with normal English styling
     if (!hasArabic) {
       return [
-        <Text key={`no-arabic-${elementKey}-${segmentKey}`} style={{ 
-          color: colors.primaryText,
+        <View key={`no-arabic-wrapper-${elementKey}-${segmentKey}`} style={{
           width: '100%',
-          flexShrink: 1,
+          marginVertical: 4,
         }}>
-          {text}
-        </Text>
+          <Text style={{ 
+            color: colors.primaryText,
+            fontSize: 18,
+            lineHeight: 26,
+            width: '100%',
+            flexShrink: 1,
+            paddingVertical: 4,
+            textAlign: 'left',
+          }}>
+            {text}
+          </Text>
+        </View>
       ];
     }
     
-    // More comprehensive Arabic detection with word boundaries
-    // This will capture Arabic phrases more accurately
-    const arabicRegex = /[\u0600-\u06FF][\u0600-\u06FF\s\u060C\u061B\u061F\u0640\u064B-\u065F\u0670\u06D6-\u06ED\u06F0-\u06F9\u0750-\u077F\(\)\[\]\{\}\"\']*[\u0600-\u06FF]/g;
+    // Enhanced Arabic detection with word boundaries
+    const arabicRegex = /[\u0600-\u06FF][\u0600-\u06FF\s\u060C\u061B\u061F\u0640\u064B-\u065F\u0670\u06D6-\u06ED\u06F0-\u06F9\u0750-\u077F\(\)\[\]\{\}\"\'،\.:\,0-9\(\)\[\]\{\};]*[\u0600-\u06FF]/g;
     
-    // Split text into segments at Arabic boundaries
+    // Split text into segments with FORCED line breaks between Arabic and English
     let lastIndex = 0;
     let match;
-    const segments_data = [];
+    const segments_data: Array<{
+      type: 'english' | 'arabic';
+      text: string;
+      start: number;
+      end: number;
+    }> = [];
     
     // Collect all Arabic matches
     while ((match = arabicRegex.exec(text)) !== null) {
       // Add any English text before this Arabic match
       if (match.index > lastIndex) {
-        const englishText = text.slice(lastIndex, match.index).trim();
-        if (englishText) {
+        const englishText = text.slice(lastIndex, match.index);
+        // Don't trim to preserve spacing, but ensure we have actual content
+        if (englishText && englishText.trim()) {
           segments_data.push({
             type: 'english',
-            text: englishText,
+            text: englishText.trim(), // Trim for clean display
             start: lastIndex,
             end: match.index
           });
@@ -86,11 +100,11 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       }
       
       // Add the Arabic text
-      const arabicText = match[0].trim();
-      if (arabicText) {
+      const arabicText = match[0];
+      if (arabicText && arabicText.trim()) {
         segments_data.push({
           type: 'arabic',
-          text: arabicText,
+          text: arabicText.trim(), // Trim for clean display
           start: match.index,
           end: match.index + match[0].length
         });
@@ -101,11 +115,11 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     
     // Add any remaining English text
     if (lastIndex < text.length) {
-      const remainingText = text.slice(lastIndex).trim();
-      if (remainingText) {
+      const remainingText = text.slice(lastIndex);
+      if (remainingText && remainingText.trim()) {
         segments_data.push({
           type: 'english',
-          text: remainingText,
+          text: remainingText.trim(), // Trim for clean display
           start: lastIndex,
           end: text.length
         });
@@ -115,61 +129,67 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     // Reset regex
     arabicRegex.lastIndex = 0;
     
-    // Render segments with strict line separation
+    // Render segments with STRICT separation and NEW LINE enforcement
     segments_data.forEach((segment, index) => {
       if (segment.type === 'arabic') {
-        // Arabic text gets its own styled container with line breaks
+        // FORCE NEW LINE: Add Arabic text with complete line separation
         segments.push(
-          <View key={`arabic-container-${elementKey}-${segmentKey++}`} style={{
+          <View key={`arabic-line-break-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: 32, // Increased top margin for better separation
-            marginBottom: 48, // Significantly increased bottom margin
-            paddingVertical: 16, // Increased padding around the entire container
-            zIndex: 10, // Higher z-index to ensure Arabic containers are always on top
-            position: 'relative', // Establish stacking context
-            // Add clear separation from other elements
-            borderTopWidth: 0,
-            borderBottomWidth: 0,
+            marginTop: index === 0 ? 0 : 20, // Force clear separation from previous content
+            marginBottom: 20, // Force clear separation from next content
           }}>
             <View style={{
-              paddingVertical: 32, // Increased internal padding
-              paddingHorizontal: 28,
-              backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.12)' : 'rgba(135, 206, 235, 0.15)',
-              borderRadius: 16, // Slightly larger border radius
-              borderLeftWidth: 4,
-              borderLeftColor: '#87CEEB',
+              paddingVertical: 24,
+              paddingHorizontal: 24,
+              backgroundColor: isDarkMode ? 'rgba(135, 206, 235, 0.08)' : 'rgba(135, 206, 235, 0.12)',
+              borderRadius: 16,
+              borderRightWidth: 4,
+              borderRightColor: '#87CEEB',
+              borderLeftWidth: 0,
               width: '100%',
               maxWidth: '100%',
               alignSelf: 'stretch',
               marginHorizontal: 0,
-              minHeight: 80, // Increased minimum height
+              minHeight: 80,
               shadowColor: isDarkMode ? '#000000' : '#87CEEB',
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: isDarkMode ? 0.4 : 0.15,
-              shadowRadius: 6,
-              elevation: 5, // Higher elevation for better separation
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: isDarkMode ? 0.2 : 0.08,
+              shadowRadius: 3,
+              elevation: 2,
               overflow: 'visible',
-              // Ensure proper spacing and no overlap
-              marginVertical: 8,
+              justifyContent: 'center',
+              alignItems: 'stretch',
             }}>
               <Text
                 style={{
                   color: '#4A90E2',
-                  fontWeight: '600',
+                  fontWeight: '500',
                   fontSize: 20,
-                  lineHeight: 45, // Increased line height for better spacing
-                  textAlign: 'right', // RTL alignment for Arabic
-                  fontFamily: 'System',
+                  lineHeight: 38,
+                  textAlign: 'right',
+                  direction: 'rtl',
+                  fontFamily: Platform.OS === 'ios' ? 'Geeza Pro' : 'Noto Sans Arabic',
                   width: '100%',
                   flexShrink: 1,
                   flexWrap: 'wrap',
-                  paddingVertical: 12, // Increased padding
-                  paddingBottom: 16, // Even more bottom padding within text
-                  textAlignVertical: 'top',
+                  paddingVertical: 8,
+                  paddingHorizontal: 4,
+                  textAlignVertical: 'center',
                   includeFontPadding: false,
+                  writingDirection: 'rtl',
+                  letterSpacing: 0,
+                  textShadowColor: 'transparent',
+                  textDecorationLine: 'none',
+                  maxWidth: '100%',
+                  overflow: 'visible',
+                  wordWrap: 'break-word' as any,
                 }}
-                numberOfLines={0} // Allow unlimited lines for dynamic height
-                ellipsizeMode="clip" // Don't truncate, let it wrap naturally
+                numberOfLines={0}
+                ellipsizeMode="clip"
+                adjustsFontSizeToFit={false}
+                allowFontScaling={true}
+                selectable={false}
               >
                 {segment.text}
               </Text>
@@ -177,30 +197,24 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
           </View>
         );
       } else {
-        // English text gets normal styling with line break after Arabic
-        const prevSegment = segments_data[index - 1];
-        const nextSegment = segments_data[index + 1];
-        const needsTopMargin = prevSegment && prevSegment.type === 'arabic';
-        const needsBottomMargin = nextSegment && nextSegment.type === 'arabic';
-        
+        // FORCE NEW LINE: Add English text with complete line separation
         segments.push(
-          <View key={`english-container-${elementKey}-${segmentKey++}`} style={{
+          <View key={`english-line-break-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: needsTopMargin ? 40 : 12, // Much larger margins around Arabic
-            marginBottom: needsBottomMargin ? 36 : 12,
-            paddingVertical: 8, // Increased padding
-            zIndex: 0, // Lower z-index than Arabic containers
-            // Ensure clear separation from Arabic containers
-            minHeight: 20,
+            marginTop: index === 0 ? 0 : 16, // Force clear separation from previous content
+            marginBottom: 16, // Force clear separation from next content
           }}>
             <Text style={{ 
               color: colors.primaryText,
+              fontSize: 18,
+              lineHeight: 26,
               width: '100%',
               flexShrink: 1,
-              fontSize: 16,
-              lineHeight: 26, // Slightly increased line height
-              paddingHorizontal: 8, // Increased horizontal padding
-              paddingVertical: 6, // Increased vertical padding
+              paddingVertical: 4,
+              paddingHorizontal: 0,
+              textAlign: 'left',
+              maxWidth: '100%',
+              flexWrap: 'wrap',
             }}>
               {segment.text}
             </Text>
@@ -210,11 +224,21 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     });
     
     return segments.length > 0 ? segments : [
-      <Text key={`arabic-fallback-${elementKey}-${segmentKey}`} style={{ 
-        color: colors.primaryText,
+      <View key={`arabic-fallback-wrapper-${elementKey}-${segmentKey}`} style={{
         width: '100%',
-        flexShrink: 1,
-      }}>{text}</Text>
+        marginVertical: 4,
+      }}>
+        <Text style={{ 
+          color: colors.primaryText,
+          width: '100%',
+          flexShrink: 1,
+          fontSize: 18,
+          lineHeight: 26,
+          paddingVertical: 4,
+        }}>
+          {text}
+        </Text>
+      </View>
     ];
   };
   
@@ -224,20 +248,14 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
     let segmentKey = elementKey * 10000;
     let currentIndex = 0;
     
-    // Skip complex formatting during active generation for small text chunks
-    if (isGenerating && text.length < 30) {
-      return processArabicText(text);
-    }
-    
-    // Simplified patterns for better performance during streaming
-    const patterns = isGenerating ? [
-      { regex: /\*\*([^*\n]+)\*\*/g, type: 'bold' },
-      { regex: /`([^`\n]+)`/g, type: 'code' },
-    ] : [
-      { regex: /\*\*([^*\n]+)\*\*/g, type: 'bold' },
-      { regex: /\*([^*\n]+)\*/g, type: 'italic' },
-      { regex: /`([^`\n]+)`/g, type: 'code' },
-      { regex: /~~([^~\n]+)~~/g, type: 'strikethrough' },
+    // Always process formatting, but optimize for streaming performance
+    // Enhanced patterns with proper precedence - longer patterns first to avoid conflicts
+    const patterns = [
+      { regex: /\*\*\*([^*]+?)\*\*\*/g, type: 'header' }, // Triple asterisk for headers
+      { regex: /\*\*([^*]+?)\*\*/g, type: 'bold' }, // Double asterisk for bold
+      { regex: /\*([^*]+?)\*/g, type: 'italic' }, // Single asterisk for italic
+      { regex: /`([^`]+?)`/g, type: 'code' }, // Backticks for code
+      { regex: /~~([^~]+?)~~/g, type: 'strikethrough' }, // Tildes for strikethrough
     ];
     
     const matches: Array<{
@@ -247,98 +265,177 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       type: string;
     }> = [];
     
+    // Collect all matches - simplified approach
     patterns.forEach(pattern => {
       let match;
       const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
       while ((match = regex.exec(text)) !== null) {
-        matches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          content: match[1],
-          type: pattern.type
-        });
+        // Only include matches that have proper opening and closing markers
+        const fullMatch = match[0];
+        const content = match[1];
+        
+        // Verify completeness based on pattern type
+        let isValid = false;
+        switch (pattern.type) {
+          case 'header':
+            isValid = fullMatch.startsWith('***') && fullMatch.endsWith('***') && content.length > 0;
+            break;
+          case 'bold':
+            isValid = fullMatch.startsWith('**') && fullMatch.endsWith('**') && content.length > 0;
+            break;
+          case 'italic':
+            isValid = fullMatch.startsWith('*') && fullMatch.endsWith('*') && content.length > 0 && !fullMatch.startsWith('**');
+            break;
+          case 'code':
+            isValid = fullMatch.startsWith('`') && fullMatch.endsWith('`') && content.length > 0;
+            break;
+          case 'strikethrough':
+            isValid = fullMatch.startsWith('~~') && fullMatch.endsWith('~~') && content.length > 0;
+            break;
+        }
+        
+        if (isValid) {
+          matches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            content: content,
+            type: pattern.type
+          });
+        }
       }
     });
     
-    // If no formatting patterns found, return text as-is to preserve spacing
+    // If no formatting patterns found, return text as-is
     if (matches.length === 0) {
       return processArabicText(text);
     }
     
-    // Sort matches by position
+    // Sort matches by position and remove overlaps
     matches.sort((a, b) => a.start - b.start);
     
+    // Filter out overlapping matches (keep the first one)
+    const filteredMatches: Array<{
+      start: number;
+      end: number;
+      content: string;
+      type: string;
+    }> = [];
+    for (let i = 0; i < matches.length; i++) {
+      const current = matches[i];
+      const hasOverlap = filteredMatches.some(existing => 
+        (current.start >= existing.start && current.start < existing.end) ||
+        (current.end > existing.start && current.end <= existing.end)
+      );
+      
+      if (!hasOverlap) {
+        filteredMatches.push(current);
+      }
+    }
+    
     // Process text with formatting
-    matches.forEach(match => {
-      // Add text before match - PRESERVE SPACES
+    filteredMatches.forEach(match => {
+      // Add text before match
       if (match.start > currentIndex) {
         const beforeText = text.slice(currentIndex, match.start);
-        if (beforeText) { // Don't trim to preserve spaces
+        if (beforeText) {
           segments.push(...processArabicText(beforeText));
           segmentKey += 100;
         }
       }
       
       // Add formatted text
-      switch (match.type) {
-        case 'bold':
-          segments.push(
-            <Text key={`bold-${segmentKey++}`} style={{
-              fontWeight: 'bold',
-              color: colors.primaryText,
-              flexShrink: 1,
-            }}>
-              {match.content}
-            </Text>
-          );
-          break;
-        case 'italic':
-          segments.push(
-            <Text key={`italic-${segmentKey++}`} style={{
-              fontStyle: 'italic',
-              color: colors.primaryText,
-              flexShrink: 1,
-            }}>
-              {match.content}
-            </Text>
-          );
-          break;
-        case 'code':
-          segments.push(
-            <Text key={`code-${segmentKey++}`} style={{
-              fontFamily: 'Courier',
-              fontSize: 14,
-              color: isDarkMode ? '#f472b6' : '#ec4899',
-              backgroundColor: isDarkMode ? 'rgba(244, 114, 182, 0.1)' : 'rgba(236, 72, 153, 0.1)',
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-              borderRadius: 4,
-              flexShrink: 1,
-            }}>
-              {match.content}
-            </Text>
-          );
-          break;
-        case 'strikethrough':
-          segments.push(
-            <Text key={`strike-${segmentKey++}`} style={{
-              textDecorationLine: 'line-through',
-              color: isDarkMode ? '#9ca3af' : '#6b7280',
-              flexShrink: 1,
-            }}>
-              {match.content}
-            </Text>
-          );
-          break;
+      const formattedContent = match.content;
+      const hasArabicInFormatted = /[\u0600-\u06FF]/.test(formattedContent);
+      
+      if (hasArabicInFormatted) {
+        // Handle Arabic text with formatting
+        const arabicSegments = processArabicText(formattedContent);
+        segments.push(
+          <View key={`formatted-arabic-${match.type}-${segmentKey++}`} style={{ width: '100%' }}>
+            {arabicSegments}
+          </View>
+        );
+      } else {
+        // Handle English formatted text
+        switch (match.type) {
+          case 'header':
+            segments.push(
+              <Text key={`header-${segmentKey++}`} style={{
+                fontSize: 24,
+                fontWeight: '800',
+                color: colors.primaryText,
+                lineHeight: 32,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'bold':
+            segments.push(
+              <Text key={`bold-${segmentKey++}`} style={{
+                fontWeight: 'bold',
+                color: colors.primaryText,
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'italic':
+            segments.push(
+              <Text key={`italic-${segmentKey++}`} style={{
+                fontStyle: 'italic',
+                color: colors.primaryText,
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'code':
+            segments.push(
+              <Text key={`code-${segmentKey++}`} style={{
+                fontFamily: 'Courier',
+                fontSize: 14,
+                color: isDarkMode ? '#f472b6' : '#ec4899',
+                backgroundColor: isDarkMode ? 'rgba(244, 114, 182, 0.1)' : 'rgba(236, 72, 153, 0.1)',
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                borderRadius: 4,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'strikethrough':
+            segments.push(
+              <Text key={`strike-${segmentKey++}`} style={{
+                textDecorationLine: 'line-through',
+                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+        }
       }
       
       currentIndex = match.end;
     });
     
-    // Add remaining text - PRESERVE SPACES
+    // Add remaining text
     if (currentIndex < text.length) {
       const remainingText = text.slice(currentIndex);
-      if (remainingText) { // Don't trim to preserve spaces
+      if (remainingText) {
         segments.push(...processArabicText(remainingText));
       }
     }
@@ -349,6 +446,8 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
   paragraphs.forEach((paragraph, paragraphIndex) => {
     if (!paragraph.trim()) return;
     
+    // Instead of splitting by lines first, process the entire paragraph
+    // to handle Arabic-English mixed content properly
     const lines = paragraph.split('\n');
     
     lines.forEach((line, lineIndex) => {
@@ -424,15 +523,9 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               marginRight: 8,
               lineHeight: 22,
             }}>•</Text>
-            <Text style={{
-              flex: 1,
-              fontSize: 16,
-              lineHeight: 22,
-              color: colors.primaryText,
-              flexShrink: 1,
-            }}>
+            <View style={{ flex: 1 }}>
               {processInlineFormatting(bulletText)}
-            </Text>
+            </View>
           </View>
         );
         return;
@@ -448,6 +541,7 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
             flexDirection: 'row', 
             marginVertical: 2,
             paddingLeft: 16,
+            width: '100%',
           }}>
             <Text style={{ 
               color: colors.primaryText, 
@@ -455,31 +549,23 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
               lineHeight: 22,
               minWidth: 20,
             }}>{number}.</Text>
-            <Text style={{
-              flex: 1,
-              fontSize: 16,
-              lineHeight: 22,
-              color: colors.primaryText,
-            }}>
+            <View style={{ flex: 1 }}>
               {processInlineFormatting(listText)}
-            </Text>
+            </View>
           </View>
         );
         return;
       }
       
-      // Regular paragraph text
+      // Regular paragraph text - DIRECTLY process with Arabic/English separation
+      const processedSegments = processInlineFormatting(line);
       formattedElements.push(
-        <Text key={`paragraph-${elementKey++}`} style={{
-          fontSize: 16,
-          lineHeight: 22,
-          color: colors.primaryText,
-          marginBottom: lineIndex === lines.length - 1 && paragraphIndex < paragraphs.length - 1 ? 12 : 0,
+        <View key={`paragraph-wrapper-${elementKey++}`} style={{
           width: '100%',
-          flexShrink: 1,
+          marginBottom: lineIndex === lines.length - 1 && paragraphIndex < paragraphs.length - 1 ? 12 : 4,
         }}>
-          {processInlineFormatting(line)}
-        </Text>
+          {processedSegments}
+        </View>
       );
     });
   });
@@ -510,6 +596,13 @@ export default function MinaraChatScreen() {
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
+  
+  // Dropdown states for ChatGPT-style selector
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedApp, setSelectedApp] = useState('MinaraX');
+  const [dropdownAnimation] = useState(new Animated.Value(0));
+  const [dropdownButtonScale] = useState(new Animated.Value(1));
+  
   const scrollViewRef = useRef<ScrollView>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -667,6 +760,13 @@ export default function MinaraChatScreen() {
     newChatBackground: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
     sideMenuBorder: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(229, 231, 235, 0.8)',
     sideMenuAccent: '#3B82F6',
+    // ChatGPT-style dropdown colors
+    dropdownBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+    dropdownBorder: isDarkMode ? 'rgba(84, 84, 88, 0.3)' : '#E5E5EA',
+    dropdownShadow: '#000000',
+    dropdownItemText: isDarkMode ? '#FFFFFF' : '#000000',
+    dropdownDivider: isDarkMode ? 'rgba(84, 84, 88, 0.6)' : '#E5E5EA',
+    checkmarkColor: '#007AFF',
   };
 
   const handleBackPress = () => {
@@ -856,9 +956,9 @@ export default function MinaraChatScreen() {
             // Only collect content from content type messages
             if (parsed.type === 'content' && parsed.content) {
               hasContent = true;
-              // Increased throttling for better performance with Arabic text
-              if (i % 5 === 0 || i === lines.length - 1) {
-                // Update the message in batches
+              // Optimized throttling for better real-time formatting performance
+              if (i % 3 === 0 || i === lines.length - 1) {
+                // Update the message in smaller batches for better real-time formatting
                 setMessages(prev => prev.map(msg => 
                   msg.id === parseInt(aiMessageId)
                     ? { ...msg, text: msg.text + parsed.content }
@@ -867,7 +967,7 @@ export default function MinaraChatScreen() {
                 
                 // Reduced haptic feedback frequency for better performance
                 const trimmedContent = parsed.content.trim();
-                if (trimmedContent.length > 10 && i % 10 === 0) {
+                if (trimmedContent.length > 15 && i % 15 === 0) {
                   try {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   } catch (error) {
@@ -876,16 +976,16 @@ export default function MinaraChatScreen() {
                   }
                 }
                 
-                // Auto-scroll with less frequency
+                // Auto-scroll with optimized frequency for smoother experience
                 setTimeout(() => {
                   if (scrollViewRef.current && !isUserScrolling) {
                     scrollViewRef.current.scrollToEnd({ 
                       animated: true 
                     });
                   }
-                }, 300);
+                }, 150);
               } else {
-                // Still accumulate content but don't trigger UI update
+                // Still accumulate content but don't trigger UI update as frequently
                 setMessages(prev => prev.map(msg => 
                   msg.id === parseInt(aiMessageId)
                     ? { ...msg, text: msg.text + parsed.content }
@@ -893,8 +993,8 @@ export default function MinaraChatScreen() {
                 ));
               }
               
-              // Reduced delay for better streaming speed
-              await new Promise(resolve => setTimeout(resolve, 5));
+              // Reduced delay for better streaming speed and real-time formatting
+              await new Promise(resolve => setTimeout(resolve, 3));
             }
           } catch (parseError) {
             // Skip lines that can't be parsed as JSON
@@ -1194,6 +1294,151 @@ export default function MinaraChatScreen() {
       cursorAnimation.setValue(1);
     }
   }, [isGenerating, cursorAnimation]);
+
+  const toggleDropdown = () => {
+    const newState = !showDropdown;
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(dropdownButtonScale, {
+        toValue: 0.95,
+        duration: 100,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(dropdownButtonScale, {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      })
+    ]).start();
+    
+    setShowDropdown(newState);
+    
+    // ChatGPT-style smooth animation
+    Animated.spring(dropdownAnimation, {
+      toValue: newState ? 1 : 0,
+      tension: 300,
+      friction: 25,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleAppSelect = (appName: string) => {
+    setSelectedApp(appName);
+    setShowDropdown(false);
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Animate dropdown close
+    Animated.spring(dropdownAnimation, {
+      toValue: 0,
+      tension: 300,
+      friction: 25,
+      useNativeDriver: true,
+    }).start();
+
+    // Handle Scholar X selection
+    if (appName === 'ScholarX') {
+      handleScholarXSelection();
+    }
+  };
+
+  const handleScholarXSelection = () => {
+    // Clear current messages and reset state
+    setMessages([]);
+    setMessage('');
+    setMessageAnimations({});
+    
+    // Generate a new chat ID for Scholar X
+    const scholarChatId = `scholar-${Date.now()}`;
+    setCurrentChatId(scholarChatId);
+    
+    // Create static user message
+    const userMessage: Message = {
+      id: 1,
+      text: 'Can you explain the philosophical implications of artificial consciousness and whether machines can truly achieve self-awareness?',
+      isUser: true,
+      timestamp: new Date().toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+    };
+
+    // Create static AI response with thinking indicator
+    const aiMessage: Message = {
+      id: 2,
+      text: `**The Nature of Consciousness and Free Will**
+
+This is a profound question that sits at the intersection of philosophy of mind, cognitive science, and artificial intelligence. 
+
+**The Hard Problem of Consciousness**
+
+The philosophical challenge here is what David Chalmers calls the "hard problem of consciousness" - explaining why and how physical processes give rise to subjective experience. When we consider artificial consciousness, we must grapple with whether computational processes can generate genuine phenomenal experience or merely simulate it.
+
+**Computational Theory of Mind**
+
+From a functionalist perspective, consciousness might emerge from the right kind of information processing patterns, regardless of the substrate. If this is true, then sufficiently complex AI systems could theoretically achieve genuine self-awareness. However, this raises questions about the nature of subjective experience itself.
+
+**The Chinese Room Problem**
+
+John Searle's Chinese Room argument suggests that syntax (computation) cannot generate semantics (meaning and understanding). A machine might process information and respond appropriately without truly "understanding" or being conscious of what it's doing.
+
+**Emergent Properties**
+
+Some philosophers argue that consciousness is an emergent property of complex systems. If AI systems reach sufficient complexity and integration, consciousness might naturally emerge - though we would face the challenge of recognizing and verifying such consciousness from the outside.
+
+**Practical Implications**
+
+The question has profound ethical implications: if machines can be conscious, they might deserve moral consideration. This could fundamentally change how we develop and interact with AI systems.
+
+While we cannot definitively answer whether machines can achieve true self-awareness, the question pushes us to examine the very nature of consciousness itself.`,
+      isUser: false,
+      timestamp: new Date().toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+    };
+
+    // Set messages immediately (static, no animation)
+    const scholarMessages = [userMessage, aiMessage];
+    setMessages(scholarMessages);
+
+    // Create static animations (already at final state)
+    const newAnimations: {[key: number]: Animated.Value} = {};
+    scholarMessages.forEach(msg => {
+      newAnimations[msg.id] = new Animated.Value(1); // Already visible
+    });
+    setMessageAnimations(newAnimations);
+
+    // Save to allChats
+    setAllChats(prev => ({
+      ...prev,
+      [scholarChatId]: scholarMessages
+    }));
+
+    // Update chat history
+    const scholarChatEntry: ChatHistory = {
+      id: scholarChatId,
+      title: 'Artificial Consciousness Discussion',
+      lastMessage: 'Can you explain the philosophical implications...',
+      timestamp: 'Just now'
+    };
+
+    setChatHistory(prev => [scholarChatEntry, ...prev]);
+
+    // Scroll to bottom after a brief delay
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
   
   return (
     <SafeAreaView 
@@ -1213,9 +1458,112 @@ export default function MinaraChatScreen() {
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.primaryText }]}>
-            Minara AI
-          </Text>
+          <TouchableOpacity 
+            onPress={toggleDropdown}
+            style={styles.dropdownButton}
+            activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 15, right: 15 }}
+          >
+            <Animated.View style={[
+              styles.dropdownButtonContent,
+              {
+                transform: [{ scale: dropdownButtonScale }]
+              }
+            ]}>
+              <Text style={[styles.headerTitle, { 
+                color: colors.primaryText,
+                fontSize: 22, // Slightly smaller as requested
+              }]}>
+                {selectedApp}
+              </Text>
+              <Animated.View style={[
+                styles.dropdownArrow,
+                {
+                  transform: [{
+                    rotate: dropdownAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '180deg'],
+                    })
+                  }]
+                }
+              ]}>
+                <Text style={[styles.dropdownArrowIcon, { color: colors.secondaryText }]}>
+                  ▼
+                </Text>
+              </Animated.View>
+            </Animated.View>
+          </TouchableOpacity>
+          
+          {/* ChatGPT-style Dropdown Menu */}
+          {showDropdown && (
+            <>
+              {/* Backdrop to close dropdown */}
+              <TouchableOpacity
+                style={styles.dropdownBackdrop}
+                onPress={toggleDropdown}
+                activeOpacity={1}
+              />
+              <Animated.View 
+                style={[
+                  styles.dropdownMenu,
+                  {
+                    backgroundColor: colors.dropdownBackground,
+                    shadowColor: colors.dropdownShadow,
+                    shadowOpacity: dropdownAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 0.15],
+                    }),
+                    transform: [
+                      {
+                        scale: dropdownAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.95, 1],
+                        })
+                      },
+                      {
+                        translateY: dropdownAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-10, 0],
+                        })
+                      }
+                    ],
+                    opacity: dropdownAnimation,
+                  }
+                ]}
+              >
+                {['MinaraX', 'ScholarX', 'DebateX'].map((appName, index) => (
+                  <TouchableOpacity
+                    key={appName}
+                    style={[
+                      styles.dropdownItem,
+                      {
+                        borderBottomWidth: index < 2 ? StyleSheet.hairlineWidth : 0,
+                        borderBottomColor: colors.dropdownDivider,
+                      }
+                    ]}
+                    onPress={() => handleAppSelect(appName)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={styles.dropdownItemContent}>
+                      {selectedApp === appName ? (
+                        <Text style={[styles.checkmark, { color: colors.secondaryText }]}>✓</Text>
+                      ) : (
+                        <View style={styles.checkmarkPlaceholder} />
+                      )}
+                      <Text style={[
+                        styles.dropdownItemText, 
+                        { 
+                          color: colors.dropdownItemText,
+                        }
+                      ]}>
+                        {appName}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </Animated.View>
+            </>
+          )}
         </View>
         
         <TouchableOpacity 
@@ -1426,11 +1774,23 @@ export default function MinaraChatScreen() {
               <View key={msg.id} style={[
                 styles.aiMessageContainer,
                 { 
-                  marginTop: isConsecutive ? 24 : 40, // Increased top margins
+                  marginTop: isConsecutive ? 24 : (selectedApp === 'ScholarX' ? 20 : 40), // Reduced top margin for Scholar X
                   marginBottom: 32, // Significantly increased bottom margin
                   paddingBottom: 16, // Increased padding at container level
                 }
               ]}>
+                {/* Thinking indicator for Scholar X */}
+                {selectedApp === 'ScholarX' && (
+                  <View style={[
+                    styles.thinkingIndicator,
+                    { backgroundColor: 'transparent' }
+                  ]}>
+                    <Text style={[styles.thinkingText, { color: colors.tertiaryText }]}>
+                      Thought for 19s ›
+                    </Text>
+                  </View>
+                )}
+                
                 <Animated.View style={[
                   styles.aiMessageContent,
                   {
@@ -1584,20 +1944,12 @@ export default function MinaraChatScreen() {
               <Text style={styles.micIcon}>🎤</Text>
             </TouchableOpacity>
             
-            {isGenerating ? (
+            {isGenerating && (
               <TouchableOpacity 
                 style={styles.stopButton}
                 onPress={stopGeneration}
               >
                 <View style={[styles.stopIcon, { backgroundColor: '#FF3B30' }]} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.audioButton}>
-                <View style={styles.audioWaves}>
-                  <View style={[styles.audioWave, { backgroundColor: colors.primaryText }]} />
-                  <View style={[styles.audioWave, { backgroundColor: colors.primaryText }]} />
-                  <View style={[styles.audioWave, { backgroundColor: colors.primaryText }]} />
-                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -1643,9 +1995,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '600',
-    fontFamily: 'AminMedium',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    fontFamily: '-apple-system',
   },
   backButton: {
     width: 32,
@@ -1675,7 +2026,7 @@ const styles = StyleSheet.create({
   messageBubble: {
     maxWidth: '85%',
     minWidth: 60,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 24,
   },
@@ -1686,8 +2037,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 8,
   },
   messageText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
     fontFamily: 'System',
   },
   inputSection: {
@@ -1762,7 +2113,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'System',
     maxHeight: 100,
     paddingTop: 0,
@@ -1792,23 +2143,6 @@ const styles = StyleSheet.create({
   },
   micIcon: {
     fontSize: 18,
-  },
-  audioButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  audioWaves: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  audioWave: {
-    width: 3,
-    height: 12,
-    borderRadius: 1.5,
   },
   sideMenu: {
     position: 'absolute',
@@ -1966,5 +2300,98 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     backgroundColor: '#FF3B30',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  dropdownButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownArrow: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownArrowIcon: {
+    fontSize: 10,
+    fontWeight: '600',
+    opacity: 0.6,
+  },
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: -100,
+    left: -500,
+    right: -500,
+    bottom: -500,
+    zIndex: 999,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 55,
+    left: '50%',
+    marginLeft: -110, // Half of new width (220/2) to center
+    width: 220,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 32 },
+    shadowOpacity: 0.15,
+    shadowRadius: 64,
+    elevation: 64,
+    zIndex: 1000,
+    borderWidth: 0,
+  },
+  dropdownItem: {
+    height: 44,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D1D5DB',
+  },
+  dropdownItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    fontWeight: '400',
+    fontFamily: '-apple-system',
+    color: '#000000',
+    flex: 1,
+  },
+  checkmark: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginRight: 12,
+    width: 16,
+  },
+  checkmarkPlaceholder: {
+    width: 16,
+    marginRight: 12,
+  },
+  thinkingIndicator: {
+    width: '100%',
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    marginBottom: 2,
+    alignItems: 'flex-start',
+  },
+  thinkingText: {
+    fontSize: 18,
+    fontWeight: '400',
+    fontFamily: 'System',
+    textAlign: 'left',
   },
 }); 
