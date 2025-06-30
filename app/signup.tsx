@@ -90,7 +90,10 @@ export default function SignUpScreen() {
     >
       <StatusBar hidden />
       
-      
+      {/* Back Button - Top Left */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>‹</Text>
+      </TouchableOpacity>
 
       <ScrollView 
         style={styles.scrollView}
@@ -220,7 +223,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#B8D4F0',
   },
-  
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: '#FFF8E7',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#2C3E50',
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: 'System',
+    lineHeight: 24,
+  },
   scrollView: {
     flex: 1,
   },
