@@ -161,8 +161,8 @@ export default function LoginScreen() {
 
   const handleSignUpWithEmail = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Navigate to dashboard for now - you can change this to actual sign-up flow
-    router.push('/dashboard');
+    // Navigate to sign-up page
+    router.push('/signup');
   };
 
   const handleSignUpWithApple = () => {
