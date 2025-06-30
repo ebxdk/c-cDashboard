@@ -53,12 +53,6 @@ export default function LoginScreen() {
     }, 1000);
   };
 
-  const handleLoginWithApple = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Navigate to dashboard for now - you can change this to actual Apple login flow
-    router.push('/dashboard');
-  };
-
   const handleForgotPassword = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert('Forgot Password', 'Password reset functionality will be implemented soon.');
@@ -121,7 +115,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Login Buttons */}
+        {/* Login Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[styles.loginEmailButton, isLoading && styles.buttonDisabled]} 
@@ -131,11 +125,6 @@ export default function LoginScreen() {
             <Text style={styles.loginEmailButtonText}>
               {isLoading ? 'Signing in...' : 'Sign in with email'}
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.loginAppleButton} onPress={handleLoginWithApple}>
-            <AppleLogo width={22} height={26} color="#000000" />
-            <Text style={styles.loginAppleButtonText}>Sign in with Apple</Text>
           </TouchableOpacity>
         </View>
 
@@ -256,7 +245,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 12,
     shadowColor: '#6C5CE7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -264,26 +252,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   loginEmailButtonText: {
-    color: '#000000',
-    fontSize: 17,
-    fontWeight: '600',
-    fontFamily: 'System',
-  },
-  loginAppleButton: {
-    backgroundColor: '#FFF8E7',
-    paddingVertical: 16,
-    borderRadius: 30,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-    gap: 8,
-  },
-  loginAppleButtonText: {
     color: '#000000',
     fontSize: 17,
     fontWeight: '600',
