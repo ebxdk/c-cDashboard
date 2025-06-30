@@ -32,42 +32,17 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    // Basic validation
-    if (!fullName.trim()) {
-      Alert.alert('Error', 'Please enter your full name');
-      return;
-    }
-
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return;
-    }
-
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
+    
+    // Skip validation during development
     setIsLoading(true);
-
+    
     try {
       // Here you would typically make an API call to create the account
-      // For now, we'll simulate a delay and navigate to dashboard
+      // For now, we'll simulate a delay and navigate to email verification
       await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Navigate to dashboard after successful sign up
-      router.push('/dashboard');
+      
+      // Navigate to email verification after successful sign up
+      router.push('/verify-email');
     } catch (error) {
       Alert.alert('Error', 'Failed to create account. Please try again.');
     } finally {
@@ -187,16 +162,24 @@ export default function SignUpScreen() {
               </View>
             </View>
 
-            {/* Sign Up Button */}
-            <TouchableOpacity 
-              style={[styles.signUpButton, isLoading && styles.disabledButton]} 
-              onPress={handleSignUp}
-              disabled={isLoading}
-            >
-              <Text style={styles.signUpButtonText}>
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Text>
-            </TouchableOpacity>
+            {/* Sign Up Button - Circular Arrow */}
+            <View style={styles.signUpButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.signUpButton, isLoading && styles.disabledButton]} 
+                onPress={handleSignUp}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Text style={styles.loadingText}>...</Text>
+                ) : (
+                  <Ionicons 
+                    name="arrow-forward" 
+                    size={24} 
+                    color="#2C3E50" 
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
@@ -334,12 +317,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
+  signUpButtonContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
   signUpButton: {
     backgroundColor: '#FFF8E7',
     borderRadius: 30,
-    paddingVertical: 16,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
     shadowColor: '#6C5CE7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -349,9 +337,9 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
-  signUpButtonText: {
-    color: '#000000',
-    fontSize: 17,
+  loadingText: {
+    color: '#2C3E50',
+    fontSize: 14,
     fontWeight: '600',
     fontFamily: 'System',
   },
