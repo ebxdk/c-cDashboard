@@ -21,12 +21,14 @@ export default function VerifyEmailScreen() {
   const router = useRouter();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCheckmark, setShowCheckmark] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
   const loadingRotation = useRef(new Animated.Value(0)).current;
+  const checkmarkScale = useRef(new Animated.Value(0)).current;
 
   // Timer for resend button
   useEffect(() => {
@@ -83,6 +85,7 @@ export default function VerifyEmailScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
+    setShowCheckmark(false);
     
     // Button press animation
     Animated.sequence([
@@ -102,11 +105,32 @@ export default function VerifyEmailScreen() {
       // Simulate verification process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Navigate directly to Face ID setup
-      router.push('/setup-face-id');
+      // Stop loading animation and show checkmark
+      setIsLoading(false);
+      setShowCheckmark(true);
+      
+      // Animate checkmark appearance
+      Animated.sequence([
+        Animated.timing(checkmarkScale, {
+          toValue: 1.2,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(checkmarkScale, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      // Wait for checkmark animation to complete, then navigate
+      setTimeout(() => {
+        router.push('/setup-face-id');
+      }, 800);
       
     } catch (error) {
       setIsLoading(false);
+      setShowCheckmark(false);
       Alert.alert('Error', 'Invalid verification code. Please try again.');
     }
   };
@@ -172,9 +196,9 @@ export default function VerifyEmailScreen() {
             {/* Verify Button */}
             <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
               <TouchableOpacity 
-                style={[styles.verifyButton, (isLoading) && styles.disabledButton]} 
+                style={[styles.verifyButton, (isLoading || showCheckmark) && styles.disabledButton]} 
                 onPress={handleVerify}
-                disabled={isLoading}
+                disabled={isLoading || showCheckmark}
               >
                 {isLoading ? (
                   <Animated.View
@@ -188,6 +212,14 @@ export default function VerifyEmailScreen() {
                     }}
                   >
                     <Ionicons name="refresh" size={20} color="#2C3E50" />
+                  </Animated.View>
+                ) : showCheckmark ? (
+                  <Animated.View
+                    style={{
+                      transform: [{ scale: checkmarkScale }]
+                    }}
+                  >
+                    <Ionicons name="checkmark" size={20} color="#2C3E50" />
                   </Animated.View>
                 ) : (
                   <Text style={styles.verifyButtonText}>Verify Email</Text>
