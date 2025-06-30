@@ -32,40 +32,40 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     // Basic validation
     if (!fullName.trim()) {
       Alert.alert('Error', 'Please enter your full name');
       return;
     }
-    
+
     if (!email.trim()) {
       Alert.alert('Error', 'Please enter your email');
       return;
     }
-    
+
     if (!email.includes('@')) {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
-    
+
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters long');
       return;
     }
-    
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       // Here you would typically make an API call to create the account
       // For now, we'll simulate a delay and navigate to dashboard
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Navigate to dashboard after successful sign up
       router.push('/dashboard');
     } catch (error) {
@@ -83,7 +83,7 @@ export default function SignUpScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
-      
+
       {/* Back Button - Top Left */}
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <Text style={styles.backButtonText}>‹</Text>
