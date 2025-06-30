@@ -2,14 +2,14 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Image,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    Image,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -173,8 +173,8 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to dashboard for now - you can change this to actual login flow
-    router.push('/dashboard');
+    // Navigate to login screen
+    router.push('/login');
   };
 
   const renderSlide = (slide: typeof SLIDES[0], index: number) => (
