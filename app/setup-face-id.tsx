@@ -37,7 +37,7 @@ export default function SetupFaceIdScreen() {
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Ionicons name="face-id-outline" size={80} color="#2C3E50" />
+            <Ionicons name="scan" size={80} color="#2C3E50" />
           </View>
           <Text style={styles.title}>Setup Face ID</Text>
           <Text style={styles.subtitle}>
