@@ -88,7 +88,7 @@ export default function SignUpScreen() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
+      <StatusBar hidden />
       
       
 
@@ -97,12 +97,6 @@ export default function SignUpScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join our community of faith</Text>
-        </View>
-
         {/* Form */}
         <View style={styles.form}>
           {/* Full Name Input */}
@@ -232,7 +226,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 120,
+    paddingTop: 40,
     paddingHorizontal: 30,
     paddingBottom: 50,
   },
