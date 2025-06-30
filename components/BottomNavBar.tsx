@@ -66,8 +66,8 @@ export default function BottomNavBar() {
     }
   }, [pathname, overlayOpacity]);
 
-  // Hide bottom nav on login page (after all hooks are called)
-  if (pathname === '/') {
+  // Hide bottom nav on login page, signup page, and index page (after all hooks are called)
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
     return null;
   }
 
