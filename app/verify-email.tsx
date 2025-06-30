@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -21,6 +22,8 @@ export default function VerifyEmailScreen() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showFaceIdPrompt, setShowFaceIdPrompt] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Timer for resend button
@@ -68,8 +71,13 @@ export default function VerifyEmailScreen() {
       // Simulate verification process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Navigate to dashboard after successful verification
-      router.push('/dashboard');
+      // Show confirmation screen
+      setIsConfirmed(true);
+      
+      // After 2 seconds, show Face ID prompt
+      setTimeout(() => {
+        setShowFaceIdPrompt(true);
+      }, 2000);
     } catch (error) {
       Alert.alert('Error', 'Invalid verification code. Please try again.');
     } finally {
@@ -85,6 +93,81 @@ export default function VerifyEmailScreen() {
     Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
   };
 
+  const handleSetupFaceId = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Here you would integrate with Face ID/biometric authentication
+    Alert.alert('Face ID Setup', 'Face ID setup would be implemented here.', [
+      {
+        text: 'OK',
+        onPress: () => router.push('/dashboard')
+      }
+    ]);
+  };
+
+  const handleSkipFaceId = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/dashboard');
+  };
+
+  // Face ID Prompt Screen
+  if (showFaceIdPrompt) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+        
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="finger-print-outline" size={80} color="#2C3E50" />
+            </View>
+            <Text style={styles.title}>Setup Face ID</Text>
+            <Text style={styles.subtitle}>
+              Secure your account with Face ID for quick and easy access to your account.
+            </Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.setupFaceIdButton} 
+              onPress={handleSetupFaceId}
+            >
+              <Text style={styles.setupFaceIdButtonText}>Setup Face ID</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.skipButton} 
+              onPress={handleSkipFaceId}
+            >
+              <Text style={styles.skipButtonText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Confirmation Screen
+  if (isConfirmed) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+        
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="checkmark-circle" size={100} color="#27AE60" />
+            </View>
+            <Text style={styles.confirmedTitle}>Confirmed!</Text>
+            <Text style={styles.subtitle}>
+              Your email has been successfully verified. Setting up your account...
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Original Verification Screen
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
@@ -208,6 +291,7 @@ const styles = StyleSheet.create({
     paddingTop: 120,
     paddingHorizontal: 30,
     paddingBottom: 50,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
@@ -220,6 +304,15 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: '#2C3E50',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontFamily: 'System',
+    letterSpacing: -0.5,
+  },
+  confirmedTitle: {
+    fontSize: 40,
+    fontWeight: '700',
+    color: '#27AE60',
     textAlign: 'center',
     marginBottom: 16,
     fontFamily: 'System',
@@ -319,4 +412,39 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     opacity: 0.7,
   },
-}); 
+  buttonContainer: {
+    marginTop: 40,
+  },
+  setupFaceIdButton: {
+    backgroundColor: '#FFF8E7',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#6C5CE7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  setupFaceIdButtonText: {
+    color: '#2C3E50',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  skipButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#34495E',
+  },
+  skipButtonText: {
+    color: '#34495E',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+});
