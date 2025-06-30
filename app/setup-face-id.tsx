@@ -34,14 +34,14 @@ export default function SetupFaceIdScreen() {
     Alert.alert('Face ID Setup', 'Face ID setup would be implemented here.', [
       {
         text: 'OK',
-        onPress: () => router.push('/dashboard')
+        onPress: () => router.push('/upload-photo')
       }
     ]);
   };
 
   const handleSkipFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/dashboard');
+    router.push('/upload-photo');
   };
 
   return (
