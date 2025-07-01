@@ -387,7 +387,7 @@ export default function Dashboard() {
       )}
       <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
         
-        {/* Enhanced Multi-Layer Parallax Background */}
+        {/* Enhanced Multi-Layer Parallax Background - Only show for gradient backgrounds */}
         
         {selectedBackground.startsWith('gradient') && (
           <>
