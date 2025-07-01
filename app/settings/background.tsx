@@ -55,6 +55,19 @@ export default function BackgroundSettingsScreen() {
     },
   ];
 
+  const solidColorPresets = [
+    {
+      id: 'blue',
+      name: 'Blue',
+      color: '#007AFF',
+    },
+    {
+      id: 'white',
+      name: 'White',
+      color: '#FFFFFF',
+    },
+  ];
+
   const patternOptions = [
     {
       id: 'pattern1',
@@ -99,6 +112,37 @@ export default function BackgroundSettingsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Solid Colors */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionHeader, { color: colors.secondaryText }]}>SOLID COLORS</Text>
+            <View style={styles.gradientGrid}>
+              {solidColorPresets.map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  style={styles.gradientOption}
+                  onPress={() => handleBackgroundSelect(preset.id)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.gradientPreview,
+                      { backgroundColor: preset.color },
+                      selectedBackground === preset.id && styles.selectedPreview,
+                      preset.id === 'white' && { borderWidth: 1, borderColor: colors.border }
+                    ]}
+                  >
+                    {selectedBackground === preset.id && (
+                      <View style={styles.selectedOverlay}>
+                        <Text style={[styles.checkmark, preset.id === 'white' && { color: '#000000' }]}>✓</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.gradientName, { color: colors.primaryText }]}>{preset.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Gradient Presets */}
           <View style={styles.sectionContainer}>
             <Text style={[styles.sectionHeader, { color: colors.secondaryText }]}>GRADIENT PRESETS</Text>
