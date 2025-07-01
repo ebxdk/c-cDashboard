@@ -31,17 +31,12 @@ export default function SetupFaceIdScreen() {
   const handleSetupFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Here you would integrate with Face ID/biometric authentication
-    Alert.alert('Face ID Setup', 'Face ID setup would be implemented here.', [
-      {
-        text: 'OK',
-        onPress: () => router.push('/upload-photo')
-      }
-    ]);
+    Alert.alert('Face ID Setup', 'Face ID setup would be implemented here.');
   };
 
   const handleSkipFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/upload-photo');
+    Alert.alert('Skip Face ID', 'You can set up Face ID later in settings.');
   };
 
   return (
