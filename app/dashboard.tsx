@@ -176,13 +176,7 @@ export default function Dashboard() {
 
   // Determine background color based on selection
   const getBackgroundColor = () => {
-    if (selectedBackground === 'blue') {
-      return '#007AFF';
-    } else if (selectedBackground === 'white') {
-      return '#FFFFFF';
-    } else {
-      return isDarkMode ? '#000000' : '#FFFFFF';
-    }
+    return '#FFFFFF';
   };
 
   // Determine text colors based on background
