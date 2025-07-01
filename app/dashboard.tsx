@@ -599,7 +599,7 @@ export default function Dashboard() {
 
                 {/* Greeting and Summary */}
                 <View style={widgetStyles.summarySection}>
-                  <Text style={[widgetStyles.greetingText, { color: colors.primaryText, fontFamily: 'System' }]}>Salaam</Text>
+                  <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>Salam</Text>
                   <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
                     You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 upcoming events</Text>, 💬 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 new messages</Text> and 🌟 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>4 daily habits</Text> awaiting your attention. <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>Let's crush it! 💪</Text>
                   </Text>
