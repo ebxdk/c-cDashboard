@@ -24,6 +24,7 @@ export default function VerifyEmailScreen() {
   const [showCheckmark, setShowCheckmark] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const verifyingRef = useRef(false);
   
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -58,35 +59,18 @@ export default function VerifyEmailScreen() {
     router.back();
   };
 
-  const handleCodeChange = (value: string, index: number) => {
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (key: string, index: number) => {
-    if (key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
   const handleVerify = async () => {
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
     const fullCode = code.join('');
-    
     if (fullCode.length !== 6) {
-      Alert.alert('Error', 'Please enter the complete 6-digit code.');
+      // Do nothing if not all digits are filled (shouldn't happen with auto-verify)
+      verifyingRef.current = false;
       return;
     }
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
     setShowCheckmark(false);
-    
     // Button press animation
     Animated.sequence([
       Animated.timing(buttonScale, {
@@ -100,15 +84,12 @@ export default function VerifyEmailScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-    
     try {
       // Simulate verification process
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
       // Stop loading animation and show checkmark
       setIsLoading(false);
       setShowCheckmark(true);
-      
       // Animate checkmark appearance
       Animated.sequence([
         Animated.timing(checkmarkScale, {
@@ -122,16 +103,48 @@ export default function VerifyEmailScreen() {
           useNativeDriver: true,
         }),
       ]).start();
-      
       // Wait for checkmark animation to complete, then navigate
       setTimeout(() => {
         router.push('/setup-face-id');
+        verifyingRef.current = false;
       }, 800);
-      
     } catch (error) {
       setIsLoading(false);
       setShowCheckmark(false);
       Alert.alert('Error', 'Invalid verification code. Please try again.');
+      verifyingRef.current = false;
+    }
+  };
+
+  const handleCodeChange = (value: string, index: number) => {
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+    // If all slots are filled, auto-verify
+    if (newCode.every((digit) => digit.length === 1)) {
+      Keyboard.dismiss();
+      handleVerify();
+    }
+  };
+
+  const handleKeyPress = (key: string, index: number) => {
+    if (key === 'Backspace') {
+      if (code[index]) {
+        // Clear the current digit
+        const newCode = [...code];
+        newCode[index] = '';
+        setCode(newCode);
+      } else if (index > 0) {
+        // Move to previous and clear it
+        inputRefs.current[index - 1]?.focus();
+        const newCode = [...code];
+        newCode[index - 1] = '';
+        setCode(newCode);
+      }
     }
   };
 
@@ -189,6 +202,13 @@ export default function VerifyEmailScreen() {
                   maxLength={1}
                   textAlign="center"
                   selectTextOnFocus
+                  onFocus={() => {
+                    // Always focus the first empty input
+                    const firstEmpty = code.findIndex((c) => c === '');
+                    if (firstEmpty !== -1 && firstEmpty !== index) {
+                      inputRefs.current[firstEmpty]?.focus();
+                    }
+                  }}
                 />
               ))}
             </View>

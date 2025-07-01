@@ -2,12 +2,11 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    Alert,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -31,12 +30,13 @@ export default function SetupFaceIdScreen() {
   const handleSetupFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Here you would integrate with Face ID/biometric authentication
-    Alert.alert('Face ID Setup', 'Face ID setup would be implemented here.');
+    // For now, we'll simulate the setup and navigate to profile setup
+    router.push('/setup-profile');
   };
 
   const handleSkipFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Skip Face ID', 'You can set up Face ID later in settings.');
+    router.push('/setup-profile');
   };
 
   return (

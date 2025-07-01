@@ -2,11 +2,12 @@ import {
     DefaultTheme,
     ThemeProvider
 } from '@react-navigation/native';
+import { Asset } from 'expo-asset';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -18,19 +19,84 @@ import { HabitsProvider } from '../contexts/HabitsContext';
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+// Preload all images used throughout the app
+const preloadImages = async () => {
+  const imageAssets = [
+    // Memoji images
+    require('../assets/images/memoji1.png'),
+    require('../assets/images/memoji2.png'),
+    require('../assets/images/memoji3.png'),
+    require('../assets/images/femalememoji1.png'),
+    require('../assets/images/femalememoji2.png'),
+    require('../assets/images/femalememoji3.png'),
+    
+    // Module/Lantern images
+    require('../assets/images/LanternDealingWithRejection.png'),
+    require('../assets/images/LanternHowToTellFamily.png'),
+    require('../assets/images/LanternLight.png'),
+    
+    // Onboarding images
+    require('../assets/images/brotherhood.png'),
+    require('../assets/images/sisterhood.png'),
+    
+    // Pattern and background images
+    require('../assets/images/cc.patterns-01.png'),
+    
+    // Logo images
+    require('../assets/images/Jane_Logo_Color_RGB.png'),
+  ];
+
+  const cacheImages = imageAssets.map(image => {
+    return Asset.fromModule(image).downloadAsync();
+  });
+
+  return Promise.all(cacheImages);
+};
+
+// Preload all audio files used throughout the app
+const preloadAudio = async () => {
+  const audioAssets = [
+    // Sound effects
+    require('../assets/clicksound.mp3'),
+  ];
+
+  const cacheAudio = audioAssets.map(audio => {
+    return Asset.fromModule(audio).downloadAsync();
+  });
+
+  return Promise.all(cacheAudio);
+};
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     'AminMedium': require('../assets/fonts/Amin Medium.ttf'),
   });
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
+    async function loadAssets() {
+      try {
+        // Preload all images and audio
+        await preloadImages();
+        await preloadAudio();
+        setAssetsLoaded(true);
+      } catch (error) {
+        console.warn('Error preloading assets:', error);
+        setAssetsLoaded(true); // Continue even if preloading fails
+      }
+    }
+
+    loadAssets();
+  }, []);
+
+  useEffect(() => {
+    if (loaded && assetsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, assetsLoaded]);
 
-  if (!loaded) {
+  if (!loaded || !assetsLoaded) {
     return null;
   }
 
@@ -50,6 +116,23 @@ export default function RootLayout() {
                   headerShown: false
                 }} 
               />
+              <Stack.Screen 
+                name="setup-profile" 
+                options={{ 
+                  headerShown: false
+                }} 
+              />
+              <Stack.Screen name="question-1" options={{ headerShown: false }} />
+              <Stack.Screen name="question-2" options={{ headerShown: false }} />
+              <Stack.Screen name="question-3" options={{ headerShown: false }} />
+              <Stack.Screen name="question-4" options={{ headerShown: false }} />
+              <Stack.Screen name="question-5" options={{ headerShown: false }} />
+              <Stack.Screen name="question-6" options={{ headerShown: false }} />
+              <Stack.Screen name="question-7" options={{ headerShown: false }} />
+              <Stack.Screen name="question-8" options={{ headerShown: false }} />
+              <Stack.Screen name="question-9" options={{ headerShown: false }} />
+              <Stack.Screen name="question-10" options={{ headerShown: false }} />
+              <Stack.Screen name="loading-screen" options={{ headerShown: false }} />
               <Stack.Screen name="dashboard" options={{ headerShown: false }} />
               <Stack.Screen name="cohort" options={{ headerShown: false }} />
               <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
@@ -60,6 +143,20 @@ export default function RootLayout() {
               <Stack.Screen name="add-habit" options={{ headerShown: false }} />
               <Stack.Screen name="journal" options={{ headerShown: false }} />
               <Stack.Screen name="affinity-groups" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="settings-main" 
+                options={{ 
+                  headerShown: false,
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom',
+                }} 
+              />
+              <Stack.Screen 
+                name="settings" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
               <Stack.Screen name="+not-found" />
             </Stack>
             <BottomNavBar />

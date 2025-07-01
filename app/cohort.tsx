@@ -823,8 +823,8 @@ export default function CohortScreen() {
     return (
       <View style={styles.modulesContainer}>
         <ModulesSlider />
-        {/* Placeholder for the section below the slider */}
-        <View style={{ height: 40 }} />
+        {/* Reduced gap between slider and featured section */}
+        <View style={{ height: 16 }} />
         {/* Featured Section */}
         <View style={styles.modulesSection}>
           <Text style={[styles.modulesSectionTitle, { color: colors.primaryText }]}>Featured</Text>
@@ -833,18 +833,24 @@ export default function CohortScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.featuredModulesScroll}
           >
-            {MOCK_MODULES.slice(0, 3).map((module) => (
+            {MOCK_MODULES.slice(0, 3).map((module, index) => (
               <TouchableOpacity
                 key={module.id}
-                style={[styles.featuredModuleCard, { backgroundColor: module.color }]}
+                style={[
+                  styles.featuredModuleCard, 
+                  { backgroundColor: module.color },
+                  index === 0 && { marginLeft: 20 } // Add left margin only to first card
+                ]}
                 onPress={() => handleCardPress('module')}
                 activeOpacity={0.9}
               >
-                <Text style={styles.featuredModuleEmoji}>{module.emoji}</Text>
-                <Text style={styles.featuredModuleTitle}>{module.title}</Text>
-                <Text style={styles.featuredModuleSubtitle}>{module.subtitle}</Text>
-                <View style={styles.featuredModuleMeta}>
-                  <Text style={styles.featuredModuleDuration}>{module.duration}</Text>
+                <View style={styles.featuredModuleContent}>
+                  <Text style={styles.featuredModuleEmoji}>{module.emoji}</Text>
+                  <Text style={styles.featuredModuleTitle}>{module.title}</Text>
+                  <Text style={styles.featuredModuleSubtitle}>{module.subtitle}</Text>
+                  <View style={styles.featuredModuleMeta}>
+                    <Text style={styles.featuredModuleDuration}>{module.duration}</Text>
+                  </View>
                   <Text style={styles.featuredModuleType}>{module.type}</Text>
                 </View>
               </TouchableOpacity>
@@ -853,7 +859,7 @@ export default function CohortScreen() {
         </View>
 
         {/* All Modules Section */}
-        <View style={styles.modulesSection}>
+        <View style={[styles.modulesSection, { paddingHorizontal: 20 }]}>
           <Text style={[styles.modulesSectionTitle, { color: colors.primaryText }]}>All Modules</Text>
           <View style={styles.modulesGrid}>
             {MOCK_MODULES.map((module) => (
@@ -1366,38 +1372,50 @@ const styles = StyleSheet.create({
 
   // Modules Tab Styles
   modulesContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0, // Removed horizontal padding
   },
   modulesSection: {
     marginBottom: 32,
+    paddingHorizontal: 0, // Changed from 20 to 0 to remove side gaps
   },
   modulesSectionTitle: {
     fontSize: 24,
     fontWeight: '700',
     fontFamily: 'System',
     marginBottom: 16,
+    paddingHorizontal: 20, // Add padding only to the title
   },
   featuredModulesScroll: {
-    paddingRight: 20,
+    paddingLeft: 0, // Changed from 20 to 0 to remove left gap
+    paddingRight: 0, // No right padding
   },
   featuredModuleCard: {
     width: 200,
-    height: 140,
+    height: 180,
     borderRadius: 16,
-    padding: 20,
     marginRight: 16,
-    justifyContent: 'space-between',
+    position: 'relative', // Add relative positioning for absolute child
+  },
+  featuredModuleContent: {
+    position: 'absolute',
+    top: 16, // Increased slightly to give more top margin
+    left: 16, // Reduced left margin for better fit
+    right: 16, // Reduced right margin for better fit
+    bottom: 16, // Reduced bottom margin for better fit
+    justifyContent: 'flex-start', // Changed back to flex-start for top alignment
+    alignItems: 'flex-start', // Changed back to flex-start for left alignment
   },
   featuredModuleEmoji: {
     fontSize: 28,
-    marginBottom: 8,
+    marginBottom: 8, // Reduced from 12 to make content more compact
   },
   featuredModuleTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'System',
-    marginBottom: 4,
+    marginBottom: 4, // Reduced from 6 to make content more compact
+    textAlign: 'left', // Ensure left alignment
   },
   featuredModuleSubtitle: {
     fontSize: 14,
@@ -1405,12 +1423,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     fontFamily: 'System',
     lineHeight: 18,
-    marginBottom: 12,
+    marginBottom: 8, // Reduced from 12 to make content more compact
+    textAlign: 'left', // Ensure left alignment
   },
   featuredModuleMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8, // Add bottom margin to push content away from card bottom
   },
   featuredModuleDuration: {
     fontSize: 12,
@@ -1419,11 +1439,19 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   featuredModuleType: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
     fontFamily: 'System',
     textTransform: 'uppercase',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 6, // Reduced from 12 to 6 to move it further down
+    right: 12,
   },
   modulesGrid: {
     gap: 12,

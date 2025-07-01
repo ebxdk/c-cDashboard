@@ -3,18 +3,18 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Animated,
+    Easing,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface Message {
@@ -1362,7 +1362,7 @@ export default function MinaraChatScreen() {
     // Create static user message
     const userMessage: Message = {
       id: 1,
-      text: 'Can you explain the philosophical implications of artificial consciousness and whether machines can truly achieve self-awareness?',
+      text: 'What is the scholarly consensus (ijma) regarding the application of ijtihad in contemporary Islamic jurisprudence, particularly concerning issues that did not exist during the classical period of fiqh development?',
       isUser: true,
       timestamp: new Date().toLocaleTimeString('en-US', { 
         hour: 'numeric', 
@@ -1374,31 +1374,45 @@ export default function MinaraChatScreen() {
     // Create static AI response with thinking indicator
     const aiMessage: Message = {
       id: 2,
-      text: `**The Nature of Consciousness and Free Will**
+      text: `**Ijtihad and Contemporary Islamic Jurisprudence**
 
-This is a profound question that sits at the intersection of philosophy of mind, cognitive science, and artificial intelligence. 
+This is a fundamental question in contemporary usul al-fiqh (principles of Islamic jurisprudence) that touches upon the dynamic nature of Islamic law and its adaptability to modern circumstances.
 
-**The Hard Problem of Consciousness**
+**The Nature of Ijtihad**
 
-The philosophical challenge here is what David Chalmers calls the "hard problem of consciousness" - explaining why and how physical processes give rise to subjective experience. When we consider artificial consciousness, we must grapple with whether computational processes can generate genuine phenomenal experience or merely simulate it.
+Ijtihad (اجتهاد) literally means "exerting effort" and refers to the independent reasoning employed by qualified scholars (mujtahidun) to derive legal rulings from the primary sources (Quran and Sunnah) when explicit guidance is not available. The classical definition requires thorough knowledge of Arabic, Quranic exegesis, hadith sciences, and the principles of jurisprudence.
 
-**Computational Theory of Mind**
+**Contemporary Scholarly Consensus**
 
-From a functionalist perspective, consciousness might emerge from the right kind of information processing patterns, regardless of the substrate. If this is true, then sufficiently complex AI systems could theoretically achieve genuine self-awareness. However, this raises questions about the nature of subjective experience itself.
+There is broad agreement among contemporary Islamic scholars that:
 
-**The Chinese Room Problem**
+1. **The Gate of Ijtihad Remains Open**: Contrary to some medieval claims that "the gate of ijtihad is closed," modern scholars across all madhabs (schools of thought) affirm that qualified ijtihad is not only permissible but necessary for addressing contemporary issues.
 
-John Searle's Chinese Room argument suggests that syntax (computation) cannot generate semantics (meaning and understanding). A machine might process information and respond appropriately without truly "understanding" or being conscious of what it's doing.
+2. **Collective Ijtihad (Ijtihad Jama'i)**: Many scholars advocate for institutional, collective ijtihad through bodies like the Islamic Fiqh Academy, recognizing that modern issues often require interdisciplinary expertise beyond what individual scholars possess.
 
-**Emergent Properties**
+**Application to Novel Issues**
 
-Some philosophers argue that consciousness is an emergent property of complex systems. If AI systems reach sufficient complexity and integration, consciousness might naturally emerge - though we would face the challenge of recognizing and verifying such consciousness from the outside.
+For matters that did not exist during the classical period - such as bioethics, digital finance, environmental law, and modern technology - scholars employ several methodological approaches:
 
-**Practical Implications**
+**Qiyas (Analogical Reasoning)**: Drawing parallels between new situations and established precedents based on shared effective causes ('illah).
 
-The question has profound ethical implications: if machines can be conscious, they might deserve moral consideration. This could fundamentally change how we develop and interact with AI systems.
+**Maslaha (Public Interest)**: Considering the broader welfare and objectives (maqasid) of Islamic law when deriving rulings.
 
-While we cannot definitively answer whether machines can achieve true self-awareness, the question pushes us to examine the very nature of consciousness itself.`,
+**Istihsan (Juristic Preference)**: Departing from strict analogical reasoning when it leads to hardship or injustice.
+
+**Contemporary Challenges and Debates**
+
+The application of ijtihad in modern contexts faces several challenges:
+
+- **Qualification Standards**: Who possesses the necessary expertise for contemporary ijtihad?
+- **Methodological Integration**: How to incorporate modern knowledge while maintaining fidelity to Islamic principles?
+- **Authority and Acceptance**: Which institutions or scholars have the authority to issue binding contemporary rulings?
+
+**Regional and Sectarian Variations**
+
+Different Islamic communities and schools of thought approach contemporary ijtihad with varying degrees of flexibility, though there is increasing cooperation through international scholarly bodies and conferences.
+
+The consensus acknowledges that while the fundamental principles of Islam are immutable, their application to new circumstances requires ongoing scholarly engagement through qualified ijtihad.`,
       isUser: false,
       timestamp: new Date().toLocaleTimeString('en-US', { 
         hour: 'numeric', 
@@ -1427,8 +1441,8 @@ While we cannot definitively answer whether machines can achieve true self-aware
     // Update chat history
     const scholarChatEntry: ChatHistory = {
       id: scholarChatId,
-      title: 'Artificial Consciousness Discussion',
-      lastMessage: 'Can you explain the philosophical implications...',
+      title: 'Contemporary Ijtihad Discussion',
+      lastMessage: 'What is the scholarly consensus regarding ijtihad...',
       timestamp: 'Just now'
     };
 
