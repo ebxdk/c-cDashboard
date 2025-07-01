@@ -5,6 +5,7 @@ import { DeviceMotion } from 'expo-sensors';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, TapGestureHandler } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
     Easing,
     useAnimatedGestureHandler,
@@ -41,8 +42,23 @@ export default function Dashboard() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [showBackgroundSelectorInSettings, setShowBackgroundSelectorInSettings] = useState(false);
-  const [selectedBackground, setSelectedBackground] = useState('pattern'); // 'pattern' or 'plain'
+  const [selectedBackground, setSelectedBackground] = useState('gradient1'); // Default to gradient1
   const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
+
+  // Load saved background preference
+  useEffect(() => {
+    const loadBackgroundPreference = async () => {
+      try {
+        const savedBackground = await AsyncStorage.getItem('selectedBackground');
+        if (savedBackground) {
+          setSelectedBackground(savedBackground);
+        }
+      } catch (error) {
+        console.log('Error loading background preference:', error);
+      }
+    };
+    loadBackgroundPreference();
+  }, []);
 
   // Enhanced parallax effect state with multiple layers
   const [deviceMotion, setDeviceMotion] = useState({ x: 0, y: 0 });
@@ -158,27 +174,73 @@ export default function Dashboard() {
     setIsDarkMode(systemColorScheme === 'dark');
   }, [systemColorScheme]);
 
+  // Determine background color based on selection
+  const getBackgroundColor = () => {
+    if (selectedBackground === 'blue') {
+      return '#007AFF';
+    } else if (selectedBackground === 'white') {
+      return '#FFFFFF';
+    } else {
+      return isDarkMode ? '#000000' : '#FFFFFF';
+    }
+  };
+
+  // Determine text colors based on background
+  const getTextColor = () => {
+    if (selectedBackground === 'blue') {
+      return '#FFFFFF';
+    } else if (selectedBackground === 'white') {
+      return '#000000';
+    } else {
+      return isDarkMode ? '#FFFFFF' : '#000000';
+    }
+  };
+
   const colors = {
-    background: isDarkMode ? '#000000' : '#FFFFFF', // Pure white for light mode
-    cardBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
-    primaryText: isDarkMode ? '#FFFFFF' : '#000000',
-    secondaryText: isDarkMode ? '#A0A0A0' : '#666666',
-    tertiaryText: isDarkMode ? '#808080' : '#777777',
-    cardBorder: isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.08)', // Slightly stronger border for light mode
-    cardShadow: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', // Subtle shadow for cards
+    background: getBackgroundColor(),
+    cardBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.15)' : 
+                   selectedBackground === 'white' ? '#F8F9FA' : 
+                   isDarkMode ? '#1C1C1E' : '#FFFFFF',
+    primaryText: getTextColor(),
+    secondaryText: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.8)' : 
+                   selectedBackground === 'white' ? '#666666' :
+                   isDarkMode ? '#A0A0A0' : '#666666',
+    tertiaryText: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.6)' : 
+                  selectedBackground === 'white' ? '#777777' :
+                  isDarkMode ? '#808080' : '#777777',
+    cardBorder: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.2)' : 
+                selectedBackground === 'white' ? 'rgba(0,0,0,0.08)' :
+                isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.08)',
+    cardShadow: selectedBackground === 'blue' ? 'rgba(0, 0, 0, 0.2)' : 
+                selectedBackground === 'white' ? 'rgba(0,0,0,0.04)' :
+                isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
     redDot: '#FF3B30',
-    prayerCompleted: '#007AFF',
-    prayerPending: isDarkMode ? '#48484A' : '#D1D1D6',
-    accent: '#007AFF',
-    accentSubtle: isDarkMode ? '#1A2332' : '#F0F4FF',
-    habitRing: '#007AFF',
-    habitBackground: isDarkMode ? '#2C2C2E' : '#E5E5EA',
-    journalGradient: isDarkMode ? '#2C2C2E' : '#007AFF',
-    journalBg: isDarkMode ? '#1A1A1A' : '#FFFFFF',
-    cohortAccent: '#007AFF',
-    cohortBackground: isDarkMode ? 'rgba(0, 122, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
-    cohortBorder: isDarkMode ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.18)',
-    resizeHandle: '#007AFF',
+    prayerCompleted: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
+    prayerPending: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.3)' : 
+                   selectedBackground === 'white' ? '#D1D1D6' :
+                   isDarkMode ? '#48484A' : '#D1D1D6',
+    accent: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
+    accentSubtle: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
+                  selectedBackground === 'white' ? '#F0F4FF' :
+                  isDarkMode ? '#1A2332' : '#F0F4FF',
+    habitRing: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
+    habitBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.2)' : 
+                     selectedBackground === 'white' ? '#E5E5EA' :
+                     isDarkMode ? '#2C2C2E' : '#E5E5EA',
+    journalGradient: selectedBackground === 'blue' ? '#FFFFFF' : 
+                     selectedBackground === 'white' ? '#007AFF' :
+                     isDarkMode ? '#2C2C2E' : '#007AFF',
+    journalBg: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
+               selectedBackground === 'white' ? '#FFFFFF' :
+               isDarkMode ? '#1A1A1A' : '#FFFFFF',
+    cohortAccent: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
+    cohortBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
+                      selectedBackground === 'white' ? 'rgba(0, 122, 255, 0.08)' :
+                      isDarkMode ? 'rgba(0, 122, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
+    cohortBorder: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.25)' : 
+                  selectedBackground === 'white' ? 'rgba(0, 122, 255, 0.18)' :
+                  isDarkMode ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.18)',
+    resizeHandle: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
   };
 
   const animatedColors = {
@@ -327,7 +389,7 @@ export default function Dashboard() {
         
         {/* Enhanced Multi-Layer Parallax Background */}
         
-        {selectedBackground === 'pattern' && (
+        {selectedBackground.startsWith('gradient') && (
           <>
             {/* Background Layer 3 - Slowest movement (30%) */}
             <Animated.View style={[

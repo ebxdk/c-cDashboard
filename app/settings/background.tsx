@@ -2,14 +2,30 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function BackgroundSettingsScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const router = useRouter();
   const [selectedBackground, setSelectedBackground] = useState('gradient1');
+
+  // Load saved background preference
+  useEffect(() => {
+    const loadBackgroundPreference = async () => {
+      try {
+        const savedBackground = await AsyncStorage.getItem('selectedBackground');
+        if (savedBackground) {
+          setSelectedBackground(savedBackground);
+        }
+      } catch (error) {
+        console.log('Error loading background preference:', error);
+      }
+    };
+    loadBackgroundPreference();
+  }, []);
 
   const colors = {
     background: isDarkMode ? '#000000' : '#F2F2F7',
@@ -86,9 +102,16 @@ export default function BackgroundSettingsScreen() {
     },
   ];
 
-  const handleBackgroundSelect = (backgroundId: string) => {
+  const handleBackgroundSelect = async (backgroundId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedBackground(backgroundId);
+    
+    // Save the background preference
+    try {
+      await AsyncStorage.setItem('selectedBackground', backgroundId);
+    } catch (error) {
+      console.log('Error saving background preference:', error);
+    }
   };
 
   return (
