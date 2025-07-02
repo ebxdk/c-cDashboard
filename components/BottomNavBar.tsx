@@ -66,8 +66,8 @@ export default function BottomNavBar() {
     }
   }, [pathname, overlayOpacity]);
 
-  // Hide bottom nav on login page, signup page, verify-email page, setup-face-id page, setup-profile page, question pages, persona-selection page, subscription page, loading screen, match-results page, and index page (after all hooks are called)
-  if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname === '/verify-email' || pathname === '/setup-face-id' || pathname === '/setup-profile' || pathname.startsWith('/question-') || pathname === '/persona-selection' || pathname === '/subscription' || pathname === '/loading-screen' || pathname === '/match-results') {
+  // Hide bottom nav on login page, signup page, verify-email page, setup-face-id page, setup-profile page, question pages, persona-selection page, subscription page, loading screen, match-results page, people-matches page, and index page (after all hooks are called)
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname === '/verify-email' || pathname === '/setup-face-id' || pathname === '/setup-profile' || pathname.startsWith('/question-') || pathname === '/persona-selection' || pathname === '/subscription' || pathname === '/loading-screen' || pathname === '/match-results' || pathname === '/people-matches') {
     return null;
   }
 

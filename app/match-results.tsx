@@ -202,7 +202,7 @@ export default function MatchResultsScreen() {
   const handleScreenTap = () => {
     if (typewriterComplete) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      router.replace('/dashboard');
+      router.replace('/people-matches');
     }
   };
 

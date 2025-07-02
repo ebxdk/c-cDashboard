@@ -1,14 +1,14 @@
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    ScrollView,
 } from 'react-native';
 
 export default function SubscriptionScreen() {
@@ -20,14 +20,22 @@ export default function SubscriptionScreen() {
     setSelectedPlan(planId);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedPlan) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Navigate to loading screen or dashboard
+    
+    // Save the selected subscription plan
+    try {
+      await AsyncStorage.setItem('selected-subscription', selectedPlan);
+    } catch (error) {
+      console.log('Error saving subscription:', error);
+    }
+    
+    // Navigate to loading screen
     router.push('/loading-screen');
   };
 
