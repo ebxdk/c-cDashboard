@@ -2,12 +2,12 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Image,
-  StatusBar,
-  StyleSheet,
-  View
+    Animated,
+    Dimensions,
+    Image,
+    StatusBar,
+    StyleSheet,
+    View
 } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
@@ -288,7 +288,7 @@ export default function LoadingScreen() {
     if (memojiAnimationsCompleted === totalMemojis && allLinesCompleted) {
       // Everything is complete, wait longer to admire the beautiful network
       const timer = setTimeout(() => {
-        router.replace('/dashboard');
+        router.replace('/match-results');
       }, 1500); // Longer pause to appreciate the complete, satisfying network
       
       return () => clearTimeout(timer);
