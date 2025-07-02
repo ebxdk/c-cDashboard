@@ -122,6 +122,7 @@ export default function RootLayout() {
                   headerShown: false
                 }} 
               />
+              <Stack.Screen name="persona-selection" options={{ headerShown: false }} />
               <Stack.Screen name="question-1" options={{ headerShown: false }} />
               <Stack.Screen name="question-2" options={{ headerShown: false }} />
               <Stack.Screen name="question-3" options={{ headerShown: false }} />
