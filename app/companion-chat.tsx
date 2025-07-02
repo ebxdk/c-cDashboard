@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messagesContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
   },
   channelIntro: {
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     bottom: 105,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
   },
   inputWrapper: {
