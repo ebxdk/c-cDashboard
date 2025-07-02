@@ -54,21 +54,23 @@ export default function PersonaSelectionScreen() {
     }
   ];
 
-  const handlePersonaSelect = async (personaIndex: number) => {
+  const handlePersonaSelect = (personaIndex: number) => {
     setSelectedPersona(personaIndex);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
 
-    // Save the selected persona and navigate immediately
+  const handleContinue = async () => {
+    if (selectedPersona === null) return;
+    
+    // Save the selected persona and navigate
     try {
-      await AsyncStorage.setItem('selected-persona', JSON.stringify(personas[personaIndex]));
+      await AsyncStorage.setItem('selected-persona', JSON.stringify(personas[selectedPersona]));
     } catch (error) {
       console.log('Error saving persona:', error);
     }
 
-    // Navigate to next page after a brief delay for visual feedback
-    setTimeout(() => {
-      router.push('/question-1');
-    }, 300);
+    // Navigate to next page
+    router.push('/question-1');
   };
 
   return (
@@ -136,7 +138,7 @@ export default function PersonaSelectionScreen() {
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.continueButton}
-              onPress={() => handlePersonaSelect(selectedPersona)}
+              onPress={handleContinue}
               activeOpacity={0.8}
             >
               <Text style={styles.continueButtonText}>Continue</Text>
