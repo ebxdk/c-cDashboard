@@ -77,7 +77,7 @@ export default function PersonaSelectionScreen() {
 
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, styles.horizontalPadding]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
@@ -294,6 +294,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20, // Add some padding at the end of the scroll view
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  horizontalPadding: {
+    paddingHorizontal: 40, // Increased from 30 to 40 for better horizontal spacing
   },
 });
