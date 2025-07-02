@@ -132,6 +132,7 @@ export default function RootLayout() {
               <Stack.Screen name="question-8" options={{ headerShown: false }} />
               <Stack.Screen name="question-9" options={{ headerShown: false }} />
               <Stack.Screen name="question-10" options={{ headerShown: false }} />
+              <Stack.Screen name="subscription" options={{ headerShown: false }} />
               <Stack.Screen name="loading-screen" options={{ headerShown: false }} />
               <Stack.Screen name="dashboard" options={{ headerShown: false }} />
               <Stack.Screen name="cohort" options={{ headerShown: false }} />

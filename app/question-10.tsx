@@ -53,9 +53,9 @@ export default function Question10Screen() {
       console.log('Error saving answer:', error);
     }
     
-    // Final question - navigate to loading screen
+    // Final question - navigate to subscription page
     setTimeout(() => {
-      router.push('/loading-screen');
+      router.push('/subscription');
     }, 300);
   };
 
