@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
     paddingHorizontal: 30,
-    paddingBottom: 60,
+    paddingBottom: 100,
   },
   headerContainer: {
     alignItems: 'center',
