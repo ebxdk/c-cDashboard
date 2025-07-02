@@ -1,4 +1,3 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -10,6 +9,7 @@ import {
     Text,
     TouchableOpacity,
     View,
+    ScrollView,
 } from 'react-native';
 
 export default function PersonaSelectionScreen() {
@@ -57,14 +57,14 @@ export default function PersonaSelectionScreen() {
   const handlePersonaSelect = async (personaIndex: number) => {
     setSelectedPersona(personaIndex);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     // Save the selected persona and navigate immediately
     try {
       await AsyncStorage.setItem('selected-persona', JSON.stringify(personas[personaIndex]));
     } catch (error) {
       console.log('Error saving persona:', error);
     }
-    
+
     // Navigate to next page after a brief delay for visual feedback
     setTimeout(() => {
       router.push('/question-1');
@@ -74,8 +74,13 @@ export default function PersonaSelectionScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      
-      <View style={styles.content}>
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         {/* Header */}
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Choose Your AI Companion</Text>
@@ -100,7 +105,7 @@ export default function PersonaSelectionScreen() {
                 <View style={styles.personaImageContainer}>
                   <Image source={persona.image} style={styles.personaImage} />
                 </View>
-                
+
                 <View style={styles.personaTextContainer}>
                   <Text style={[
                     styles.personaName,
@@ -115,7 +120,7 @@ export default function PersonaSelectionScreen() {
                     {persona.description}
                   </Text>
                 </View>
-                
+
                 {selectedPersona === index && (
                   <View style={styles.checkmark}>
                     <Text style={styles.checkmarkText}>✓</Text>
@@ -139,7 +144,7 @@ export default function PersonaSelectionScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -284,5 +289,11 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
     fontSize: 18,
     fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20, // Add some padding at the end of the scroll view
   },
 });
