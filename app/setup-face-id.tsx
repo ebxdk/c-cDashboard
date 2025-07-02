@@ -30,19 +30,23 @@ export default function SetupFaceIdScreen() {
   const handleSetupFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Here you would integrate with Face ID/biometric authentication
-    // For now, we'll simulate the setup and navigate to profile setup
-    router.push('/setup-profile');
+    Alert.alert('Face ID Setup', 'Face ID setup completed!', [
+      {
+        text: 'OK',
+        onPress: () => router.push('/persona-selection')
+      }
+    ]);
   };
 
   const handleSkipFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/setup-profile');
+    router.push('/persona-selection');
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
-      
+
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
@@ -147,4 +151,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-}); 
+});
