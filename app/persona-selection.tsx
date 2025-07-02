@@ -55,35 +55,20 @@ export default function PersonaSelectionScreen() {
   ];
 
   const handlePersonaSelect = async (personaIndex: number) => {
-    if (selectedPersona !== null && selectedPersona !== personaIndex) {
-      // Allow changing the answer
-      setSelectedPersona(personaIndex);
-    } else if (selectedPersona === null) {
-      // First time selecting
-      setSelectedPersona(personaIndex);
-    } else {
-      // Same option selected again, proceed to next page
-      proceedToNext(personaIndex);
-      return;
-    }
-    
+    setSelectedPersona(personaIndex);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Auto-proceed after selection
-    setTimeout(() => {
-      proceedToNext(personaIndex);
-    }, 800);
-  };
-
-  const proceedToNext = async (personaIndex: number) => {
-    // Save the selected persona
+    // Save the selected persona and navigate immediately
     try {
       await AsyncStorage.setItem('selected-persona', JSON.stringify(personas[personaIndex]));
     } catch (error) {
       console.log('Error saving persona:', error);
     }
     
-    router.push('/question-1');
+    // Navigate to next page after a brief delay for visual feedback
+    setTimeout(() => {
+      router.push('/question-1');
+    }, 300);
   };
 
   return (
@@ -152,13 +137,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 80,
+    paddingTop: 60,
     paddingHorizontal: 30,
-    paddingBottom: 50,
+    paddingBottom: 60,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 40,
   },
   title: {
     fontSize: 32,
@@ -181,12 +166,13 @@ const styles = StyleSheet.create({
   },
   personasContainer: {
     flex: 1,
-    gap: 16,
+    gap: 14,
+    justifyContent: 'center',
   },
   personaCard: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(44, 62, 80, 0.1)',
