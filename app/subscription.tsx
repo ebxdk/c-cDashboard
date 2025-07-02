@@ -155,6 +155,17 @@ export default function SubscriptionScreen() {
           </Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/dashboard');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.skipButtonText}>Skip for now</Text>
+        </TouchableOpacity>
+
         <Text style={styles.disclaimer}>
           You can change or cancel your subscription at any time in settings.
         </Text>
@@ -333,6 +344,21 @@ const styles = StyleSheet.create({
   submitButtonTextDisabled: {
     color: '#34495E',
     opacity: 0.6,
+  },
+  skipButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(44, 62, 80, 0.3)',
+  },
+  skipButtonText: {
+    color: '#34495E',
+    fontSize: 17,
+    fontWeight: '500',
+    fontFamily: 'System',
   },
   disclaimer: {
     fontSize: 13,
