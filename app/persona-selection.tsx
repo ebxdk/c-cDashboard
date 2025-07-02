@@ -125,6 +125,20 @@ export default function PersonaSelectionScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Continue Button */}
+        {selectedPersona !== null && (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={() => handlePersonaSelect(selectedPersona)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.rightArrow}>→</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -238,5 +252,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  buttonContainer: {
+    marginTop: 20,
+    paddingHorizontal: 0,
+  },
+  continueButton: {
+    backgroundColor: '#FFF8E7',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#6C5CE7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#2C3E50',
+  },
+  continueButtonText: {
+    color: '#2C3E50',
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: 'System',
+    marginRight: 8,
+  },
+  rightArrow: {
+    color: '#2C3E50',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
