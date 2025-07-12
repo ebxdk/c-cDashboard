@@ -187,15 +187,15 @@ export default function MatchResultsScreen() {
       // Create personalized sentence
       const selectedTraits = traits.slice(0, 2); // Use first 2 traits for shorter text
       if (selectedTraits.length >= 2) {
-        return `I matched you with someone perfect for a ${selectedTraits[0]}, ${selectedTraits[1]} person like you.`;
+        return `Found people who match your ${selectedTraits[0]}, ${selectedTraits[1]} approach.`;
       } else if (selectedTraits.length === 1) {
-        return `I found the perfect companion for a ${selectedTraits[0]} like you.`;
+        return `Found matches for your ${selectedTraits[0]} style.`;
       } else {
-        return `I found someone who perfectly matches your spiritual journey.`;
+        return `Found suitable matches based on your preferences.`;
       }
     } catch (error) {
       console.log('Error generating description:', error);
-      return `I found someone perfect for your unique spiritual journey.`;
+      return `Found several suitable matches for you.`;
     }
   };
 
@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   cursor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#2C3E50',
     marginLeft: 4,
     marginBottom: 4,

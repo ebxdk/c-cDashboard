@@ -9,7 +9,6 @@ import {
     Text,
     TouchableOpacity,
     View,
-    ScrollView,
 } from 'react-native';
 
 export default function PersonaSelectionScreen() {
@@ -20,35 +19,35 @@ export default function PersonaSelectionScreen() {
     {
       id: 0,
       name: "Amina",
-      description: "Compassionate spiritual guide with gentle wisdom",
+      description: "Soft, nurturing & compassionate tone 🤲",
       image: require('../assets/images/femalememoji1.png'),
       gender: "female"
     },
     {
       id: 1,
       name: "Omar",
-      description: "Knowledgeable mentor who loves deep conversations",
+      description: "Direct, scholarly & thoughtful approach 📖",
       image: require('../assets/images/memoji1.png'),
       gender: "male"
     },
     {
       id: 2,
       name: "Zara",
-      description: "Encouraging friend who celebrates your growth",
+      description: "Energetic, encouraging & uplifting style 🌟",
       image: require('../assets/images/femalememoji2.png'),
       gender: "female"
     },
     {
       id: 3,
       name: "Yusuf",
-      description: "Thoughtful advisor with practical life insights",
+      description: "Straightforward, practical & no-nonsense 💡",
       image: require('../assets/images/memoji2.png'),
       gender: "male"
     },
     {
       id: 4,
       name: "Layla",
-      description: "Warm companion who understands your journey",
+      description: "Warm, understanding & patient manner 💛",
       image: require('../assets/images/femalememoji3.png'),
       gender: "female"
     }
@@ -77,17 +76,12 @@ export default function PersonaSelectionScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, styles.horizontalPadding]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
+      <View style={styles.content}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Choose Your AI Companion</Text>
+          <Text style={styles.title}>Choose Your AI Persona</Text>
           <Text style={styles.subtitle}>
-            Select the persona that resonates with you most
+            Pick your perfect AI personality match
           </Text>
         </View>
 
@@ -134,19 +128,31 @@ export default function PersonaSelectionScreen() {
         </View>
 
         {/* Continue Button */}
-        {selectedPersona !== null && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleContinue}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-              <Text style={styles.rightArrow}>→</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              selectedPersona === null && styles.disabledButton
+            ]}
+            onPress={selectedPersona !== null ? handleContinue : undefined}
+            activeOpacity={selectedPersona !== null ? 0.8 : 1}
+            disabled={selectedPersona === null}
+          >
+            <Text style={[
+              styles.continueButtonText,
+              selectedPersona === null && styles.disabledButtonText
+            ]}>
+              Continue
+            </Text>
+            <Text style={[
+              styles.rightArrow,
+              selectedPersona === null && styles.disabledButtonText
+            ]}>
+              →
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -161,6 +167,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 30,
     paddingBottom: 100,
+    justifyContent: 'center',
   },
   headerContainer: {
     alignItems: 'center',
@@ -187,20 +194,21 @@ const styles = StyleSheet.create({
   },
   personasContainer: {
     flex: 1,
-    gap: 14,
+    gap: 12,
     justifyContent: 'center',
+    maxHeight: 400,
   },
   personaCard: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(44, 62, 80, 0.1)',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
     elevation: 2,
   },
   selectedPersona: {
@@ -208,60 +216,60 @@ const styles = StyleSheet.create({
     borderColor: '#2C3E50',
     borderWidth: 2,
     shadowColor: '#6C5CE7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
   },
   personaContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   personaImageContainer: {
-    marginRight: 16,
+    marginRight: 12,
   },
   personaImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
   },
   personaTextContainer: {
     flex: 1,
   },
   personaName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#2C3E50',
     fontFamily: 'System',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   personaDescription: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     color: '#34495E',
     fontFamily: 'System',
-    lineHeight: 20,
+    lineHeight: 16,
     opacity: 0.8,
   },
   selectedPersonaText: {
     color: '#2C3E50',
   },
   checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#2C3E50',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: 10,
   },
   checkmarkText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 30,
     paddingHorizontal: 0,
   },
   continueButton: {
@@ -292,14 +300,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  scrollView: {
-    flex: 1,
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+    borderColor: '#AAAAAA',
   },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 100,
-  },
-  horizontalPadding: {
-    paddingHorizontal: 40, // Increased from 30 to 40 for better horizontal spacing
+  disabledButtonText: {
+    color: '#AAAAAA',
   },
 });

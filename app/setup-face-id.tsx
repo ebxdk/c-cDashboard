@@ -2,11 +2,12 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -33,14 +34,14 @@ export default function SetupFaceIdScreen() {
     Alert.alert('Face ID Setup', 'Face ID setup completed!', [
       {
         text: 'OK',
-        onPress: () => router.push('/persona-selection')
+        onPress: () => router.push('/setup-profile')
       }
     ]);
   };
 
   const handleSkipFaceId = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/persona-selection');
+    router.push('/setup-profile');
   };
 
   return (

@@ -86,8 +86,8 @@ export default function SetupProfileScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Navigate to questions flow
-    router.push('/question-1');
+    // Navigate to persona selection
+    router.push('/persona-selection');
   };
 
   const handleSkip = () => {
@@ -95,7 +95,7 @@ export default function SetupProfileScreen() {
     Alert.alert('Skip Profile Setup', 'You can complete your profile later in settings.', [
       {
         text: 'Skip',
-        onPress: () => router.push('/question-1')
+        onPress: () => router.push('/persona-selection')
       },
       {
         text: 'Continue Setup',
