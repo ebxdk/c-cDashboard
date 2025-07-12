@@ -1,3 +1,4 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -12,7 +13,10 @@ import {
     Text,
     TouchableOpacity,
     View,
+    PanGestureHandler,
+    State,
 } from 'react-native';
+import { PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,9 +28,12 @@ interface Person {
   image: any;
   bio: string;
   interests: string[];
+  profession?: string;
+  education?: string;
+  strengths?: string[];
 }
 
-// Mock profiles data
+// Enhanced mock profiles data
 const MOCK_PROFILES: Person[] = [
   {
     id: 1,
@@ -35,7 +42,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Toronto, Canada",
     image: require('../assets/images/femalememoji1.png'),
     bio: "Recent revert finding my way in Islam. Love reading and deep conversations.",
-    interests: ["Quran Study", "Reading", "Nature Walks"]
+    interests: ["Quran Study", "Reading", "Nature Walks"],
+    profession: "Software Developer",
+    education: "Computer Science, University of Toronto",
+    strengths: ["Patient Listener", "Thoughtful", "Encouraging"]
   },
   {
     id: 2,
@@ -44,7 +54,10 @@ const MOCK_PROFILES: Person[] = [
     location: "London, UK",
     image: require('../assets/images/memoji1.png'),
     bio: "Software engineer passionate about Islamic history and technology.",
-    interests: ["Islamic History", "Technology", "Fitness"]
+    interests: ["Islamic History", "Technology", "Fitness"],
+    profession: "Senior Engineer",
+    education: "Engineering, Imperial College London",
+    strengths: ["Knowledgeable", "Analytical", "Supportive"]
   },
   {
     id: 3,
@@ -53,7 +66,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Sydney, Australia",
     image: require('../assets/images/femalememoji2.png'),
     bio: "University student exploring my faith journey with curiosity and joy.",
-    interests: ["Art", "Cooking", "Community Service"]
+    interests: ["Art", "Cooking", "Community Service"],
+    profession: "Medical Student",
+    education: "Medicine, University of Sydney",
+    strengths: ["Empathetic", "Creative", "Dedicated"]
   },
   {
     id: 4,
@@ -62,7 +78,10 @@ const MOCK_PROFILES: Person[] = [
     location: "New York, USA",
     image: require('../assets/images/memoji2.png'),
     bio: "Teacher and mentor helping others grow in their Islamic knowledge.",
-    interests: ["Teaching", "Mentoring", "Sports"]
+    interests: ["Teaching", "Mentoring", "Sports"],
+    profession: "Islamic Studies Teacher",
+    education: "Islamic Studies, Al-Azhar University",
+    strengths: ["Wise", "Patient", "Inspiring"]
   },
   {
     id: 5,
@@ -71,7 +90,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Dubai, UAE",
     image: require('../assets/images/femalememoji3.png'),
     bio: "Healthcare worker dedicated to serving others and strengthening my deen.",
-    interests: ["Healthcare", "Volunteering", "Travel"]
+    interests: ["Healthcare", "Volunteering", "Travel"],
+    profession: "Nurse",
+    education: "Nursing, American University of Beirut",
+    strengths: ["Caring", "Reliable", "Compassionate"]
   },
   {
     id: 6,
@@ -80,7 +102,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Birmingham, UK",
     image: require('../assets/images/memoji3.png'),
     bio: "Business owner balancing entrepreneurship with Islamic values.",
-    interests: ["Business", "Islamic Finance", "Family"]
+    interests: ["Business", "Islamic Finance", "Family"],
+    profession: "Entrepreneur",
+    education: "Business Administration, University of Birmingham",
+    strengths: ["Leadership", "Innovative", "Ethical"]
   },
   {
     id: 7,
@@ -89,7 +114,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Chicago, USA",
     image: require('../assets/images/femalememoji1.png'),
     bio: "Graduate student passionate about Islamic literature and poetry.",
-    interests: ["Literature", "Poetry", "Languages"]
+    interests: ["Literature", "Poetry", "Languages"],
+    profession: "PhD Student",
+    education: "Literature, University of Chicago",
+    strengths: ["Articulate", "Deep Thinker", "Cultured"]
   },
   {
     id: 8,
@@ -98,25 +126,10 @@ const MOCK_PROFILES: Person[] = [
     location: "Manchester, UK",
     image: require('../assets/images/memoji1.png'),
     bio: "Engineer and community organizer building bridges through faith.",
-    interests: ["Engineering", "Community", "Photography"]
-  },
-  {
-    id: 9,
-    name: "Aisha Thompson",
-    age: 25,
-    location: "Los Angeles, USA",
-    image: require('../assets/images/femalememoji2.png'),
-    bio: "Creative professional exploring Islam through art and expression.",
-    interests: ["Art", "Design", "Music"]
-  },
-  {
-    id: 10,
-    name: "Khalid Roberts",
-    age: 30,
-    location: "Toronto, Canada",
-    image: require('../assets/images/memoji2.png'),
-    bio: "Recent revert sharing the journey with fellow new Muslims.",
-    interests: ["Cooking", "Hiking", "Learning Arabic"]
+    interests: ["Engineering", "Community", "Photography"],
+    profession: "Civil Engineer",
+    education: "Engineering, University of Manchester",
+    strengths: ["Organized", "Community-minded", "Technical"]
   }
 ];
 
@@ -129,6 +142,7 @@ export default function PeopleMatchesScreen() {
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(30)).current;
+  const scrollY = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadSubscriptionData();
@@ -164,22 +178,17 @@ export default function PeopleMatchesScreen() {
       }
     } catch (error) {
       console.log('Error loading subscription:', error);
-      setSubscriptionTier('support'); // Default fallback
+      setSubscriptionTier('support');
     }
   };
 
   const setupProfilesForTier = () => {
     switch (subscriptionTier) {
       case 'support':
-        // Support+: Show 8 profiles in a grid
         setDisplayedProfiles(MOCK_PROFILES.slice(0, 8));
         break;
       case 'companion':
-        // Companion+: Show 1 profile, with ability to scroll for more
-        setDisplayedProfiles(MOCK_PROFILES.slice(0, 5));
-        break;
       case 'mentorship':
-        // Mentorship+: Show 1 profile, with ability to scroll for more (premium profiles)
         setDisplayedProfiles(MOCK_PROFILES.slice(0, 5));
         break;
       default:
@@ -189,8 +198,8 @@ export default function PeopleMatchesScreen() {
 
   const handleProfileSelect = (profile: Person) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // TODO: Navigate to chat or profile detail
     console.log('Selected profile:', profile.name);
+    router.replace('/dashboard');
   };
 
   const handleContinue = () => {
@@ -198,17 +207,27 @@ export default function PeopleMatchesScreen() {
     router.replace('/dashboard');
   };
 
-  const handleNextProfile = () => {
-    if (currentProfileIndex < displayedProfiles.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentProfileIndex(currentProfileIndex + 1);
-    }
-  };
+  const onGestureEvent = Animated.event(
+    [{ nativeEvent: { translationY: scrollY } }],
+    { useNativeDriver: false }
+  );
 
-  const handlePrevProfile = () => {
-    if (currentProfileIndex > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setCurrentProfileIndex(currentProfileIndex - 1);
+  const onHandlerStateChange = (event: PanGestureHandlerStateChangeEvent) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationY, velocityY } = event.nativeEvent;
+      
+      if (translationY < -50 || velocityY < -500) {
+        // Swipe up - next profile
+        if (currentProfileIndex < displayedProfiles.length - 1) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setCurrentProfileIndex(currentProfileIndex + 1);
+        }
+      }
+      
+      Animated.spring(scrollY, {
+        toValue: 0,
+        useNativeDriver: false,
+      }).start();
     }
   };
 
@@ -222,90 +241,6 @@ export default function PeopleMatchesScreen() {
   };
 
   const renderSupportTierGrid = () => (
-    <View style={styles.gridContainer}>
-      <Text style={styles.gridTitle}>Your Community Matches</Text>
-      <Text style={styles.gridSubtitle}>Connect with {displayedProfiles.length} people in your area</Text>
-      
-      <View style={styles.profilesGrid}>
-        {displayedProfiles.map((profile, index) => (
-          <TouchableOpacity
-            key={profile.id}
-            style={styles.gridProfileCard}
-            onPress={() => handleProfileSelect(profile)}
-            activeOpacity={0.8}
-          >
-            <Image source={profile.image} style={styles.gridProfileImage} />
-            <Text style={styles.gridProfileName}>{profile.name}</Text>
-            <Text style={styles.gridProfileAge}>{profile.age}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderSingleProfileView = () => {
-    const currentProfile = displayedProfiles[currentProfileIndex];
-    
-    if (!currentProfile) return null;
-
-    return (
-      <View style={styles.singleProfileContainer}>
-        <Text style={styles.singleTitle}>Your Perfect Match</Text>
-        <Text style={styles.singleSubtitle}>Swipe or scroll to see more options</Text>
-        
-        <View style={styles.profileCard}>
-          <Image source={currentProfile.image} style={styles.singleProfileImage} />
-          
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{currentProfile.name}</Text>
-            <Text style={styles.profileDetails}>{currentProfile.age} • {currentProfile.location}</Text>
-            <Text style={styles.profileBio}>{currentProfile.bio}</Text>
-            
-            <View style={styles.interestsContainer}>
-              {currentProfile.interests.map((interest, index) => (
-                <View key={index} style={styles.interestTag}>
-                  <Text style={styles.interestText}>{interest}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Navigation dots */}
-        <View style={styles.dotsContainer}>
-          {displayedProfiles.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                { backgroundColor: index === currentProfileIndex ? '#2C3E50' : 'rgba(44, 62, 80, 0.3)' }
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* Action buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.passButton]}
-            onPress={handleNextProfile}
-            disabled={currentProfileIndex >= displayedProfiles.length - 1}
-          >
-            <Text style={styles.passButtonText}>Pass</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.actionButton, styles.connectButton]}
-            onPress={() => handleProfileSelect(currentProfile)}
-          >
-            <Text style={styles.connectButtonText}>Connect</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
       
@@ -322,15 +257,30 @@ export default function PeopleMatchesScreen() {
         <View style={styles.header}>
           <Text style={styles.tierBadge}>{getTierDisplayName()}</Text>
           <Text style={styles.title}>People Near You</Text>
+          <Text style={styles.subtitle}>Connect with {displayedProfiles.length} people in your community</Text>
         </View>
 
-        {/* Content based on tier */}
+        {/* Profiles Grid */}
         <ScrollView 
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.gridContent}
         >
-          {subscriptionTier === 'support' ? renderSupportTierGrid() : renderSingleProfileView()}
+          <View style={styles.profilesGrid}>
+            {displayedProfiles.map((profile, index) => (
+              <TouchableOpacity
+                key={profile.id}
+                style={styles.gridProfileContainer}
+                onPress={() => handleProfileSelect(profile)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.profileImageContainer}>
+                  <Image source={profile.image} style={styles.gridProfileImage} />
+                </View>
+                <Text style={styles.gridProfileName} numberOfLines={1}>{profile.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </ScrollView>
 
         {/* Continue button */}
@@ -344,6 +294,117 @@ export default function PeopleMatchesScreen() {
       </Animated.View>
     </View>
   );
+
+  const renderTikTokStyleView = () => {
+    const currentProfile = displayedProfiles[currentProfileIndex];
+    
+    if (!currentProfile) return null;
+
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onHandlerStateChange}
+        >
+          <Animated.View style={[styles.tikTokContainer, {
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [-100, 0, 100],
+                outputRange: [-50, 0, 50],
+                extrapolate: 'clamp',
+              })
+            }]
+          }]}>
+            {/* Background Image */}
+            <View style={styles.profileBackground}>
+              <View style={styles.gradientOverlay} />
+            </View>
+
+            {/* Profile Card */}
+            <View style={styles.tikTokProfileCard}>
+              <View style={styles.tikTokImageContainer}>
+                <Image source={currentProfile.image} style={styles.tikTokProfileImage} />
+              </View>
+              
+              <View style={styles.tikTokProfileInfo}>
+                <Text style={styles.tikTokProfileName}>{currentProfile.name}</Text>
+                <Text style={styles.tikTokProfileAge}>{currentProfile.age} • {currentProfile.location}</Text>
+                
+                {currentProfile.profession && (
+                  <View style={styles.tikTokInfoRow}>
+                    <Text style={styles.tikTokInfoLabel}>Profession:</Text>
+                    <Text style={styles.tikTokInfoValue}>{currentProfile.profession}</Text>
+                  </View>
+                )}
+                
+                {currentProfile.education && (
+                  <View style={styles.tikTokInfoRow}>
+                    <Text style={styles.tikTokInfoLabel}>Education:</Text>
+                    <Text style={styles.tikTokInfoValue}>{currentProfile.education}</Text>
+                  </View>
+                )}
+                
+                {currentProfile.strengths && (
+                  <View style={styles.strengthsContainer}>
+                    <Text style={styles.tikTokInfoLabel}>Strengths:</Text>
+                    <View style={styles.strengthsTags}>
+                      {currentProfile.strengths.map((strength, index) => (
+                        <View key={index} style={styles.strengthTag}>
+                          <Text style={styles.strengthText}>{strength}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                
+                <Text style={styles.tikTokBio}>{currentProfile.bio}</Text>
+              </View>
+            </View>
+
+            {/* Bottom Actions */}
+            <View style={styles.tikTokActions}>
+              <View style={styles.progressIndicator}>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${((currentProfileIndex + 1) / displayedProfiles.length) * 100}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {currentProfileIndex + 1} of {displayedProfiles.length}
+                </Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.selectButton} 
+                onPress={() => handleProfileSelect(currentProfile)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.selectButtonText}>Connect & Continue</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Swipe Hint */}
+            {currentProfileIndex < displayedProfiles.length - 1 && (
+              <View style={styles.swipeHint}>
+                <Text style={styles.swipeHintText}>↑ Swipe up for next person</Text>
+              </View>
+            )}
+          </Animated.View>
+        </PanGestureHandler>
+      </View>
+    );
+  };
+
+  if (subscriptionTier === 'support') {
+    return renderSupportTierGrid();
+  } else {
+    return renderTikTokStyleView();
+  }
 }
 
 const styles = StyleSheet.create({
@@ -359,7 +420,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
   tierBadge: {
     fontSize: 14,
@@ -378,206 +439,54 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'System',
     letterSpacing: -0.5,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  
-  // Support+ Grid Styles
-  gridContainer: {
-    flex: 1,
-  },
-  gridTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2C3E50',
-    textAlign: 'center',
     marginBottom: 8,
-    fontFamily: 'System',
   },
-  gridSubtitle: {
+  subtitle: {
     fontSize: 16,
     fontWeight: '400',
     color: '#34495E',
     textAlign: 'center',
-    marginBottom: 30,
     fontFamily: 'System',
     opacity: 0.8,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  gridContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   profilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 15,
+    gap: 20,
   },
-  gridProfileCard: {
-    width: (SCREEN_WIDTH - 60) / 2 - 7.5, // Account for padding and gap
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+  gridProfileContainer: {
+    width: (SCREEN_WIDTH - 60) / 2 - 10,
     alignItems: 'center',
+    marginBottom: 25,
+  },
+  profileImageContainer: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   gridProfileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   gridProfileName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2C3E50',
     textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'System',
-  },
-  gridProfileAge: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#34495E',
-    fontFamily: 'System',
-    opacity: 0.8,
-  },
-  
-  // Single Profile View Styles
-  singleProfileContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  singleTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2C3E50',
-    textAlign: 'center',
-    marginBottom: 8,
-    fontFamily: 'System',
-  },
-  singleSubtitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#34495E',
-    textAlign: 'center',
-    marginBottom: 30,
-    fontFamily: 'System',
-    opacity: 0.8,
-  },
-  profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-    marginBottom: 24,
-  },
-  singleProfileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 20,
-    borderWidth: 4,
-    borderColor: '#F8F9FA',
-  },
-  profileInfo: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 8,
-    fontFamily: 'System',
-  },
-  profileDetails: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#34495E',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  profileBio: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#34495E',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-    fontFamily: 'System',
-  },
-  interestsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  interestTag: {
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(44, 62, 80, 0.1)',
-  },
-  interestText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2C3E50',
-    fontFamily: 'System',
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 30,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 16,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  passButton: {
-    backgroundColor: 'rgba(44, 62, 80, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(44, 62, 80, 0.2)',
-  },
-  connectButton: {
-    backgroundColor: '#2C3E50',
-  },
-  passButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#34495E',
-    fontFamily: 'System',
-  },
-  connectButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    marginTop: 12,
     fontFamily: 'System',
   },
   continueButton: {
@@ -598,4 +507,188 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: 'System',
   },
-}); 
+  
+  // TikTok Style Views
+  tikTokContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  profileBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#1a1a1a',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  tikTokProfileCard: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 80,
+  },
+  tikTokImageContainer: {
+    marginBottom: 30,
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  tikTokProfileImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+  },
+  tikTokProfileInfo: {
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  tikTokProfileName: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 8,
+    fontFamily: 'System',
+    textAlign: 'center',
+  },
+  tikTokProfileAge: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#34495E',
+    marginBottom: 20,
+    fontFamily: 'System',
+    textAlign: 'center',
+  },
+  tikTokInfoRow: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  tikTokInfoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34495E',
+    marginBottom: 4,
+    fontFamily: 'System',
+  },
+  tikTokInfoValue: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#2C3E50',
+    fontFamily: 'System',
+  },
+  strengthsContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  strengthsTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  strengthTag: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  strengthText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1976D2',
+    fontFamily: 'System',
+  },
+  tikTokBio: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#34495E',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: 'System',
+    marginTop: 8,
+  },
+  tikTokActions: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  progressIndicator: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  progressBar: {
+    width: '60%',
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+  },
+  selectButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 25,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  selectButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2C3E50',
+    fontFamily: 'System',
+  },
+  swipeHint: {
+    position: 'absolute',
+    top: 100,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  swipeHintText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+  },
+});
