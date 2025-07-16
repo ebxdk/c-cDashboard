@@ -69,7 +69,7 @@ export default function PersonaSelectionScreen() {
     }
 
     // Navigate to next page
-    router.push('/question-1');
+    router.push('/bio-data-questions/question-1');
   };
 
   return (
