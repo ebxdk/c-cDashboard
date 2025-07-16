@@ -135,7 +135,7 @@ export default function SetupProfileScreen() {
             <Text style={styles.sectionTitle}>Profile Picture</Text>
             <TouchableOpacity style={styles.imageContainer} onPress={handleImagePicker}>
               {profileImage ? (
-                <Image source={{ uri: profileImage }} style={styles.profileImage} />c
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
               ) : (
                 <View style={styles.placeholderImage}>
                   <Ionicons name="camera" size={40} color="#34495E" />
