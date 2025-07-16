@@ -32,9 +32,9 @@ export default function SetupProfileScreen() {
 
   const handleImagePicker = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (permissionResult.granted === false) {
       Alert.alert('Permission Required', 'Permission to access camera roll is required!');
       return;
@@ -55,7 +55,7 @@ export default function SetupProfileScreen() {
   const handleDescriptionChange = (text: string) => {
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
     const count = words.length;
-    
+
     if (count <= 30) {
       setDescription(text);
       setWordCount(count);
@@ -67,12 +67,12 @@ export default function SetupProfileScreen() {
       Alert.alert('Required Field', 'Please add a description about yourself.');
       return;
     }
-    
+
     if (!age.trim()) {
       Alert.alert('Required Field', 'Please enter your age.');
       return;
     }
-    
+
     if (!location.trim()) {
       Alert.alert('Required Field', 'Please enter your location.');
       return;
@@ -85,7 +85,7 @@ export default function SetupProfileScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     // Navigate to persona selection
     router.push('/persona-selection');
   };
@@ -403,4 +403,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-}); 
+});
