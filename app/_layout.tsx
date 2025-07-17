@@ -29,19 +29,19 @@ const preloadImages = async () => {
     require('../assets/images/femalememoji1.png'),
     require('../assets/images/femalememoji2.png'),
     require('../assets/images/femalememoji3.png'),
-    
+
     // Module/Lantern images
     require('../assets/images/LanternDealingWithRejection.png'),
     require('../assets/images/LanternHowToTellFamily.png'),
     require('../assets/images/LanternLight.png'),
-    
+
     // Onboarding images
     require('../assets/images/brotherhood.png'),
     require('../assets/images/sisterhood.png'),
-    
+
     // Pattern and background images
     require('../assets/images/cc.patterns-01.png'),
-    
+
     // Logo images
     require('../assets/images/Jane_Logo_Color_RGB.png'),
   ];
