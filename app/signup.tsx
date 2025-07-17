@@ -14,6 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { supabase } from '../lib/supabaseClient'
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -32,19 +33,32 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    // Skip validation during development
     setIsLoading(true);
-    
-    try {
-      // Here you would typically make an API call to create the account
-      // For now, we'll simulate a delay and navigate to email verification
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Navigate to email verification after successful sign up
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      setIsLoading(false);
+      return;
+    }
+
+    try { 
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: 'https://your-app.com/welcome', // optional, adjust as needed
+        },
+      });
+
+      if (error) throw error;
+
+      Alert.alert('Check your email', 'We sent you a confirmation link.');
       router.push('/verify-email');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Signup failed');
     } finally {
       setIsLoading(false);
     }

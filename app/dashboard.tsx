@@ -176,7 +176,7 @@ export default function Dashboard() {
 
   // Determine background color based on selection
   const getBackgroundColor = () => {
-    return '#FFFFFF';
+    return '#FFFAF2';
   };
 
   // Determine text colors based on background
@@ -192,7 +192,7 @@ export default function Dashboard() {
 
   const colors = {
     background: getBackgroundColor(),
-    cardBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.15)' : 
+    cardBackground: selectedBackground === 'blue' ? '#E5EBEE' : 
                    selectedBackground === 'white' ? '#F8F9FA' : 
                    isDarkMode ? '#1C1C1E' : '#FFFFFF',
     primaryText: getTextColor(),
@@ -228,11 +228,11 @@ export default function Dashboard() {
                selectedBackground === 'white' ? '#FFFFFF' :
                isDarkMode ? '#1A1A1A' : '#FFFFFF',
     cohortAccent: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
-    cohortBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
-                      selectedBackground === 'white' ? 'rgba(0, 122, 255, 0.08)' :
+    cohortBackground: selectedBackground === 'blue' ? '#E5EBEE' : 
+                      selectedBackground === 'white' ? '#FFFAF2' :
                       isDarkMode ? 'rgba(0, 122, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
-    cohortBorder: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.25)' : 
-                  selectedBackground === 'white' ? 'rgba(0, 122, 255, 0.18)' :
+    cohortBorder: selectedBackground === 'blue' ? '#E5EBEE' : 
+                  selectedBackground === 'white' ? '#FFFAF2' :
                   isDarkMode ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.18)',
     resizeHandle: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
   };
