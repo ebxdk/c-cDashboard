@@ -41,3 +41,5 @@ app-example
 # Environment variables
 .env
 .env.local
+
+client_secret_171081651146-d0rk7vsd66hboc0tjaedfvmj4ktovjru.apps.googleusercontent.com.json

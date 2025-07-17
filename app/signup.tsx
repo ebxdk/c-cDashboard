@@ -49,7 +49,7 @@ export default function SignUpScreen() {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: 'https://your-app.com/welcome', // optional, adjust as needed
+          emailRedirectTo: 'https://google.com', // optional, adjust as needed
         },
       });
 
