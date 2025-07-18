@@ -49,7 +49,7 @@ export default function SignUpScreen() {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: 'https://google.com', // optional, adjust as needed
+          emailRedirectTo: process.env.EXPO_PUBLIC_EMAIL_REDIRECT_URL || 'https://your-app.vercel.app/welcome',
         },
       });
 
