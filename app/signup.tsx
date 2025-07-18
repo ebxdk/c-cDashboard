@@ -35,6 +35,23 @@ export default function SignUpScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
 
+    // Password requirements
+    const passwordRequirements = [
+      { regex: /.{8,}/, message: 'at least 8 characters' },
+      { regex: /[A-Z]/, message: 'an uppercase letter' },
+      { regex: /[a-z]/, message: 'a lowercase letter' },
+      { regex: /[0-9]/, message: 'a number' },
+      { regex: /[^A-Za-z0-9]/, message: 'a special character' },
+    ];
+    const failed = passwordRequirements.filter(req => !req.regex.test(password));
+    if (failed.length > 0) {
+      Alert.alert('Password Requirements',
+        'Password must contain:\n' + failed.map(f => '- ' + f.message).join('\n')
+      );
+      setIsLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match.');
       setIsLoading(false);

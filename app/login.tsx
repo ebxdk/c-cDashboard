@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { supabase } from '../lib/supabaseClient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -44,13 +45,20 @@ export default function LoginScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
-    
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      // Navigate to dashboard for now - you can change this to actual login flow
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      // Navigate to dashboard on successful login
       router.push('/dashboard');
-    }, 1000);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
