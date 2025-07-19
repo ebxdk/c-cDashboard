@@ -656,6 +656,13 @@ export default function Dashboard() {
                     );
                   })}
 
+                  {/* Add this button to your dashboard for easy testing */}
+                  <TouchableOpacity 
+                    style={widgetStyles.testButton} 
+                    onPress={() => router.push('/chat-test')}
+                  >
+                    <Text style={widgetStyles.testButtonText}>🧪 Test Supabase Chat</Text>
+                  </TouchableOpacity>
                   
                 </View>
               </ScrollView>

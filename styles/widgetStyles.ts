@@ -438,4 +438,19 @@ export const widgetStyles = StyleSheet.create({
     fontFamily: Fonts.body,
     opacity: 0.6,
   },
+  testButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+    marginHorizontal: 30,
+  },
+  testButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: Fonts.header,
+  },
 }); 

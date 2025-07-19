@@ -17,18 +17,10 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Alert
 } from 'react-native';
-
-interface Message {
-  id: number;
-  sender: string;
-  message: string;
-  time: string;
-  isMe: boolean;
-  avatar?: any;
-  isSystemMessage?: boolean;
-}
+import chatApi, { ChatMessage, ChatRoom, UserProfile } from '../lib/chatApi';
 
 // Mock avatar data
 const avatarData: { [key: string]: any } = {
@@ -60,70 +52,25 @@ export default function GroupChatScreen() {
   const isDarkMode = colorScheme === 'dark';
   const colors = Colors[colorScheme];
   
+  // Supabase integration states
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [room, setRoom] = useState<ChatRoom | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [messageOffset, setMessageOffset] = useState(0);
+  
   const [message, setMessage] = useState('');
   const [inputAnimation] = useState(new Animated.Value(0));
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
   const [headerExpansionAnimation] = useState(new Animated.Value(0));
   const scrollViewRef = useRef<ScrollView>(null);
   
-  // Get group info from params
+  // Get room ID from params (fallback to default for demo)
+  const roomId = params.roomId as string || 'default-engineering-room';
   const groupName = params.groupName as string || 'engineering';
   const groupEmoji = params.groupEmoji as string || '🔒';
   const groupDescription = params.groupDescription as string || 'A space for engineering discussions, collaboration, and team updates. Share your progress, ask questions, and connect with fellow engineers.';
-  
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: 'Mohammad Hadi',
-      message: 'joined 🔒engineering from an invitation by @ibrahim.',
-      time: '6:21 PM',
-      isMe: false,
-      avatar: avatarData['Mohammad Hadi'],
-      isSystemMessage: true,
-    },
-    {
-      id: 2,
-      sender: 'Ahmed Javed',
-      message: 'joined 🔒engineering from an invitation by @ibrahim.',
-      time: '7:54 PM',
-      isMe: false,
-      avatar: avatarData['Ahmed Javed'],
-      isSystemMessage: true,
-    },
-    {
-      id: 3,
-      sender: 'Mujtaba Saighani',
-      message: 'joined 🔒engineering from an invitation by @ibrahim.',
-      time: '10:24 AM',
-      isMe: false,
-      avatar: avatarData['Mujtaba Saighani'],
-      isSystemMessage: true,
-    },
-    {
-      id: 4,
-      sender: 'Mujtaba Saighani',
-      message: 'Hello everyone, my name is Mujtaba and I was recently hired. I look forward to working with you all.',
-      time: '11:00 AM',
-      isMe: false,
-      avatar: avatarData['Mujtaba Saighani'],
-    },
-    {
-      id: 5,
-      sender: 'Ebad Khan',
-      message: 'Salam Mujtaba! Very excited to work with you and everyone else in the team.',
-      time: '1:56 PM',
-      isMe: false,
-      avatar: avatarData['Ebad Khan'],
-    },
-    {
-      id: 6,
-      sender: 'Ebad Khan',
-      message: 'We are still waiting on 1-2 more people to join the slack. Inshallah as soon as they\'re fully on-boarded I would love to have a first orientation meeting during this week or the next week Inshallah 🙏🏼 the deen.',
-      time: '1:56 PM',
-      isMe: false,
-      avatar: avatarData['Ebad Khan'],
-    }
-  ]);
 
   const chatColors = {
     background: isDarkMode ? '#1A1D21' : '#FFFFFF',
@@ -144,6 +91,56 @@ export default function GroupChatScreen() {
     headerCardBackground: isDarkMode ? '#2C2D30' : '#F8F8F8',
     channelIntroBackground: isDarkMode ? '#1A1D21' : '#FFFFFF',
     proTagBackground: '#8B5CF6',
+  };
+
+  // Supabase integration functions
+  const loadRoomData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load current user profile
+      const userProfile = await chatApi.userProfile.getCurrentProfile();
+      setCurrentUser(userProfile);
+      
+      // Load room info
+      const roomData = await chatApi.rooms.getRoomById(roomId);
+      setRoom(roomData);
+      
+      // Load messages
+      const roomMessages = await chatApi.messages.getRoomMessages(roomId);
+      setMessages(roomMessages);
+      
+      // Join room if not already a participant
+      if (roomData && userProfile) {
+        await chatApi.rooms.joinRoom(roomId);
+      }
+    } catch (error) {
+      console.error('Error loading room data:', error);
+      Alert.alert('Error', 'Failed to load chat data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadMoreMessages = async () => {
+    if (!hasMoreMessages || isLoading) return;
+    
+    try {
+      const newMessages = await chatApi.messages.getRoomMessages(
+        roomId,
+        50,
+        messageOffset
+      );
+      
+      if (newMessages.length < 50) {
+        setHasMoreMessages(false);
+      }
+      
+      setMessages(prev => [...newMessages, ...prev]);
+      setMessageOffset(prev => prev + 50);
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+    }
   };
 
   const handleBackPress = () => {
@@ -169,23 +166,27 @@ export default function GroupChatScreen() {
     }).start();
   };
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      const newMessage: Message = {
-        id: messages.length + 1,
-        sender: 'You',
-        message: message.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMe: true,
-      };
+  const handleSendMessage = async () => {
+    if (!message.trim() || !roomId || !currentUser) return;
+    
+    try {
+      // Send message to Supabase
+      const messageId = await chatApi.messages.sendMessage(
+        roomId,
+        message.trim()
+      );
       
-      setMessages([...messages, newMessage]);
-      setMessage('');
-      
-      // Scroll to bottom after a short delay to ensure the message is rendered
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      if (messageId) {
+        setMessage('');
+        
+        // Scroll to bottom after a short delay
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
     }
   };
 
@@ -194,6 +195,56 @@ export default function GroupChatScreen() {
     const currentIndex = dates.indexOf(dateString);
     return currentIndex !== -1 ? dates[currentIndex] : dateString;
   };
+
+  // Helper function to check if message is from current user
+  const isMessageFromCurrentUser = (message: ChatMessage) => {
+    return currentUser && message.sender_id === currentUser.id;
+  };
+
+  // Helper function to get sender name
+  const getSenderName = (message: ChatMessage) => {
+    if (isMessageFromCurrentUser(message)) {
+      return 'You';
+    }
+    return message.sender_profile?.full_name || 'Unknown User';
+  };
+
+  // Helper function to get sender avatar
+  const getSenderAvatar = (message: ChatMessage) => {
+    if (message.sender_profile?.avatar_url) {
+      return { uri: message.sender_profile.avatar_url };
+    }
+    // Fallback to mock avatar data
+    const senderName = getSenderName(message);
+    return avatarData[senderName] || avatarData['Ahmed'];
+  };
+
+  // Load room data on component mount
+  useEffect(() => {
+    loadRoomData();
+  }, [roomId]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (roomId) {
+      // Subscribe to real-time messages
+      const channel = chatApi.realtime.subscribeToRoomMessages(
+        roomId,
+        (newMessage) => {
+          setMessages(prev => [...prev, newMessage]);
+          
+          // Scroll to bottom for new messages
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+      );
+
+      return () => {
+        chatApi.realtime.unsubscribe(`room:${roomId}`);
+      };
+    }
+  }, [roomId]);
 
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
@@ -227,6 +278,14 @@ export default function GroupChatScreen() {
       keyboardWillHideListener.remove();
     };
   }, [inputAnimation]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: chatColors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={[styles.loadingText, { color: chatColors.primaryText }]}>Loading chat...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: chatColors.background }]}>
@@ -287,7 +346,7 @@ export default function GroupChatScreen() {
             <View style={styles.groupTitleRow}>
               <Text style={[styles.hashIcon, { color: chatColors.channelColor }]}>🔒</Text>
               <Text style={[styles.groupTitle, { color: chatColors.primaryText }]}>
-                {groupName}
+                {room?.name || groupName}
               </Text>
               <Animated.Text style={[
                 styles.expandIcon, 
@@ -318,336 +377,95 @@ export default function GroupChatScreen() {
         </View>
       </View>
 
-      {/* Expanded Card - Separate from header, positioned absolutely on screen */}
-      {isHeaderExpanded && (
-        <Animated.View style={[
-          styles.expandedCard, 
-          { 
-            backgroundColor: chatColors.headerCardBackground,
-            height: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [56, 320],
-              extrapolate: 'clamp',
-            }),
-            left: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [56, 16],
-              extrapolate: 'clamp',
-            }),
-            right: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [56, 16],
-              extrapolate: 'clamp',
-            }),
-            borderRadius: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [12, 16],
-              extrapolate: 'clamp',
-            }),
-            shadowOpacity: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 0.15],
-              extrapolate: 'clamp',
-            }),
-            shadowRadius: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 12],
-              extrapolate: 'clamp',
-            }),
-            shadowOffset: {
-              width: 0,
-              height: headerExpansionAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 4],
-                extrapolate: 'clamp',
-              }),
-            },
-            elevation: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 8],
-              extrapolate: 'clamp',
-            }),
-            opacity: headerExpansionAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 1],
-              extrapolate: 'clamp',
-            }),
-            transform: [{
-              scale: headerExpansionAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.95, 1],
-                extrapolate: 'clamp',
-              })
-            }]
-          }
-        ]}>
-          {/* Compact Header Content */}
-          <View style={styles.expandedCardHeader}>
-            <View style={styles.groupTitleRow}>
-              <Text style={[styles.hashIcon, { color: chatColors.channelColor }]}>🔒</Text>
-              <Text style={[styles.groupTitle, { color: chatColors.primaryText }]}>
-                {groupName}
+      {/* Messages */}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={() => {
+            // Load more messages when scrolling to top
+            if (hasMoreMessages) {
+              loadMoreMessages();
+            }
+          }}
+        >
+          {messages.map((message) => (
+            <View key={message.id} style={styles.messageContainer}>
+              <View style={styles.messageHeader}>
+                <Image 
+                  source={getSenderAvatar(message)} 
+                  style={styles.avatar}
+                />
+                <View style={styles.messageInfo}>
+                  <Text style={[styles.senderName, { color: chatColors.primaryText }]}>
+                    {getSenderName(message)}
+                  </Text>
+                  <Text style={[styles.messageTime, { color: chatColors.secondaryText }]}>
+                    {new Date(message.created_at).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.messageText, { color: chatColors.primaryText }]}>
+                {message.content}
               </Text>
             </View>
-            <Text style={[styles.memberInfo, { color: chatColors.secondaryText }]}>
-              {groupMembers.length} members • 2 tabs
-            </Text>
-          </View>
+          ))}
+        </ScrollView>
 
-          {/* Expanded Content */}
-          <Animated.View style={[
-            styles.expandedContent,
+        {/* Input */}
+        <Animated.View 
+          style={[
+            styles.inputContainer,
             {
-              opacity: headerExpansionAnimation.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0, 0, 1],
-                extrapolate: 'clamp',
-              }),
+              backgroundColor: chatColors.inputBackground,
+              borderTopColor: chatColors.inputBorder,
               transform: [{
-                translateY: headerExpansionAnimation.interpolate({
+                translateY: inputAnimation.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-5, 0],
+                  outputRange: [0, -20],
                   extrapolate: 'clamp',
                 })
               }]
             }
-          ]}>
-            {/* Group Description */}
-            <Text style={[styles.expandedDescription, { color: chatColors.secondaryText }]}>
-              {groupDescription}
-            </Text>
-
-            {/* Action Buttons */}
-            <View style={styles.expandedActions}>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: chatColors.primaryText }]}>👥</Text>
-                <Text style={[styles.expandedActionText, { color: chatColors.primaryText }]}>Add people</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: chatColors.primaryText }]}>⚙️</Text>
-                <Text style={[styles.expandedActionText, { color: chatColors.primaryText }]}>Settings</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: chatColors.primaryText }]}>🔇</Text>
-                <Text style={[styles.expandedActionText, { color: chatColors.primaryText }]}>Mute</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: chatColors.primaryText }]}>⭐</Text>
-                <Text style={[styles.expandedActionText, { color: chatColors.primaryText }]}>Star</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: chatColors.primaryText }]}>📋</Text>
-                <Text style={[styles.expandedActionText, { color: chatColors.primaryText }]}>View details</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.expandedActionButton, { backgroundColor: 'transparent' }]}>
-                <Text style={[styles.expandedActionIcon, { color: '#FF6B6B' }]}>🚪</Text>
-                <Text style={[styles.expandedActionText, { color: '#FF6B6B' }]}>Leave</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </Animated.View>
-      )}
-      
-      {/* Messages */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Channel Introduction */}
-        <View style={[styles.channelIntro, { backgroundColor: chatColors.channelIntroBackground }]}>
-          <View style={styles.channelIntroHeader}>
-            <Text style={[styles.channelIntroIcon, { color: chatColors.channelColor }]}>🔒</Text>
-            <Text style={[styles.channelIntroTitle, { color: chatColors.primaryText }]}>{groupName}</Text>
-          </View>
-          <Text style={[styles.channelIntroText, { color: chatColors.secondaryText }]}>
-            This is the very beginning of the 🔒{groupName} channel.
-          </Text>
-          
-          {/* Action Buttons */}
-          <View style={styles.channelIntroActions}>
-            <TouchableOpacity style={[styles.channelIntroButton, { backgroundColor: chatColors.messageHover }]}>
-              <Text style={[styles.channelIntroButtonIcon, { color: chatColors.primaryText }]}>✏️</Text>
-              <Text style={[styles.channelIntroButtonText, { color: chatColors.primaryText }]}>Add description</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.channelIntroButton, { backgroundColor: chatColors.messageHover }]}>
-              <Text style={[styles.channelIntroButtonIcon, { color: chatColors.primaryText }]}>👥</Text>
-              <Text style={[styles.channelIntroButtonText, { color: chatColors.primaryText }]}>Add people</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Pro Notice - Separate Card */}
-        <View style={[styles.proNoticeCard, { backgroundColor: chatColors.messageHover }]}>
-          <View style={[styles.proTag, { backgroundColor: chatColors.proTagBackground }]}>
-            <Text style={styles.proTagText}>PRO</Text>
-          </View>
-          <Text style={[styles.proNoticeText, { color: chatColors.secondaryText }]}>
-            Messages and files older than 90 days are hidden on your current plan.
-          </Text>
-          <TouchableOpacity>
-            <Text style={[styles.proNoticeLink, { color: '#1264A3' }]}>Learn more about Slack Pro</Text>
-          </TouchableOpacity>
-        </View>
-
-        {messages.map((msg, index) => {
-          const prevMessage = messages[index - 1];
-          const nextMessage = messages[index + 1];
-          const showSender = !prevMessage || prevMessage.sender !== msg.sender || prevMessage.isSystemMessage !== msg.isSystemMessage;
-          const showAvatar = showSender && !msg.isMe;
-          const isLastInGroup = !nextMessage || nextMessage.sender !== msg.sender || nextMessage.isMe !== msg.isMe || nextMessage.isSystemMessage !== msg.isSystemMessage;
-          const isFirstInGroup = showSender;
-          
-          // Show date dividers
-          let showDateDivider = false;
-          let dateText = '';
-          if (index === 0) {
-            showDateDivider = true;
-            dateText = 'Apr 8th';
-          } else if (index === 2) {
-            showDateDivider = true;
-            dateText = 'Apr 11th';
-          } else if (index === 3) {
-            showDateDivider = true;
-            dateText = 'May 5th';
-          }
-          
-          return (
-            <React.Fragment key={msg.id}>
-              {showDateDivider && (
-                <View style={styles.dateDivider}>
-                  <View style={[styles.dateLine, { backgroundColor: chatColors.separatorColor }]} />
-                  <Text style={[styles.dateText, { color: chatColors.tertiaryText }]}>{dateText}</Text>
-                  <View style={[styles.dateLine, { backgroundColor: chatColors.separatorColor }]} />
-                </View>
-              )}
-              
-              <View style={[
-                styles.messageRow,
-                { 
-                  paddingTop: isFirstInGroup ? 12 : 2,
-                  paddingBottom: isLastInGroup ? 8 : 0,
-                }
-              ]}>
-                {/* Avatar column */}
-                <View style={styles.avatarColumn}>
-                  {showAvatar && msg.avatar ? (
-                    <Image 
-                      source={msg.avatar} 
-                      style={[styles.messageAvatar, { 
-                        borderColor: chatColors.avatarBorder 
-                      }]} 
-                    />
-                  ) : showAvatar ? (
-                    <View style={[styles.avatarPlaceholder, { 
-                      backgroundColor: chatColors.messageHover,
-                      borderColor: chatColors.avatarBorder 
-                    }]}>
-                      <Text style={[styles.avatarText, { color: chatColors.primaryText }]}>
-                        {msg.sender.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-                
-                {/* Message content */}
-                <View style={styles.messageContent}>
-                  {/* Sender name and timestamp */}
-                  {showSender && (
-                    <View style={styles.messageHeader}>
-                      <Text style={[styles.senderName, { color: chatColors.primaryText }]}>
-                        {msg.sender}
-                      </Text>
-                      <Text style={[styles.messageTime, { color: chatColors.tertiaryText }]}>
-                        {msg.time}
-                      </Text>
-                    </View>
-                  )}
-                  
-                  {/* Message text */}
-                  <View style={styles.messageTextContainer}>
-                    <Text style={[
-                      styles.messageText, 
-                      { 
-                        color: msg.isSystemMessage ? chatColors.systemMessageText : chatColors.primaryText,
-                        fontStyle: msg.isSystemMessage ? 'italic' : 'normal'
-                      }
-                    ]}>
-                      {msg.message}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </React.Fragment>
-          );
-        })}
-      </ScrollView>
-
-      {/* Input Area */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.inputContainer, { 
-          backgroundColor: chatColors.background,
-          borderTopColor: chatColors.separatorColor,
-        }]}
-      >
-        <Animated.View 
-          style={[
-            styles.inputRow,
-            {
-              transform: [
-                {
-                  translateY: inputAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -8],
-                    extrapolate: 'clamp',
-                  })
-                }
-              ],
-            }
           ]}
         >
-          <View style={[styles.inputWrapper, { 
-            backgroundColor: chatColors.inputBackground,
-            borderColor: chatColors.inputBorder 
-          }]}>
-            <TouchableOpacity style={styles.attachButton}>
-              <Text style={[styles.attachIcon, { color: chatColors.tertiaryText }]}>+</Text>
-            </TouchableOpacity>
-            
-            <TextInput
-              style={[styles.textInput, { color: chatColors.primaryText }]}
-              placeholder={`Message ${groupName}`}
-              placeholderTextColor={chatColors.tertiaryText}
-              value={message}
-              onChangeText={setMessage}
-              onSubmitEditing={handleSendMessage}
-              returnKeyType="send"
-              multiline
-            />
-            
-            <TouchableOpacity style={styles.emojiButton}>
-              <Text style={[styles.emojiIcon, { color: chatColors.tertiaryText }]}>😊</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.mentionButton}>
-              <Text style={[styles.mentionIcon, { color: chatColors.tertiaryText }]}>@</Text>
-            </TouchableOpacity>
-            
-            {message.trim() ? (
-              <TouchableOpacity 
-                style={[styles.sendButton, { backgroundColor: chatColors.channelColor }]}
-                onPress={handleSendMessage}
-              >
-                <Text style={styles.sendIcon}>➤</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.micButton}>
-                <Text style={[styles.micIcon, { color: chatColors.tertiaryText }]}>🎤</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <TextInput
+            style={[
+              styles.textInput,
+              { 
+                color: chatColors.primaryText,
+                backgroundColor: chatColors.inputBackground,
+              }
+            ]}
+            placeholder="Message #engineering"
+            placeholderTextColor={chatColors.secondaryText}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            maxLength={1000}
+          />
+          <TouchableOpacity 
+            style={[
+              styles.sendButton,
+              { 
+                backgroundColor: message.trim() ? chatColors.channelColor : chatColors.secondaryText,
+                opacity: message.trim() ? 1 : 0.5
+              }
+            ]}
+            onPress={handleSendMessage}
+            disabled={!message.trim()}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
         </Animated.View>
       </KeyboardAvoidingView>
     </View>
@@ -658,382 +476,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  messageRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  avatarColumn: {
-    width: 40,
-    alignItems: 'center',
-  },
-  messageAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 0,
-  },
-  avatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: Fonts.system,
-  },
-  messageContent: {
-    flex: 1,
-    paddingLeft: 8,
-  },
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 2,
-  },
-  senderName: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginRight: 8,
-    fontFamily: Fonts.system,
-  },
-  messageTime: {
-    fontSize: 12,
-    fontWeight: '400',
-    fontFamily: Fonts.system,
-    opacity: 0.7,
-  },
-  messageTextContainer: {
-    paddingLeft: 0,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: Fonts.system,
-    fontWeight: '400',
-  },
-  inputContainer: {
-    position: 'absolute',
-    bottom: 104, // Position above the 104px tall bottom nav bar
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  inputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 44,
-  },
-  attachButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  attachIcon: {
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: Fonts.system,
-    maxHeight: 100,
-    paddingVertical: 0,
-  },
-  emojiButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  emojiIcon: {
+  loadingText: {
     fontSize: 16,
-  },
-  mentionButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  mentionIcon: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  sendButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  sendIcon: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  micButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  micIcon: {
-    fontSize: 16,
-  },
-  dateDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginVertical: 8,
-  },
-  dateLine: {
-    flex: 1,
-    height: 1,
-  },
-  dateText: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: Fonts.system,
-    marginHorizontal: 16,
+    fontWeight: '500',
   },
   slackHeader: {
-    paddingTop: 54, // Account for status bar
-    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    minHeight: 70,
-    position: 'relative',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 16,
+    padding: 8,
   },
   backIcon: {
-    fontSize: 18,
-    fontWeight: '400',
+    fontSize: 20,
+    fontWeight: '600',
   },
-  headerInfo: {
+  headerCardTrigger: {
     flex: 1,
-    paddingLeft: 12,
-  },
-  headerCard: {
-    position: 'absolute',
-    top: 66,
-    left: 56,
-    right: 56,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    overflow: 'hidden',
-  },
-  headerCardContent: {
-    alignItems: 'flex-start',
-    paddingVertical: 4,
+    marginHorizontal: 12,
   },
   groupTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 2,
   },
   hashIcon: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
     marginRight: 6,
   },
   groupTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: Fonts.system,
+    marginRight: 4,
+  },
+  expandIcon: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   memberInfo: {
     fontSize: 13,
     fontWeight: '400',
-    fontFamily: Fonts.system,
-    opacity: 0.7,
-    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerActionButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    borderRadius: 16,
+    padding: 8,
   },
   headerActionIcon: {
-    fontSize: 16,
-  },
-  
-  channelIntro: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 8,
-  },
-  channelIntroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  channelIntroIcon: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  channelIntroTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: Fonts.system,
-  },
-  channelIntroText: {
-    fontSize: 17,
-    fontWeight: '400',
-    fontFamily: Fonts.system,
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  channelIntroActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 0,
-    marginBottom: 16,
-  },
-  channelIntroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flex: 1,
-    minHeight: 56,
-  },
-  channelIntroButtonIcon: {
     fontSize: 18,
-    marginRight: 10,
-  },
-  channelIntroButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: Fonts.system,
-  },
-  proNoticeCard: {
-    marginHorizontal: 8,
-    marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
-    flexDirection: 'column',
-  },
-  proTag: {
-    backgroundColor: '#8B5CF6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  proTagText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-    fontFamily: Fonts.system,
-  },
-  proNoticeText: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: Fonts.system,
-    lineHeight: 20,
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  proNoticeLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: Fonts.system,
-    textDecorationLine: 'underline',
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    position: 'relative',
-    zIndex: 1,
-  },
-  expandIcon: {
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  expandedContent: {
-    paddingTop: 16,
-    paddingHorizontal: 0,
-  },
-  expandedDescription: {
-    fontSize: 15,
-    fontWeight: '400',
-    fontFamily: Fonts.system,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  expandedActions: {
-    flexDirection: 'column',
-    marginTop: 16,
-  },
-  expandedActionButton: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 0,
-    marginBottom: 0,
-  },
-  expandedActionIcon: {
-    fontSize: 18,
-    marginRight: 12,
-    width: 24,
-    textAlign: 'center',
-  },
-  expandedActionText: {
-    fontSize: 16,
-    fontWeight: '400',
-    fontFamily: Fonts.system,
-    flex: 1,
-  },
-  headerSpacer: {
-    flex: 1,
   },
   modalOverlay: {
     position: 'absolute',
@@ -1041,28 +540,79 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9999, // Very high z-index to cover everything including bottom nav
+    zIndex: 1000,
   },
   modalOverlayTouchable: {
     flex: 1,
   },
-  headerCardTrigger: {
+  keyboardAvoidingView: {
     flex: 1,
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
   },
-  expandedCard: {
-    position: 'absolute',
-    top: 66, // Position where the header card should be
+  messagesContainer: {
+    flex: 1,
+  },
+  messagesContent: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    overflow: 'hidden',
-    zIndex: 10000, // Higher than modal overlay to stay visible
   },
-  expandedCardHeader: {
-    paddingVertical: 4,
-    marginBottom: 8,
+  messageContainer: {
+    marginBottom: 16,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  messageInfo: {
+    flex: 1,
+  },
+  senderName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  messageTime: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  messageText: {
+    fontSize: 15,
+    fontWeight: '400',
+    lineHeight: 20,
+    marginLeft: 40,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  textInput: {
+    flex: 1,
+    minHeight: 36,
+    maxHeight: 120,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    fontSize: 15,
+    marginRight: 8,
+  },
+  sendButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

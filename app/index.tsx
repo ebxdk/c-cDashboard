@@ -10,8 +10,10 @@ import {
     Text,
     TouchableOpacity,
     View,
+    Alert,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { startAsync, makeRedirectUri } from 'expo-auth-session';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -40,6 +42,16 @@ const AppleLogo = ({ width = 20, height = 24, color = '#000000' }) => (
   </Svg>
 );
 
+// Add GoogleLogo SVG
+const GoogleLogo = ({ width = 24, height = 24 }) => (
+  <Svg width={width} height={height} viewBox="0 0 24 24">
+    <Path fill="#4285F4" d="M21.805 10.023h-9.765v3.955h5.627c-.242 1.236-1.457 3.627-5.627 3.627-3.386 0-6.145-2.803-6.145-6.25s2.759-6.25 6.145-6.25c1.93 0 3.227.82 3.97 1.527l2.713-2.64C17.13 2.82 15.02 1.75 12.04 1.75c-3.386 0-6.145 2.803-6.145 6.25 0 1.07.28 2.08.768 2.945z"/>
+    <Path fill="#34A853" d="M3.153 7.345l3.285 2.41c.89-1.73 2.57-2.955 4.602-2.955 1.13 0 2.16.387 2.97 1.02l2.713-2.64C15.02 2.82 12.91 1.75 9.93 1.75c-3.386 0-6.145 2.803-6.145 6.25 0 1.07.28 2.08.768 2.945z"/>
+    <Path fill="#FBBC05" d="M12.04 21.75c2.98 0 5.09-.98 6.77-2.68l-3.11-2.55c-.86.58-2.01.98-3.66.98-2.86 0-5.28-1.93-6.15-4.57l-3.22 2.49c1.62 3.18 5.13 5.33 9.37 5.33z"/>
+    <Path fill="#EA4335" d="M21.805 10.023h-9.765v3.955h5.627c-.242 1.236-1.457 3.627-5.627 3.627-3.386 0-6.145-2.803-6.145-6.25s2.759-6.25 6.145-6.25c1.93 0 3.227.82 3.97 1.527l2.713-2.64C17.13 2.82 15.02 1.75 12.04 1.75 6.477 1.75 2 6.227 2 11.75s4.477 10 10.04 10c5.77 0 9.56-4.047 9.56-9.75 0-.656-.07-1.15-.16-1.477z" opacity=".1"/>
+  </Svg>
+);
+
 export default function LoginScreen() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -48,6 +60,7 @@ export default function LoginScreen() {
   const autoSlideTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [userInteracting, setUserInteracting] = useState(false);
   const userInteractionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Create infinite scroll by duplicating slides
   const infiniteSlides = [...SLIDES, ...SLIDES, ...SLIDES]; // Triple the slides for smooth infinite scroll
@@ -177,6 +190,34 @@ export default function LoginScreen() {
     router.push('/login');
   };
 
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const redirectUri = makeRedirectUri({
+    scheme: 'yourapp', // must match your app.json
+    // useProxy: true, // Uncomment if using Expo Go and supported
+  });
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const authUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUri)}`;
+      const result = await startAsync({ authUrl });
+      console.log('Google Auth result:', result);
+      Alert.alert('Google Auth Result', JSON.stringify(result, null, 2));
+      // Optionally, show a Toast (if you have a Toast library)
+      // Toast.show(JSON.stringify(result));
+      if (result.type === 'success' && result.url) {
+        // Supabase will handle the session automatically if you use supabase-js v2+
+      } else {
+        Alert.alert('Google Sign-Up cancelled or failed', `Result type: ${result.type}`);
+      }
+    } catch (err) {
+      console.error('Google Auth error:', err);
+      Alert.alert('Google Auth Exception', String(err));
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   const renderSlide = (slide: typeof SLIDES[0], index: number) => (
     <View key={`slide-${index}`} style={styles.slide}>
       <View style={styles.imageContainer}>
@@ -238,19 +279,37 @@ export default function LoginScreen() {
         {infiniteSlides.map((slide, index) => renderSlide(slide, index))}
       </Animated.ScrollView>
 
-      {/* Pagination Dots */}
+      {/* Pagination Dots - always right below the carousel */}
       {renderPagination()}
 
-      {/* Bottom Buttons */}
-      <View style={styles.bottomContainer}>
+      {/* Bottom Buttons - always at the bottom */}
+      <View style={styles.bottomContainer} pointerEvents="box-none">
+        {/* Spacer to move everything lower */}
+        <View style={{ height: 40 }} />
+
         <TouchableOpacity style={styles.signUpEmailButton} onPress={handleSignUpWithEmail}>
           <Text style={styles.signUpEmailButtonText}>Sign up with email</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.signUpAppleButton} onPress={handleSignUpWithApple}>
-          <AppleLogo width={22} height={26} color="#000000" />
-          <Text style={styles.signUpAppleButtonText}>Sign up with Apple</Text>
-        </TouchableOpacity>
+
+        {/* Separator for social sign up */}
+        <View style={styles.separatorContainer}>
+          <View style={styles.separatorLine} />
+          <Text style={styles.separatorText}>Or sign up with:</Text>
+          <View style={styles.separatorLine} />
+        </View>
+
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={styles.socialButton} onPress={handleSignUpWithApple}>
+            <AppleLogo width={28} height={28} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignUp} disabled={isGoogleLoading}>
+            {isGoogleLoading ? (
+              <Text style={{ color: '#2C3E50', fontWeight: 'bold' }}>...</Text>
+            ) : (
+              <GoogleLogo width={28} height={28} />
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.termsContainer}>
           <Text style={styles.termsText}>
@@ -355,7 +414,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -20, // Move the whole bottom section lower
     left: 0,
     right: 0,
     paddingHorizontal: 30,
@@ -426,5 +485,44 @@ const styles = StyleSheet.create({
     maxWidth: 700,
     maxHeight: 700,
     marginTop: 50,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 18,
+    gap: 24,
+  },
+  socialButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFF8E7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6C5CE7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 15,
+    marginHorizontal: 10,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#34495E',
+    opacity: 0.3,
+  },
+  separatorText: {
+    color: '#34495E',
+    fontSize: 14,
+    fontWeight: '500',
+    marginHorizontal: 10,
+    fontFamily: 'System',
   },
 }); 
