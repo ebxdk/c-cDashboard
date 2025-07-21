@@ -1,7 +1,9 @@
 import { useCalendar } from '@/contexts/CalendarContext';
 import { useHabits } from '@/contexts/HabitsContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useRef } from 'react';
 import { Dimensions, Image, Animated as RNAnimated, Text, TouchableOpacity, View } from 'react-native';
@@ -327,7 +329,7 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
           fontFamily: 'System',
           opacity: 0.9,
           letterSpacing: -0.2,
-        }}>Cohort</Text>
+        }}>Connect</Text>
       </View>
     </View>
     </TouchableOpacity>
@@ -1545,56 +1547,263 @@ export const JournalWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
   );
 };
 
-export const TestWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+export const AffinityGroupsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const router = useRouter();
+  const [joinedGroups, setJoinedGroups] = React.useState<string[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  // Affinity groups data (matching the structure from the app)
+  const AFFINITY_GROUPS = [
+    { id: '1', emoji: '🍽️', name: 'Halal Foodies Club', tagline: 'Share halal recipes, local halal spots, snacks from different cultures', memberCount: 1247 },
+    { id: '2', emoji: '🎮', name: 'Muslim Gamers', tagline: 'Talk about favorite games, set up casual halal game nights', memberCount: 892 },
+    { id: '3', emoji: '📚', name: 'Muslim Book/Anime Club', tagline: 'Share your fav Islamic books, anime, manga, or shows', memberCount: 634 },
+    { id: '4', emoji: '✈️', name: 'Revert Travel Chat', tagline: 'Talk Umrah dreams, halal travel hacks, Muslim-friendly destinations', memberCount: 456 },
+    { id: '5', emoji: '📸', name: 'Aesthetic Muslims', tagline: 'Share Islamic aesthetic pics, clothing inspo, room decor, wallpapers', memberCount: 789 },
+    { id: '6', emoji: '🛍️', name: 'Modest Fashion Talk', tagline: 'Share fits, brands, modest wear inspo (hijabi fashion, thobes, etc.)', memberCount: 923 },
+    { id: '7', emoji: '💼', name: 'Career & Resume Circle', tagline: 'Job advice, resume tips, halal work discussions', memberCount: 567 },
+    { id: '8', emoji: '💸', name: 'Halal Hustle Chat', tagline: 'Side hustles, selling, halal investing, business ideas', memberCount: 834 },
+    { id: '9', emoji: '🧠', name: 'Memory & Quran Hacks', tagline: 'Productivity tips, how to stay on track memorizing, habit building', memberCount: 445 },
+    { id: '10', emoji: '🎯', name: 'Muslim Productivity Tools', tagline: 'Apps, systems, routines to keep deen + dunya on point', memberCount: 312 },
+    { id: '11', emoji: '🌙', name: 'Ramadan Prep & Vibes', tagline: 'Only open during Ramadan seasons — recipes, goals, support', memberCount: 1834 },
+    { id: '12', emoji: '💭', name: 'Late Night Deen Thoughts', tagline: 'Chatroom for deep convos about Allah, doubts, afterlife, etc.', memberCount: 678 },
+    { id: '13', emoji: '🧎', name: 'Salah Struggles & Wins', tagline: 'Talk honestly about struggles staying consistent, wins, reminders', memberCount: 924 },
+    { id: '14', emoji: '🤲', name: 'Du\'a Board', tagline: 'Share what you need du\'a for and make du\'a for others', memberCount: 1245 },
+    { id: '15', emoji: '😔', name: 'Loneliness & Isolation', tagline: 'For people who just feel lost or alone in the revert journey', memberCount: 543 },
+    { id: '16', emoji: '👨‍👩‍👧‍👦', name: 'Family Drama Vent Room', tagline: 'Talk family struggles, boundaries, non-Muslim tensions', memberCount: 387 },
+    { id: '17', emoji: '😤', name: 'Dealing With Anger', tagline: 'Especially for brothers who need a space to cool off, vent', memberCount: 289 },
+    { id: '18', emoji: '💕', name: 'Self-Love & Muslim Identity', tagline: 'Loving yourself while growing into your Muslim identity', memberCount: 734 },
+    { id: '19', emoji: '🤷‍♂️', name: 'I Don\'t Know What I\'m Doing', tagline: 'A totally non-judgy room for asking even the "dumbest" questions', memberCount: 2145 },
+    { id: '20', emoji: '⏱️', name: 'Just Reverted - Day 1 Club', tagline: 'For people who just took shahada or are days/weeks in', memberCount: 678 },
+    { id: '21', emoji: '🧕', name: 'How to Be Muslim 101', tagline: 'Practical help: how to pray, make wudu, what to say, what to avoid', memberCount: 1834 },
+    { id: '22', emoji: '💬', name: 'Cringe Moments & Mistakes', tagline: 'Laugh and learn from Islamic fails — converts tell all', memberCount: 923 },
+  ];
+
+  // Load joined groups from AsyncStorage
+  React.useEffect(() => {
+    const loadJoinedGroups = async () => {
+      try {
+        const savedJoinedGroups = await AsyncStorage.getItem('joinedAffinityGroups');
+        if (savedJoinedGroups) {
+          const parsedGroups = JSON.parse(savedJoinedGroups);
+          setJoinedGroups(parsedGroups);
+        }
+      } catch (error) {
+        console.log('Error loading joined groups:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadJoinedGroups();
+  }, []);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/affinity-groups');
   };
 
-  return (
-    <TouchableOpacity 
-      onPress={handlePress}
-      activeOpacity={0.8}
-      style={[
+  const handleGroupPress = (groupId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const group = AFFINITY_GROUPS.find(g => g.id === groupId);
+    if (group) {
+      router.push({
+        pathname: '/group-chat',
+        params: {
+          groupName: group.name,
+          groupEmoji: group.emoji,
+          groupId: group.id,
+        }
+      });
+    }
+  };
+
+  // Get user's enrolled groups (limit to 2 for the widget, show remainder count)
+  const allUserGroups = AFFINITY_GROUPS.filter(group => joinedGroups.includes(group.id));
+  const userGroups = allUserGroups.slice(0, 2);
+  const remainingCount = allUserGroups.length - 2;
+
+  if (isLoading) {
+    return (
+      <View style={[
         baseWidgetStyle, 
         { 
           backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF',
           padding: 20,
+          justifyContent: 'center',
+          alignItems: 'center',
         }
-      ]}
-    >
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
-        <Text style={{
-          fontSize: 32,
-          textAlign: 'center',
-          marginBottom: 8,
-        }}>🧩</Text>
-        <Text style={{
-          fontSize: 16,
-          fontWeight: '600',
-          color: colors.primaryText,
-          textAlign: 'center',
-          marginBottom: 4,
-          fontFamily: 'System',
-        }}>
-          Affinity Groups
-        </Text>
-        <Text style={{
-          fontSize: 12,
-          color: colors.secondaryText,
-          textAlign: 'center',
-          fontFamily: 'System',
-        }}>
-          Find your people
-        </Text>
+      ]}>
+        <Text style={{ fontSize: 12, color: colors.secondaryText }}>Loading...</Text>
       </View>
-    </TouchableOpacity>
+    );
+  }
+
+  // Empty state when user has no groups
+  if (userGroups.length === 0) {
+    return (
+      <TouchableOpacity 
+        onPress={handlePress}
+        activeOpacity={0.8}
+        style={[
+          baseWidgetStyle, 
+          { 
+            backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+            padding: 20,
+          }
+        ]}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <Text style={{
+            fontSize: 28,
+            textAlign: 'center',
+            marginBottom: 8,
+          }}>🧩</Text>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.primaryText,
+            textAlign: 'center',
+            marginBottom: 4,
+            fontFamily: 'System',
+          }}>
+            Affinity Groups
+          </Text>
+          <Text style={{
+            fontSize: 12,
+            color: colors.secondaryText,
+            textAlign: 'center',
+            fontFamily: 'System',
+          }}>
+            Find your people
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={[
+      baseWidgetStyle, 
+      { 
+        backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+        padding: 16,
+      }
+    ]}>
+      {/* Header */}
+      <Text style={{
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.primaryText,
+        marginBottom: 6,
+        fontFamily: 'System',
+      }}>
+        Affinity Groups
+      </Text>
+
+      {/* Groups List */}
+      <View style={{ flex: 1, justifyContent: 'flex-start', minHeight: 80 }}>
+        {userGroups.map((group, index) => (
+          <View key={group.id}>
+            <TouchableOpacity
+              onPress={() => handleGroupPress(group.id)}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 3,
+                marginBottom: 1,
+              }}
+            >
+              <Text style={{
+                fontSize: 18,
+                marginRight: 10,
+              }}>
+                {group.emoji}
+              </Text>
+              <Text style={{
+                fontSize: 13,
+                fontWeight: '500',
+                color: colors.primaryText,
+                flex: 1,
+                fontFamily: 'System',
+              }} numberOfLines={1}>
+                {group.name}
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Show remaining count under the 2nd group */}
+            {index === 1 && remainingCount > 0 && (
+              <TouchableOpacity
+                onPress={handlePress}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 3,
+                  marginBottom: 1,
+                }}
+              >
+                <Text style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: colors.primaryText,
+                  marginRight: 10,
+                  fontFamily: 'System',
+                  width: 18, // Same width as emoji space
+                  textAlign: 'center',
+                }}>
+                  +{remainingCount}
+                </Text>
+                <Text style={{
+                  fontSize: 13,
+                  fontWeight: '500',
+                  color: colors.primaryText,
+                  flex: 1,
+                  fontFamily: 'System',
+                }} numberOfLines={1}>
+                  More Groups
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+      </View>
+
+      {/* View My Groups Button with Light Blue Gradient */}
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.8}
+        style={{
+          marginTop: 8,
+          borderRadius: 16,
+          overflow: 'hidden',
+        }}
+      >
+        <LinearGradient
+          colors={['#87CEEB', '#ADD8E6']} // Light blue gradient
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{
+            fontSize: 13,
+            fontWeight: '600',
+            color: '#FFFFFF',
+            fontFamily: 'System',
+          }}>
+            View My Groups
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 };
 

@@ -1,9 +1,9 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { StatusBar } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Easing,
     Keyboard,
@@ -15,12 +15,16 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
-    Alert
+    View
 } from 'react-native';
 import chatApi, { AIChatSession, ChatMessage, UserProfile } from '../lib/chatApi';
-import { supabase } from '../lib/supabaseClient';
+
+interface Message {
+  id: number;
+  text: string;
+  isUser: boolean;
+  timestamp: string;
+}
 
 interface ChatHistory {
   id: string;
@@ -199,17 +203,20 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
         segments.push(
           <View key={`english-line-break-${elementKey}-${segmentKey++}`} style={{
             width: '100%',
-            marginTop: index === 0 ? 0 : 20, // Force clear separation from previous content
-            marginBottom: 20, // Force clear separation from next content
+            marginTop: index === 0 ? 0 : 16, // Force clear separation from previous content
+            marginBottom: 16, // Force clear separation from next content
           }}>
-            <Text style={{
+            <Text style={{ 
               color: colors.primaryText,
               fontSize: 18,
               lineHeight: 26,
               width: '100%',
               flexShrink: 1,
               paddingVertical: 4,
+              paddingHorizontal: 0,
               textAlign: 'left',
+              maxWidth: '100%',
+              flexWrap: 'wrap',
             }}>
               {segment.text}
             </Text>
@@ -218,35 +225,358 @@ const formatAIResponse = (text: string, colors: any, isDarkMode: boolean, isGene
       }
     });
     
-    return segments;
+    return segments.length > 0 ? segments : [
+      <View key={`arabic-fallback-wrapper-${elementKey}-${segmentKey}`} style={{
+        width: '100%',
+        marginVertical: 4,
+      }}>
+        <Text style={{ 
+          color: colors.primaryText,
+          width: '100%',
+          flexShrink: 1,
+          fontSize: 18,
+          lineHeight: 26,
+          paddingVertical: 4,
+        }}>
+          {text}
+        </Text>
+      </View>
+    ];
   };
   
-  // Process each paragraph
-  paragraphs.forEach((paragraph, index) => {
-    if (paragraph.trim()) {
-      const processedParagraph = processArabicText(paragraph.trim());
-      formattedElements.push(...processedParagraph);
-      elementKey++;
+  // Optimized inline markdown formatting with performance improvements
+  const processInlineFormatting = (text: string): React.ReactElement[] => {
+    const segments: React.ReactElement[] = [];
+    let segmentKey = elementKey * 10000;
+    let currentIndex = 0;
+    
+    // Always process formatting, but optimize for streaming performance
+    // Enhanced patterns with proper precedence - longer patterns first to avoid conflicts
+    const patterns = [
+      { regex: /\*\*\*([^*]+?)\*\*\*/g, type: 'header' }, // Triple asterisk for headers
+      { regex: /\*\*([^*]+?)\*\*/g, type: 'bold' }, // Double asterisk for bold
+      { regex: /\*([^*]+?)\*/g, type: 'italic' }, // Single asterisk for italic
+      { regex: /`([^`]+?)`/g, type: 'code' }, // Backticks for code
+      { regex: /~~([^~]+?)~~/g, type: 'strikethrough' }, // Tildes for strikethrough
+    ];
+    
+    const matches: Array<{
+      start: number;
+      end: number;
+      content: string;
+      type: string;
+    }> = [];
+    
+    // Collect all matches - simplified approach
+    patterns.forEach(pattern => {
+      let match;
+      const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+      while ((match = regex.exec(text)) !== null) {
+        // Only include matches that have proper opening and closing markers
+        const fullMatch = match[0];
+        const content = match[1];
+        
+        // Verify completeness based on pattern type
+        let isValid = false;
+        switch (pattern.type) {
+          case 'header':
+            isValid = fullMatch.startsWith('***') && fullMatch.endsWith('***') && content.length > 0;
+            break;
+          case 'bold':
+            isValid = fullMatch.startsWith('**') && fullMatch.endsWith('**') && content.length > 0;
+            break;
+          case 'italic':
+            isValid = fullMatch.startsWith('*') && fullMatch.endsWith('*') && content.length > 0 && !fullMatch.startsWith('**');
+            break;
+          case 'code':
+            isValid = fullMatch.startsWith('`') && fullMatch.endsWith('`') && content.length > 0;
+            break;
+          case 'strikethrough':
+            isValid = fullMatch.startsWith('~~') && fullMatch.endsWith('~~') && content.length > 0;
+            break;
+        }
+        
+        if (isValid) {
+          matches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            content: content,
+            type: pattern.type
+          });
+        }
+      }
+    });
+    
+    // If no formatting patterns found, return text as-is
+    if (matches.length === 0) {
+      return processArabicText(text);
     }
+    
+    // Sort matches by position and remove overlaps
+    matches.sort((a, b) => a.start - b.start);
+    
+    // Filter out overlapping matches (keep the first one)
+    const filteredMatches: Array<{
+      start: number;
+      end: number;
+      content: string;
+      type: string;
+    }> = [];
+    for (let i = 0; i < matches.length; i++) {
+      const current = matches[i];
+      const hasOverlap = filteredMatches.some(existing => 
+        (current.start >= existing.start && current.start < existing.end) ||
+        (current.end > existing.start && current.end <= existing.end)
+      );
+      
+      if (!hasOverlap) {
+        filteredMatches.push(current);
+      }
+    }
+    
+    // Process text with formatting
+    filteredMatches.forEach(match => {
+      // Add text before match
+      if (match.start > currentIndex) {
+        const beforeText = text.slice(currentIndex, match.start);
+        if (beforeText) {
+          segments.push(...processArabicText(beforeText));
+          segmentKey += 100;
+        }
+      }
+      
+      // Add formatted text
+      const formattedContent = match.content;
+      const hasArabicInFormatted = /[\u0600-\u06FF]/.test(formattedContent);
+      
+      if (hasArabicInFormatted) {
+        // Handle Arabic text with formatting
+        const arabicSegments = processArabicText(formattedContent);
+        segments.push(
+          <View key={`formatted-arabic-${match.type}-${segmentKey++}`} style={{ width: '100%' }}>
+            {arabicSegments}
+          </View>
+        );
+      } else {
+        // Handle English formatted text
+        switch (match.type) {
+          case 'header':
+            segments.push(
+              <Text key={`header-${segmentKey++}`} style={{
+                fontSize: 24,
+                fontWeight: '800',
+                color: colors.primaryText,
+                lineHeight: 32,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'bold':
+            segments.push(
+              <Text key={`bold-${segmentKey++}`} style={{
+                fontWeight: 'bold',
+                color: colors.primaryText,
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'italic':
+            segments.push(
+              <Text key={`italic-${segmentKey++}`} style={{
+                fontStyle: 'italic',
+                color: colors.primaryText,
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'code':
+            segments.push(
+              <Text key={`code-${segmentKey++}`} style={{
+                fontFamily: 'Courier',
+                fontSize: 14,
+                color: isDarkMode ? '#f472b6' : '#ec4899',
+                backgroundColor: isDarkMode ? 'rgba(244, 114, 182, 0.1)' : 'rgba(236, 72, 153, 0.1)',
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                borderRadius: 4,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+          case 'strikethrough':
+            segments.push(
+              <Text key={`strike-${segmentKey++}`} style={{
+                textDecorationLine: 'line-through',
+                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                fontSize: 18,
+                lineHeight: 26,
+                flexShrink: 1,
+              }}>
+                {formattedContent}
+              </Text>
+            );
+            break;
+        }
+      }
+      
+      currentIndex = match.end;
+    });
+    
+    // Add remaining text
+    if (currentIndex < text.length) {
+      const remainingText = text.slice(currentIndex);
+      if (remainingText) {
+        segments.push(...processArabicText(remainingText));
+      }
+    }
+    
+    return segments.length > 0 ? segments : processArabicText(text);
+  };
+  
+  paragraphs.forEach((paragraph, paragraphIndex) => {
+    if (!paragraph.trim()) return;
+    
+    // Instead of splitting by lines first, process the entire paragraph
+    // to handle Arabic-English mixed content properly
+    const lines = paragraph.split('\n');
+    
+    lines.forEach((line, lineIndex) => {
+      if (!line.trim()) return;
+      
+      // Handle headers
+      const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headerMatch) {
+        const level = headerMatch[1].length;
+        const headerText = headerMatch[2];
+        
+        let fontSize = 16;
+        let fontWeight: 'normal' | 'bold' | '600' | '700' | '800' = '600';
+        let marginTop = 16;
+        let marginBottom = 8;
+        
+        switch (level) {
+          case 1:
+            fontSize = 24;
+            fontWeight = '800';
+            marginTop = 20;
+            marginBottom = 12;
+            break;
+          case 2:
+            fontSize = 20;
+            fontWeight = '700';
+            marginTop = 18;
+            marginBottom = 10;
+            break;
+          case 3:
+            fontSize = 18;
+            fontWeight = '700';
+            marginTop = 16;
+            marginBottom = 8;
+            break;
+          default:
+            fontSize = 16;
+            fontWeight = '600';
+            marginTop = 14;
+            marginBottom = 6;
+        }
+        
+        formattedElements.push(
+          <View key={`header-${elementKey++}`} style={{ marginTop, marginBottom, width: '100%' }}>
+            <Text style={{
+              fontSize,
+              fontWeight,
+              color: colors.primaryText,
+              lineHeight: fontSize * 1.3,
+              width: '100%',
+              flexShrink: 1,
+            }}>
+              {processInlineFormatting(headerText)}
+            </Text>
+          </View>
+        );
+        return;
+      }
+      
+      // Handle bullet points
+      const bulletMatch = line.match(/^[\s]*[-*•]\s+(.+)$/);
+      if (bulletMatch) {
+        const bulletText = bulletMatch[1];
+        formattedElements.push(
+          <View key={`bullet-${elementKey++}`} style={{ 
+            flexDirection: 'row', 
+            marginVertical: 2,
+            paddingLeft: 16,
+            width: '100%',
+          }}>
+            <Text style={{ 
+              color: colors.primaryText, 
+              marginRight: 8,
+              lineHeight: 22,
+            }}>•</Text>
+            <View style={{ flex: 1 }}>
+              {processInlineFormatting(bulletText)}
+            </View>
+          </View>
+        );
+        return;
+      }
+      
+      // Handle numbered lists
+      const numberedMatch = line.match(/^[\s]*(\d+)\.\s+(.+)$/);
+      if (numberedMatch) {
+        const number = numberedMatch[1];
+        const listText = numberedMatch[2];
+        formattedElements.push(
+          <View key={`numbered-${elementKey++}`} style={{ 
+            flexDirection: 'row', 
+            marginVertical: 2,
+            paddingLeft: 16,
+            width: '100%',
+          }}>
+            <Text style={{ 
+              color: colors.primaryText, 
+              marginRight: 8,
+              lineHeight: 22,
+              minWidth: 20,
+            }}>{number}.</Text>
+            <View style={{ flex: 1 }}>
+              {processInlineFormatting(listText)}
+            </View>
+          </View>
+        );
+        return;
+      }
+      
+      // Regular paragraph text - DIRECTLY process with Arabic/English separation
+      const processedSegments = processInlineFormatting(line);
+      formattedElements.push(
+        <View key={`paragraph-wrapper-${elementKey++}`} style={{
+          width: '100%',
+          marginBottom: lineIndex === lines.length - 1 && paragraphIndex < paragraphs.length - 1 ? 12 : 4,
+        }}>
+          {processedSegments}
+        </View>
+      );
+    });
   });
   
-  // Add cursor animation for generating state
-  if (isGenerating) {
-    formattedElements.push(
-      <Animated.Text
-        key="cursor"
-        style={{
-          color: colors.primaryText,
-          fontSize: 18,
-          opacity: cursorAnimation,
-        }}
-      >
-        |
-      </Animated.Text>
-    );
-  }
-  
-  return formattedElements;
+  return (
+    <View style={{ flex: 1, width: '100%', maxWidth: '100%' }}>
+      {formattedElements}
+    </View>
+  );
 };
 
 export default function MinaraChatScreen() {
@@ -260,6 +590,8 @@ export default function MinaraChatScreen() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [allChats, setAllChats] = useState<{[key: string]: any[]}>({});
+  const [currentChatId, setCurrentChatId] = useState<string>('1');
   
   const [cursorAnimation] = useState(new Animated.Value(1));
   const [message, setMessage] = useState('');
@@ -313,91 +645,29 @@ export default function MinaraChatScreen() {
 
   const loadSessionMessages = async (sessionId: string) => {
     try {
-      // For AI chat, use the AI-specific function that bypasses room participant checks
-      const sessionMessages = await chatApi.ai.getSessionMessages(sessionId);
+      // For AI chat, we'll use the session ID as the room ID
+      const sessionMessages = await chatApi.messages.getRoomMessages(sessionId);
       setMessages(sessionMessages);
     } catch (error) {
       console.error('Error loading session messages:', error);
     }
   };
 
-
-
-  // Function to generate descriptive chat title from first message
-  const generateChatTitle = (message: string): string => {
-    // Clean the message
-    const cleanMessage = message.trim().toLowerCase();
-    
-    // Common Islamic topics and keywords
-    const islamicTopics = {
-      'prayer': 'Prayer Guidance',
-      'wudu': 'Wudu & Ablution',
-      'quran': 'Quran Study',
-      'hadith': 'Hadith Discussion',
-      'ramadan': 'Ramadan & Fasting',
-      'hajj': 'Hajj & Umrah',
-      'halal': 'Halal & Haram',
-      'zakat': 'Zakat & Charity',
-      'dua': 'Duas & Supplications',
-      'salah': 'Prayer Times',
-      'islamic': 'Islamic Knowledge',
-      'prophet': 'Prophet Muhammad ﷺ',
-      'allah': 'Allah & Tawheed',
-      'jannah': 'Paradise & Afterlife',
-      'sunnah': 'Sunnah Practices',
-      'fiqh': 'Islamic Law',
-      'aqeedah': 'Islamic Beliefs',
-      'tajweed': 'Quran Recitation',
-      'sadaqah': 'Charity & Giving',
-      'dhikr': 'Remembrance of Allah'
-    };
-    
-    // Check for Islamic topics first
-    for (const [keyword, title] of Object.entries(islamicTopics)) {
-      if (cleanMessage.includes(keyword)) {
-        return title;
+  const createNewSession = async (title: string) => {
+    try {
+      const sessionId = await chatApi.ai.createSession(title);
+      if (sessionId) {
+        setCurrentSessionId(sessionId);
+        setMessages([]);
+        
+        // Reload sessions list
+        const sessions = await chatApi.ai.getUserSessions();
+        setAiSessions(sessions);
       }
+    } catch (error) {
+      console.error('Error creating new session:', error);
+      Alert.alert('Error', 'Failed to create new chat session.');
     }
-    
-    // Check for question patterns
-    if (cleanMessage.includes('what is') || cleanMessage.includes('what are')) {
-      const words = cleanMessage.split(' ');
-      const topicIndex = words.indexOf('is') + 1;
-      if (topicIndex < words.length) {
-        const topic = words.slice(topicIndex, topicIndex + 3).join(' ');
-        return `${topic.charAt(0).toUpperCase() + topic.slice(1)}`;
-      }
-    }
-    
-    if (cleanMessage.includes('how to') || cleanMessage.includes('how do')) {
-      const words = cleanMessage.split(' ');
-      const topicIndex = words.indexOf('to') + 1;
-      if (topicIndex < words.length) {
-        const topic = words.slice(topicIndex, topicIndex + 3).join(' ');
-        return `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`;
-      }
-    }
-    
-    // Check for specific topics
-    if (cleanMessage.includes('pillars')) return 'Five Pillars of Islam';
-    if (cleanMessage.includes('shahada')) return 'Shahada & Faith';
-    if (cleanMessage.includes('fasting')) return 'Fasting & Ramadan';
-    if (cleanMessage.includes('charity')) return 'Charity & Zakat';
-    if (cleanMessage.includes('pilgrimage')) return 'Hajj & Pilgrimage';
-    if (cleanMessage.includes('morning') || cleanMessage.includes('evening')) return 'Morning/Evening Duas';
-    if (cleanMessage.includes('food') || cleanMessage.includes('eating')) return 'Halal Food & Diet';
-    if (cleanMessage.includes('finance') || cleanMessage.includes('banking')) return 'Islamic Finance';
-    if (cleanMessage.includes('family') || cleanMessage.includes('marriage')) return 'Family & Marriage';
-    if (cleanMessage.includes('education') || cleanMessage.includes('learning')) return 'Islamic Education';
-    
-    // Default: use first few words of the message
-    const words = cleanMessage.split(' ').slice(0, 4);
-    if (words.length > 0) {
-      const title = words.join(' ').charAt(0).toUpperCase() + words.join(' ').slice(1);
-      return title.length > 30 ? title.substring(0, 30) + '...' : title;
-    }
-    
-    return 'New Chat';
   };
 
   // Convert AI sessions to chat history format for UI
@@ -407,6 +677,69 @@ export default function MinaraChatScreen() {
     lastMessage: session.last_message || 'No messages yet',
     timestamp: new Date(session.updated_at).toLocaleDateString()
   }));
+
+  // Initialize sample chat data
+  useEffect(() => {
+    const sampleChats = {
+      '1': [
+        {
+          id: 1,
+          text: 'What time is Maghrib today?',
+          isUser: true,
+          timestamp: '2:30 PM'
+        },
+        {
+          id: 2,
+          text: 'MashAllah, that\'s a wonderful question. Maghrib time varies by location, but generally it\'s at sunset. For today, in most locations, it would be around 6:45 PM. I recommend checking your local Islamic center or prayer time app for the exact time in your area.',
+          isUser: false,
+          timestamp: '2:31 PM'
+        }
+      ],
+      '2': [
+        {
+          id: 1,
+          text: 'Help me understand Surah Al-Fatiha',
+          isUser: true,
+          timestamp: 'Yesterday 3:15 PM'
+        },
+        {
+          id: 2,
+          text: 'SubhanAllah, Surah Al-Fatiha is the opening chapter of the Quran and is recited in every unit of prayer. It\'s a beautiful supplication that includes praise of Allah, seeking guidance, and asking to be on the straight path. Would you like me to explain any specific verses?',
+          isUser: false,
+          timestamp: 'Yesterday 3:16 PM'
+        }
+      ],
+      '3': [
+        {
+          id: 1,
+          text: 'Is cryptocurrency halal?',
+          isUser: true,
+          timestamp: '3 days ago 1:20 PM'
+        },
+        {
+          id: 2,
+          text: 'Alhamdulillah, this is a complex topic that scholars have different opinions on. Some consider it permissible as a digital asset, while others have concerns about speculation and volatility. The key factors to consider are: avoiding excessive speculation (gharar), ensuring it\'s not used for haram activities, and understanding the underlying technology. I recommend consulting with a qualified Islamic scholar for your specific situation.',
+          isUser: false,
+          timestamp: '3 days ago 1:22 PM'
+        }
+      ],
+      '4': [
+        {
+          id: 1,
+          text: 'How to prepare for Ramadan?',
+          isUser: true,
+          timestamp: '1 week ago 5:00 PM'
+        },
+        {
+          id: 2,
+          text: 'MashAllah, preparing for Ramadan is a beautiful spiritual journey. Here are some key preparations: 1) Start adjusting your sleep schedule gradually, 2) Begin reading more Quran daily, 3) Increase your dhikr and duas, 4) Plan your iftar meals and suhoor, 5) Set spiritual goals for the month, 6) Seek forgiveness and make amends with others. May Allah grant you a blessed Ramadan!',
+          isUser: false,
+          timestamp: '1 week ago 5:02 PM'
+        }
+      ]
+    };
+    setAllChats(sampleChats);
+  }, []);
 
   // Suggestion prompts data
   const suggestionPrompts = [
@@ -469,6 +802,7 @@ export default function MinaraChatScreen() {
     newChatBackground: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
     sideMenuBorder: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(229, 231, 235, 0.8)',
     sideMenuAccent: '#3B82F6',
+    // ChatGPT-style dropdown colors
     dropdownBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
     dropdownBorder: isDarkMode ? 'rgba(84, 84, 88, 0.3)' : '#E5E5EA',
     dropdownShadow: '#000000',
@@ -478,83 +812,114 @@ export default function MinaraChatScreen() {
   };
 
   const handleBackPress = () => {
-    console.log('Back button pressed - navigating back');
-    Alert.alert('Back Button', 'Back button pressed! Navigating back...');
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.back();
-    } catch (error) {
-      console.error('Error navigating back:', error);
-      // Fallback: try to go to dashboard
-      router.push('/dashboard');
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
   };
 
   const toggleSideMenu = () => {
     const newState = !showSideMenu;
-    const toValue = newState ? 0 : 340;
+    const toValue = newState ? 0 : 340; // Slide to right when closing
+    const overlayValue = newState ? 1 : 0;
     
-    Animated.parallel([
-      Animated.spring(sideMenuAnimation, {
-        toValue,
-        useNativeDriver: false,
-        tension: 120,
-        friction: 9,
+    // Animate menu button press
+    Animated.sequence([
+      Animated.timing(menuButtonScale, {
+        toValue: 0.85,
+        duration: 100,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
       }),
-      Animated.timing(overlayOpacity, {
-        toValue: newState ? 1 : 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
+      Animated.timing(menuButtonScale, {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      })
     ]).start();
     
-    setShowSideMenu(newState);
+    // Only update state immediately when opening, delay when closing for exit animation
+    if (newState) {
+      setShowSideMenu(newState);
+    }
+    
+    // Apple-like spring animation for opening, refined timing for closing
+    if (newState) {
+      // Opening: Use spring for natural, buttery smooth feel
+      Animated.parallel([
+        Animated.spring(sideMenuAnimation, {
+          toValue,
+          useNativeDriver: true,
+          stiffness: 250,
+          damping: 28,
+          mass: 0.8,
+          velocity: 0,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: overlayValue,
+          duration: 320,
+          easing: Easing.bezier(0.23, 1, 0.32, 1), // More buttery easing curve
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      // Closing: Use precise timing for clean, sophisticated exit
+      Animated.parallel([
+        Animated.timing(sideMenuAnimation, {
+          toValue,
+          duration: 320,
+          easing: Easing.bezier(0.32, 0.72, 0, 1), // Apple's exit easing
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayOpacity, {
+          toValue: overlayValue,
+          duration: 280,
+          easing: Easing.bezier(0.4, 0, 0.2, 1), // Faster overlay fade
+          useNativeDriver: true,
+        })
+      ]).start((finished) => {
+        // Only update state after animation completes when closing
+        if (finished) {
+          setShowSideMenu(newState);
+        }
+      });
+    }
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleNewChat = async () => {
-    try {
-      // Create a new chat session
-      const newSessionId = await chatApi.ai.createSession('New Chat');
-      if (newSessionId) {
-        setCurrentSessionId(newSessionId);
-        setMessages([]);
-        setMessage('');
-        setMessageAnimations({});
-        
-        // Reload sessions list and reorder - new session should be at top
-        const updatedSessions = await chatApi.ai.getUserSessions();
-        setAiSessions(updatedSessions);
-        
-        // Close side menu
-        toggleSideMenu();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-    } catch (error) {
-      console.error('Error creating new chat:', error);
-      Alert.alert('Error', 'Failed to create new chat session.');
-    }
+  const handleNewChat = () => {
+    // Generate a new chat ID
+    const newChatId = Date.now().toString();
+    
+    // Clear current messages and reset state
+    setMessages([]);
+    setMessage('');
+    setMessageAnimations({});
+    setCurrentChatId(newChatId);
+    
+    // Close side menu
+    toggleSideMenu();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const handleChatSelect = async (chat: ChatHistory) => {
-    // Load the selected chat's messages
-    setCurrentSessionId(chat.id);
-    await loadSessionMessages(chat.id);
+  const handleChatSelect = (chat: ChatHistory) => {
+    // Save current chat if it exists and has messages
+    if (currentChatId && messages.length > 0) {
+      setAllChats(prev => ({
+        ...prev,
+        [currentChatId]: messages
+      }));
+    }
     
-    // Reorder sessions - move selected chat to top
-    setAiSessions(prevSessions => {
-      const selectedSession = prevSessions.find(session => session.id === chat.id);
-      if (selectedSession) {
-        const otherSessions = prevSessions.filter(session => session.id !== chat.id);
-        return [selectedSession, ...otherSessions];
-      }
-      return prevSessions;
-    });
+    // Load the selected chat's messages
+    const chatMessages = allChats[chat.id] || [];
+    setMessages(chatMessages);
+    setCurrentChatId(chat.id);
     
     // Reset message animations for the loaded chat
     const newAnimations: {[key: number]: Animated.Value} = {};
-    messages.forEach(msg => {
-      newAnimations[parseInt(msg.id)] = new Animated.Value(1); // Already visible
+    chatMessages.forEach(msg => {
+      newAnimations[msg.id] = new Animated.Value(1); // Already visible
     });
     setMessageAnimations(newAnimations);
     
@@ -611,7 +976,6 @@ export default function MinaraChatScreen() {
       
       const lines = responseText.split('\n');
       let hasContent = false;
-      let aiResponseText = '';
       
       // Process each line with error handling
       for (let i = 0; i < lines.length; i++) {
@@ -634,34 +998,42 @@ export default function MinaraChatScreen() {
             // Only collect content from content type messages
             if (parsed.type === 'content' && parsed.content) {
               hasContent = true;
-              aiResponseText += parsed.content;
-              
-              // Update the message in smaller batches for better real-time formatting
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMessageId
-                  ? { ...msg, content: aiResponseText }
-                  : msg
-              ));
-              
-              // Reduced haptic feedback frequency for better performance
-              const trimmedContent = parsed.content.trim();
-              if (trimmedContent.length > 15 && i % 15 === 0) {
-                try {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                } catch (error) {
-                  // Silently handle haptic errors
-                  console.log('Haptic feedback error:', error);
+              // Optimized throttling for better real-time formatting performance
+              if (i % 3 === 0 || i === lines.length - 1) {
+                // Update the message in smaller batches for better real-time formatting
+                setMessages(prev => prev.map(msg => 
+                  msg.id === parseInt(aiMessageId)
+                    ? { ...msg, text: msg.text + parsed.content }
+                    : msg
+                ));
+                
+                // Reduced haptic feedback frequency for better performance
+                const trimmedContent = parsed.content.trim();
+                if (trimmedContent.length > 15 && i % 15 === 0) {
+                  try {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  } catch (error) {
+                    // Silently handle haptic errors
+                    console.log('Haptic feedback error:', error);
+                  }
                 }
+                
+                // Auto-scroll with optimized frequency for smoother experience
+                setTimeout(() => {
+                  if (scrollViewRef.current && !isUserScrolling) {
+                    scrollViewRef.current.scrollToEnd({ 
+                      animated: true 
+                    });
+                  }
+                }, 150);
+              } else {
+                // Still accumulate content but don't trigger UI update as frequently
+                setMessages(prev => prev.map(msg => 
+                  msg.id === parseInt(aiMessageId)
+                    ? { ...msg, text: msg.text + parsed.content }
+                    : msg
+                ));
               }
-              
-              // Auto-scroll with optimized frequency for smoother experience
-              setTimeout(() => {
-                if (scrollViewRef.current && !isUserScrolling) {
-                  scrollViewRef.current.scrollToEnd({ 
-                    animated: true 
-                  });
-                }
-              }, 150);
               
               // Reduced delay for better streaming speed and real-time formatting
               await new Promise(resolve => setTimeout(resolve, 3));
@@ -676,11 +1048,6 @@ export default function MinaraChatScreen() {
       // If no content was received, show an error
       if (!hasContent) {
         throw new Error('No content received from the server. The AI service may be temporarily unavailable.');
-      }
-      
-      // Update session last message
-      if (currentSessionId) {
-        await chatApi.ai.updateSessionLastMessage(currentSessionId, aiResponseText);
       }
       
     } catch (error: any) {
@@ -705,8 +1072,8 @@ export default function MinaraChatScreen() {
       
       // Update message with appropriate error
       setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId
-          ? { ...msg, content: msg.content + (msg.content ? '\n\n' : '') + errorMessage }
+        msg.id === parseInt(aiMessageId)
+          ? { ...msg, text: msg.text + (msg.text ? '\n\n' : '') + errorMessage }
           : msg
       ));
     } finally {
@@ -724,494 +1091,926 @@ export default function MinaraChatScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !currentSessionId || !currentUser) return;
-    
-    const userMessage = message.trim();
-    setMessage('');
-    
-    try {
-      // Send user message to Supabase using AI-specific function
-      const userMessageId = await chatApi.ai.sendSessionMessage(
-        currentSessionId,
-        userMessage,
-        'text'
-      );
+    if (message.trim()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      if (userMessageId) {
-        // Add user message to local state
-        const newUserMessage: ChatMessage = {
-          id: userMessageId,
-          room_id: currentSessionId,
-          sender_id: currentUser.id,
-          content: userMessage,
-          message_type: 'text',
-          is_edited: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          sender_profile: currentUser
-        };
-        
-        setMessages(prev => [...prev, newUserMessage]);
-        
-        // Create AI message placeholder
-        const aiMessageId = `ai-${Date.now()}`;
-        const aiMessage: ChatMessage = {
-          id: aiMessageId,
-          room_id: currentSessionId,
-          sender_id: 'ai-assistant',
-          content: '',
-          message_type: 'ai_response',
-          is_edited: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
-        
-        // Generate AI response
-        await generateAIResponse(userMessage, aiMessageId);
-        
-        // Update session last message and title if this is the first message
-        const currentSession = aiSessions.find(session => session.id === currentSessionId);
-        const isFirstMessage = messages.length === 0;
-        
-        if (isFirstMessage && currentSession?.title === 'New Chat') {
-          // Generate descriptive title from the first message
-          const descriptiveTitle = generateChatTitle(userMessage);
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      // If no current chat, create a new one
+      let chatId = currentChatId;
+      if (!chatId) {
+        chatId = Date.now().toString();
+        setCurrentChatId(chatId);
+      }
+      
+      // Add user message
+      const userMessage: Message = {
+        id: messages.length + 1,
+        text: message.trim(),
+        isUser: true,
+        timestamp: timeString,
+      };
+      
+      // Create animation for user message
+      const userMessageAnimation = new Animated.Value(0);
+      setMessageAnimations(prev => ({
+        ...prev,
+        [userMessage.id]: userMessageAnimation
+      }));
+      
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      const currentMessage = message.trim();
+      setMessage('');
+      
+      // Create placeholder AI message for real-time updates
+      const aiMessageId = (newMessages.length + 1).toString();
+      const aiMessage: Message = {
+        id: parseInt(aiMessageId),
+        text: '',
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+      };
+      
+      // Create animation for AI message
+      const aiMessageAnimation = new Animated.Value(0);
+      setMessageAnimations(prev => ({
+        ...prev,
+        [aiMessage.id]: aiMessageAnimation
+      }));
+      
+      // Add the placeholder message immediately
+      const messagesWithAI = [...newMessages, aiMessage];
+      setMessages(messagesWithAI);
+      
+      // Update chat history with new message
+      const updateChatHistory = (lastMessage: string, isNewChat: boolean = false) => {
+        setChatHistory(prev => {
+          const existingChatIndex = prev.findIndex(chat => chat.id === chatId);
+          const now = new Date();
+          const timestamp = 'Just now';
           
-          // Update session with new title and last message
-          await chatApi.ai.updateSessionLastMessage(currentSessionId, userMessage);
-          
-          // Update session title in Supabase (we'll need to add this function)
-          try {
-            await supabase
-              .from('ai_chat_sessions')
-              .update({ title: descriptiveTitle })
-              .eq('id', currentSessionId);
-          } catch (error) {
-            console.error('Error updating session title:', error);
+          if (existingChatIndex >= 0) {
+            // Update existing chat
+            const updated = [...prev];
+            updated[existingChatIndex] = {
+              ...updated[existingChatIndex],
+              lastMessage,
+              timestamp
+            };
+            // Move to top
+            const [updatedChat] = updated.splice(existingChatIndex, 1);
+            return [updatedChat, ...updated];
+          } else if (isNewChat) {
+            // Create new chat entry
+            const title = currentMessage.length > 30 
+              ? currentMessage.substring(0, 30) + '...' 
+              : currentMessage;
+            const newChatEntry: ChatHistory = {
+              id: chatId!,
+              title,
+              lastMessage,
+              timestamp
+            };
+            return [newChatEntry, ...prev];
           }
-          
-          // Update local state with new title
-          setAiSessions(prevSessions => {
-            const updatedSessions = prevSessions.map(session => 
-              session.id === currentSessionId 
-                ? { ...session, title: descriptiveTitle, last_message: userMessage }
-                : session
-            );
-            // Move current session to top
-            const currentSession = updatedSessions.find(session => session.id === currentSessionId);
-            const otherSessions = updatedSessions.filter(session => session.id !== currentSessionId);
-            return currentSession ? [currentSession, ...otherSessions] : updatedSessions;
-          });
-        } else {
-          // Just update last message for existing conversations
-          await chatApi.ai.updateSessionLastMessage(currentSessionId, userMessage);
-          
-          // Reorder sessions - move current session to top when message is sent
-          setAiSessions(prevSessions => {
-            const currentSession = prevSessions.find(session => session.id === currentSessionId);
-            if (currentSession) {
-              const otherSessions = prevSessions.filter(session => session.id !== currentSessionId);
-              return [currentSession, ...otherSessions];
-            }
-            return prevSessions;
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
-    }
-  };
-
-  const handleSuggestionPress = async (suggestion: string) => {
-    setMessage(suggestion);
-    
-    // If this is a new chat, update the title based on the suggestion
-    const currentSession = aiSessions.find(session => session.id === currentSessionId);
-    if (currentSession?.title === 'New Chat') {
-      const descriptiveTitle = generateChatTitle(suggestion);
+          return prev;
+        });
+      };
       
-      // Update session title in Supabase
-      try {
-        await supabase
-          .from('ai_chat_sessions')
-          .update({ title: descriptiveTitle })
-          .eq('id', currentSessionId);
-        
-        // Update local state
-        setAiSessions(prevSessions => 
-          prevSessions.map(session => 
-            session.id === currentSessionId 
-              ? { ...session, title: descriptiveTitle }
-              : session
-          )
-        );
-      } catch (error) {
-        console.error('Error updating session title:', error);
-      }
-    }
-    
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const toggleDropdown = () => {
-    const newState = !showDropdown;
-    
-    Animated.parallel([
-      Animated.timing(dropdownAnimation, {
-        toValue: newState ? 1 : 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.spring(dropdownButtonScale, {
-        toValue: newState ? 0.95 : 1,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    setShowDropdown(newState);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleAppSelect = (appName: string) => {
-    setSelectedApp(appName);
-    toggleDropdown();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
-
-  const handleScholarXSelection = () => {
-    setSelectedApp('ScholarX');
-    toggleDropdown();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
-
-  // Load user data and create new session on component mount
-  useEffect(() => {
-    const initializeChat = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Load current user profile
-        const userProfile = await chatApi.userProfile.getCurrentProfile();
-        setCurrentUser(userProfile);
-        
-        // Load AI chat sessions
-        const sessions = await chatApi.ai.getUserSessions();
-        setAiSessions(sessions);
-        
-        // Create a new session for this chat
-        const newSessionId = await chatApi.ai.createSession('New Chat');
-        if (newSessionId) {
-          setCurrentSessionId(newSessionId);
-          setMessages([]);
-          
-          // Reload sessions list to include the new session
-          const updatedSessions = await chatApi.ai.getUserSessions();
-          setAiSessions(updatedSessions);
+      // Update chat history with user message
+      updateChatHistory(currentMessage, !currentChatId);
+      
+      // Save to allChats
+      setAllChats(prev => ({
+        ...prev,
+        [chatId!]: messagesWithAI
+      }));
+      
+      // Animate user message
+      Animated.sequence([
+        Animated.timing(userMessageAnimation, {
+          toValue: 0.8,
+          duration: 120,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+        Animated.spring(userMessageAnimation, {
+          toValue: 1,
+          useNativeDriver: true,
+          stiffness: 280,
+          damping: 20,
+          mass: 1,
+        })
+      ]).start();
+      
+      // Animate AI message placeholder
+      Animated.sequence([
+        Animated.timing(aiMessageAnimation, {
+          toValue: 0.8,
+          duration: 120,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+        Animated.spring(aiMessageAnimation, {
+          toValue: 1,
+          useNativeDriver: true,
+          stiffness: 280,
+          damping: 20,
+          mass: 1,
+        })
+      ]).start();
+      
+      // Auto-scroll for user message
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollToEnd({ animated: true });
+          setIsUserScrolling(false); // Reset user scrolling when sending new message
         }
-      } catch (error) {
-        console.error('Error initializing chat:', error);
-        Alert.alert('Error', 'Failed to initialize chat. Please try again.');
-      } finally {
-        setIsLoading(false);
+      }, 200);
+      
+      // Start streaming AI response
+      await generateAIResponse(currentMessage, aiMessageId);
+      
+      // Update chat history and allChats with final AI response after streaming completes
+      setTimeout(() => {
+        setMessages(currentMessages => {
+          const finalAIMessage = currentMessages.find(msg => msg.id === parseInt(aiMessageId));
+          if (finalAIMessage && finalAIMessage.text) {
+            updateChatHistory(finalAIMessage.text);
+            setAllChats(prev => ({
+              ...prev,
+              [chatId!]: currentMessages
+            }));
+          }
+          return currentMessages;
+        });
+      }, 1000);
+    }
+  };
+
+  const handleSuggestionPress = (suggestion: string) => {
+    setMessage(suggestion);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        const duration = Platform.OS === 'ios' ? event.duration : 300;
+        Animated.timing(inputAnimation, {
+          toValue: 1,
+          duration: duration,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      (event) => {
+        const duration = Platform.OS === 'ios' ? event.duration : 300;
+        Animated.timing(inputAnimation, {
+          toValue: 0,
+          duration: duration,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, [inputAnimation]);
+
+  // Reset side panel when component unmounts or navigation occurs
+  useEffect(() => {
+    return () => {
+      // Close side panel when component unmounts (navigation away)
+      if (showSideMenu) {
+        setShowSideMenu(false);
+        sideMenuAnimation.setValue(340);
+        overlayOpacity.setValue(0);
+      }
+      
+      // Clean up scroll timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
       }
     };
-    
-    initializeChat();
-  }, []);
+  }, [showSideMenu, sideMenuAnimation, overlayOpacity]);
 
-  // Real-time subscriptions for AI chat
-  useEffect(() => {
-    if (currentSessionId) {
-      // Subscribe to real-time messages for this session
-      const channel = chatApi.realtime.subscribeToRoomMessages(
-        currentSessionId,
-        (newMessage) => {
-          // Only add messages that aren't already in the list
-          setMessages(prev => {
-            const exists = prev.some(msg => msg.id === newMessage.id);
-            if (!exists) {
-              return [...prev, newMessage];
-            }
-            return prev;
-          });
-        }
-      );
-
-      return () => {
-        chatApi.realtime.unsubscribe(`room:${currentSessionId}`);
-      };
-    }
-  }, [currentSessionId]);
-
-  // Cursor animation for generating state
+  // Animate cursor blinking when generating
   useEffect(() => {
     if (isGenerating) {
-      const animation = Animated.loop(
+      const blinkAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(cursorAnimation, {
-            toValue: 0,
+            toValue: 0.2,
             duration: 500,
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
           Animated.timing(cursorAnimation, {
             toValue: 1,
             duration: 500,
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ])
       );
-      animation.start();
-      return () => animation.stop();
+      blinkAnimation.start();
+      return () => blinkAnimation.stop();
+    } else {
+      cursorAnimation.setValue(1);
     }
   }, [isGenerating, cursorAnimation]);
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={[styles.loadingText, { color: colors.primaryText }]}>Loading Minara Chat...</Text>
-      </View>
-    );
-  }
+  const toggleDropdown = () => {
+    const newState = !showDropdown;
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(dropdownButtonScale, {
+        toValue: 0.95,
+        duration: 100,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(dropdownButtonScale, {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      })
+    ]).start();
+    
+    setShowDropdown(newState);
+    
+    // ChatGPT-style smooth animation
+    Animated.spring(dropdownAnimation, {
+      toValue: newState ? 1 : 0,
+      tension: 300,
+      friction: 25,
+      useNativeDriver: true,
+    }).start();
+  };
 
+  const handleAppSelect = (appName: string) => {
+    setSelectedApp(appName);
+    setShowDropdown(false);
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Animate dropdown close
+    Animated.spring(dropdownAnimation, {
+      toValue: 0,
+      tension: 300,
+      friction: 25,
+      useNativeDriver: true,
+    }).start();
+
+    // Handle Scholar X selection
+    if (appName === 'ScholarX') {
+      handleScholarXSelection();
+    }
+  };
+
+  const handleScholarXSelection = () => {
+    // Clear current messages and reset state
+    setMessages([]);
+    setMessage('');
+    setMessageAnimations({});
+    
+    // Generate a new chat ID for Scholar X
+    const scholarChatId = `scholar-${Date.now()}`;
+    setCurrentChatId(scholarChatId);
+    
+    // Create static user message
+    const userMessage: Message = {
+      id: 1,
+      text: 'What is the scholarly consensus (ijma) regarding the application of ijtihad in contemporary Islamic jurisprudence, particularly concerning issues that did not exist during the classical period of fiqh development?',
+      isUser: true,
+      timestamp: new Date().toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+    };
+
+    // Create static AI response with thinking indicator
+    const aiMessage: Message = {
+      id: 2,
+      text: `**Ijtihad and Contemporary Islamic Jurisprudence**
+
+This is a fundamental question in contemporary usul al-fiqh (principles of Islamic jurisprudence) that touches upon the dynamic nature of Islamic law and its adaptability to modern circumstances.
+
+**The Nature of Ijtihad**
+
+Ijtihad (اجتهاد) literally means "exerting effort" and refers to the independent reasoning employed by qualified scholars (mujtahidun) to derive legal rulings from the primary sources (Quran and Sunnah) when explicit guidance is not available. The classical definition requires thorough knowledge of Arabic, Quranic exegesis, hadith sciences, and the principles of jurisprudence.
+
+**Contemporary Scholarly Consensus**
+
+There is broad agreement among contemporary Islamic scholars that:
+
+1. **The Gate of Ijtihad Remains Open**: Contrary to some medieval claims that "the gate of ijtihad is closed," modern scholars across all madhabs (schools of thought) affirm that qualified ijtihad is not only permissible but necessary for addressing contemporary issues.
+
+2. **Collective Ijtihad (Ijtihad Jama'i)**: Many scholars advocate for institutional, collective ijtihad through bodies like the Islamic Fiqh Academy, recognizing that modern issues often require interdisciplinary expertise beyond what individual scholars possess.
+
+**Application to Novel Issues**
+
+For matters that did not exist during the classical period - such as bioethics, digital finance, environmental law, and modern technology - scholars employ several methodological approaches:
+
+**Qiyas (Analogical Reasoning)**: Drawing parallels between new situations and established precedents based on shared effective causes ('illah).
+
+**Maslaha (Public Interest)**: Considering the broader welfare and objectives (maqasid) of Islamic law when deriving rulings.
+
+**Istihsan (Juristic Preference)**: Departing from strict analogical reasoning when it leads to hardship or injustice.
+
+**Contemporary Challenges and Debates**
+
+The application of ijtihad in modern contexts faces several challenges:
+
+- **Qualification Standards**: Who possesses the necessary expertise for contemporary ijtihad?
+- **Methodological Integration**: How to incorporate modern knowledge while maintaining fidelity to Islamic principles?
+- **Authority and Acceptance**: Which institutions or scholars have the authority to issue binding contemporary rulings?
+
+**Regional and Sectarian Variations**
+
+Different Islamic communities and schools of thought approach contemporary ijtihad with varying degrees of flexibility, though there is increasing cooperation through international scholarly bodies and conferences.
+
+The consensus acknowledges that while the fundamental principles of Islam are immutable, their application to new circumstances requires ongoing scholarly engagement through qualified ijtihad.`,
+      isUser: false,
+      timestamp: new Date().toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+    };
+
+    // Set messages immediately (static, no animation)
+    const scholarMessages = [userMessage, aiMessage];
+    setMessages(scholarMessages);
+
+    // Create static animations (already at final state)
+    const newAnimations: {[key: number]: Animated.Value} = {};
+    scholarMessages.forEach(msg => {
+      newAnimations[msg.id] = new Animated.Value(1); // Already visible
+    });
+    setMessageAnimations(newAnimations);
+
+    // Save to allChats
+    setAllChats(prev => ({
+      ...prev,
+      [scholarChatId]: scholarMessages
+    }));
+
+    // Update chat history
+    const scholarChatEntry: ChatHistory = {
+      id: scholarChatId,
+      title: 'Contemporary Ijtihad Discussion',
+      lastMessage: 'What is the scholarly consensus regarding ijtihad...',
+      timestamp: 'Just now'
+    };
+
+    setChatHistory(prev => [scholarChatEntry, ...prev]);
+
+    // Scroll to bottom after a brief delay
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+  
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      
+    <SafeAreaView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      {params.noAnim === '1' && (
+        <Stack.Screen options={{ animation: 'none' }} />
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={handleBackPress} 
-          style={[styles.backButton, { backgroundColor: colors.inputBackground }]}
-          activeOpacity={0.7}
+          onPress={handleBackPress}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={[styles.backButtonText, { color: colors.primaryText }]}>←</Text>
+          <Text style={[styles.backIcon, { color: colors.secondaryText }]}>✕</Text>
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
-          <TouchableOpacity onPress={toggleDropdown} style={styles.appSelector}>
-            <Animated.Text style={[
-              styles.appSelectorText,
-              { 
-                color: colors.primaryText,
+          <TouchableOpacity 
+            onPress={toggleDropdown}
+            style={styles.dropdownButton}
+            activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 15, right: 15 }}
+          >
+            <Animated.View style={[
+              styles.dropdownButtonContent,
+              {
                 transform: [{ scale: dropdownButtonScale }]
               }
             ]}>
-              {selectedApp}
-            </Animated.Text>
-            <Text style={[styles.dropdownArrow, { color: colors.secondaryText }]}>▼</Text>
+              <Text style={[styles.headerTitle, { 
+                color: colors.primaryText,
+                fontSize: 22, // Slightly smaller as requested
+              }]}>
+                {selectedApp}
+              </Text>
+              <Animated.View style={[
+                styles.dropdownArrow,
+                {
+                  transform: [{
+                    rotate: dropdownAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '180deg'],
+                    })
+                  }]
+                }
+              ]}>
+                <Text style={[styles.dropdownArrowIcon, { color: colors.secondaryText }]}>
+                  ▼
+                </Text>
+              </Animated.View>
+            </Animated.View>
           </TouchableOpacity>
+          
+          {/* ChatGPT-style Dropdown Menu */}
+          {showDropdown && (
+            <>
+              {/* Backdrop to close dropdown */}
+              <TouchableOpacity
+                style={styles.dropdownBackdrop}
+                onPress={toggleDropdown}
+                activeOpacity={1}
+              />
+              <Animated.View 
+                style={[
+                  styles.dropdownMenu,
+                  {
+                    backgroundColor: colors.dropdownBackground,
+                    shadowColor: colors.dropdownShadow,
+                    shadowOpacity: dropdownAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 0.15],
+                    }),
+                    transform: [
+                      {
+                        scale: dropdownAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.95, 1],
+                        })
+                      },
+                      {
+                        translateY: dropdownAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-10, 0],
+                        })
+                      }
+                    ],
+                    opacity: dropdownAnimation,
+                  }
+                ]}
+              >
+                {['MinaraX', 'ScholarX', 'DebateX'].map((appName, index) => (
+                  <TouchableOpacity
+                    key={appName}
+                    style={[
+                      styles.dropdownItem,
+                      {
+                        borderBottomWidth: index < 2 ? StyleSheet.hairlineWidth : 0,
+                        borderBottomColor: colors.dropdownDivider,
+                      }
+                    ]}
+                    onPress={() => handleAppSelect(appName)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={styles.dropdownItemContent}>
+                      {selectedApp === appName ? (
+                        <Text style={[styles.checkmark, { color: colors.secondaryText }]}>✓</Text>
+                      ) : (
+                        <View style={styles.checkmarkPlaceholder} />
+                      )}
+                      <Text style={[
+                        styles.dropdownItemText, 
+                        { 
+                          color: colors.dropdownItemText,
+                        }
+                      ]}>
+                        {appName}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </Animated.View>
+            </>
+          )}
         </View>
         
-        <TouchableOpacity onPress={toggleSideMenu} style={styles.menuButton}>
-          <Animated.Text style={[
-            styles.menuButtonText,
-            { 
-              color: colors.primaryText,
-              transform: [{ scale: menuButtonScale }]
-            }
-          ]}>
-            ☰
-          </Animated.Text>
+        <TouchableOpacity 
+          onPress={toggleSideMenu}
+          style={styles.menuButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Animated.View 
+            style={[
+              styles.hamburgerMenu,
+              {
+                transform: [{ scale: menuButtonScale }]
+              }
+            ]}
+          >
+            <View style={[styles.hamburgerLine, { backgroundColor: colors.primaryText }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: colors.primaryText }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: colors.primaryText }]} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
-      {/* Main Content */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView 
-          style={styles.mainContent}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 100}
-        >
-        {/* Messages Area */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={true}
-          keyboardShouldPersistTaps="never"
-          onScrollBeginDrag={() => setIsUserScrolling(true)}
-          onScrollEndDrag={() => setIsUserScrolling(false)}
-          onContentSizeChange={() => {
-            if (!isUserScrolling) {
-              scrollViewRef.current?.scrollToEnd({ animated: true });
-            }
-          }}
-          onLayout={() => {
-            if (!isUserScrolling) {
-              scrollViewRef.current?.scrollToEnd({ animated: false });
-            }
-          }}
-        >
-          {messages.map((msg) => (
-            <View key={msg.id} style={[
-              styles.messageContainer,
-              msg.sender_id === currentUser?.id ? styles.userMessage : styles.aiMessage
-            ]}>
-              <View style={[
-                styles.messageBubble,
-                msg.sender_id === currentUser?.id 
-                  ? { backgroundColor: colors.userMessageBackground }
-                  : { backgroundColor: colors.messageBackground }
-              ]}>
-                {msg.sender_id === currentUser?.id ? (
-                  <Text style={[styles.messageText, { color: '#FFFFFF' }]}>
-                    {msg.content}
-                  </Text>
-                ) : (
-                  <View>
-                    {formatAIResponse(msg.content, colors, isDarkMode, isGenerating && currentGenerationId === msg.id, cursorAnimation)}
-                  </View>
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Input Area */}
-        <View style={[styles.inputContainer, { backgroundColor: colors.inputBackground }]}>
-          <TextInput
-            style={[
-              styles.textInput,
-              { 
-                color: colors.primaryText,
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.inputBorder
-              }
-            ]}
-            placeholder="Message Minara..."
-            placeholderTextColor={colors.secondaryText}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            maxLength={1000}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 300);
-            }}
-          />
-          <TouchableOpacity 
-            style={[
-              styles.sendButton,
-              { 
-                backgroundColor: message.trim() ? colors.userMessageBackground : colors.secondaryText,
-                opacity: message.trim() ? 1 : 0.5
-              }
-            ]}
-            onPress={handleSendMessage}
-            disabled={!message.trim() || isGenerating}
-          >
-            <Text style={styles.sendButtonText}>
-              {isGenerating ? '⏹️' : '→'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-              </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-
       {/* Side Menu */}
-      {showSideMenu && (
-        <Animated.View 
-          style={[
-            styles.sideMenuOverlay,
-            { opacity: overlayOpacity }
-          ]}
-        >
-          <TouchableOpacity 
-            style={styles.sideMenuOverlayTouchable}
-            onPress={toggleSideMenu}
-          />
-        </Animated.View>
-      )}
-      
       <Animated.View 
         style={[
           styles.sideMenu,
-          { 
-            backgroundColor: colors.sideMenuBackground,
-            transform: [{ translateX: sideMenuAnimation }]
+          {
+            transform: [{ translateX: sideMenuAnimation }],
+            backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
+            borderLeftWidth: StyleSheet.hairlineWidth,
+            borderLeftColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            shadowColor: '#000000',
+            shadowOffset: { width: -8, height: 0 },
+            shadowOpacity: isDarkMode ? 0.6 : 0.15,
+            shadowRadius: 24,
+            elevation: 16,
+          }
+        ]}
+        pointerEvents={showSideMenu ? 'auto' : 'none'}
+      >
+        <SafeAreaView style={styles.sideMenuContent}>
+          {/* Side Menu Header */}
+          <View style={styles.sideMenuHeader}>
+            <Text style={[styles.sideMenuTitle, { color: colors.primaryText }]}>
+              Chats
+            </Text>
+            <TouchableOpacity 
+              onPress={handleNewChat}
+              style={[styles.newChatButton, { backgroundColor: colors.sideMenuItemBackground }]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={[styles.newChatIcon, { color: colors.sideMenuAccent }]}>✎</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* New Chat Button */}
+          <TouchableOpacity 
+            style={[styles.newChatCard, { 
+              backgroundColor: colors.newChatBackground,
+              borderWidth: 1,
+              borderColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)',
+            }]}
+            onPress={handleNewChat}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.newChatIconContainer, { backgroundColor: colors.sideMenuAccent }]}>
+              <Text style={styles.newChatCardIcon}>+</Text>
+            </View>
+            <Text style={[styles.newChatText, { color: colors.primaryText }]}>
+              New Chat
+            </Text>
+          </TouchableOpacity>
+
+          {/* Chat History */}
+          <View style={styles.chatHistorySection}>
+            <Text style={[styles.sectionTitle, { color: colors.tertiaryText }]}>
+              Recent
+            </Text>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={styles.chatHistoryList}
+              scrollEnabled={showSideMenu}
+            >
+              {chatHistory.map((chat) => (
+                <TouchableOpacity
+                  key={chat.id}
+                  style={[styles.chatHistoryItem, {
+                    backgroundColor: colors.sideMenuItemBackground,
+                  }]}
+                  onPress={() => handleChatSelect(chat)}
+                  activeOpacity={0.6}
+                  disabled={!showSideMenu}
+                >
+                  <View style={styles.chatItemContent}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.chatTitle, { color: colors.primaryText }]} numberOfLines={1}>
+                        {chat.title}
+                      </Text>
+                      <Text style={[styles.chatLastMessage, { color: colors.secondaryText }]} numberOfLines={1}>
+                        {chat.lastMessage}
+                      </Text>
+                    </View>
+                    <Text style={[styles.chatTimestamp, { color: colors.tertiaryText }]}>
+                      {chat.timestamp}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </Animated.View>
+
+      {/* Overlay to close side menu */}
+      <Animated.View 
+        style={[
+          styles.overlay,
+          {
+            opacity: overlayOpacity,
+            pointerEvents: showSideMenu ? 'auto' : 'none',
+            backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.25)',
           }
         ]}
       >
-        <View style={styles.sideMenuHeader}>
-          <View style={styles.sideMenuHeaderTop}>
-            <TouchableOpacity 
-              style={styles.sideMenuBackButton}
-              onPress={toggleSideMenu}
-            >
-              <Text style={[styles.sideMenuBackButtonText, { color: colors.primaryText }]}>←</Text>
-            </TouchableOpacity>
-            <Text style={[styles.sideMenuTitle, { color: colors.primaryText }]}>Chat History</Text>
-          </View>
-          <TouchableOpacity 
-            style={[styles.newChatButton, { backgroundColor: colors.newChatBackground }]}
-            onPress={handleNewChat}
-          >
-            <Text style={[styles.newChatButtonText, { color: colors.sideMenuAccent }]}>
-              + New Chat
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView style={styles.chatHistoryContainer}>
-          {chatHistory.map((chat) => (
-            <TouchableOpacity
-              key={chat.id}
-              style={[
-                styles.chatHistoryItem,
-                { 
-                  backgroundColor: currentSessionId === chat.id 
-                    ? colors.sideMenuItemHover 
-                    : 'transparent'
-                }
-              ]}
-              onPress={() => handleChatSelect(chat)}
-            >
-              <Text style={[styles.chatHistoryTitle, { color: colors.primaryText }]}>
-                {chat.title}
-              </Text>
-              <Text style={[styles.chatHistorySubtitle, { color: colors.secondaryText }]}>
-                {chat.lastMessage}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={toggleSideMenu}
+          activeOpacity={1}
+        />
       </Animated.View>
 
-      {/* Suggestions */}
-      {messages.length === 0 && (
-        <View style={styles.suggestionsContainer}>
-          <Text style={[styles.suggestionsTitle, { color: colors.primaryText }]}>
-            How can I help you today?
-          </Text>
-          <View style={styles.suggestionsGrid}>
-            {suggestionPrompts.map((suggestion, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.suggestionCard,
-                  { 
-                    backgroundColor: colors.suggestionBackground,
-                    borderColor: colors.suggestionBorder
+      {/* Messages Area */}
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.messagesContainer}
+        contentContainerStyle={[
+          styles.messagesContent,
+          {
+            justifyContent: messages.length > 0 ? 'flex-start' : 'flex-end',
+            paddingTop: messages.length > 0 ? 20 : 40,
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          const currentOffset = event.nativeEvent.contentOffset.y;
+          setScrollPosition(currentOffset);
+        }}
+        onScrollBeginDrag={() => {
+          setIsUserScrolling(true);
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+          }
+        }}
+        onScrollEndDrag={() => {
+          // Reset user scrolling flag after 2 seconds of no scrolling
+          scrollTimeoutRef.current = setTimeout(() => {
+            setIsUserScrolling(false);
+          }, 2000);
+        }}
+        scrollEventThrottle={16}
+      >
+        {messages.map((msg, index) => {
+          const prevMessage = messages[index - 1];
+          const isConsecutive = prevMessage && prevMessage.isUser === msg.isUser;
+          const messageAnimation = messageAnimations[msg.id];
+          
+          if (msg.isUser) {
+            // User messages in bubbles (existing style)
+            return (
+              <View key={msg.id} style={[
+                styles.messageRow, 
+                styles.userMessageRow,
+                { marginTop: isConsecutive ? 4 : 20 }
+              ]}>
+                <Animated.View style={[
+                  styles.messageBubble,
+                  { backgroundColor: colors.userMessageBackground },
+                  !isConsecutive && styles.userMessageBubbleFirst,
+                  messageAnimation && {
+                    transform: [
+                      {
+                        scale: messageAnimation.interpolate({
+                          inputRange: [0, 0.4, 0.8, 1],
+                          outputRange: [0.3, 0.85, 1.02, 1],
+                          extrapolate: 'clamp',
+                        })
+                      }
+                    ],
+                    opacity: messageAnimation.interpolate({
+                      inputRange: [0, 0.3, 0.8, 1],
+                      outputRange: [0, 0.7, 0.95, 1],
+                      extrapolate: 'clamp',
+                    }),
                   }
-                ]}
-                onPress={() => handleSuggestionPress(suggestion.prompt)}
+                ]}>
+                  <Text style={[
+                    styles.messageText,
+                    { color: '#FFFFFF' }
+                  ]}>
+                    {msg.text}
+                  </Text>
+                </Animated.View>
+              </View>
+            );
+          } else {
+            // AI messages without bubbles (full width)
+            return (
+              <View key={msg.id} style={[
+                styles.aiMessageContainer,
+                { 
+                  marginTop: isConsecutive ? 24 : (selectedApp === 'ScholarX' ? 20 : 40), // Reduced top margin for Scholar X
+                  marginBottom: 32, // Significantly increased bottom margin
+                  paddingBottom: 16, // Increased padding at container level
+                }
+              ]}>
+                {/* Thinking indicator for Scholar X */}
+                {selectedApp === 'ScholarX' && (
+                  <View style={[
+                    styles.thinkingIndicator,
+                    { backgroundColor: 'transparent' }
+                  ]}>
+                    <Text style={[styles.thinkingText, { color: colors.tertiaryText }]}>
+                      Thought for 19s ›
+                    </Text>
+                  </View>
+                )}
+                
+                <Animated.View style={[
+                  styles.aiMessageContent,
+                  {
+                    backgroundColor: 'transparent',
+                    paddingHorizontal: 0,
+                    maxWidth: '100%',
+                    paddingBottom: 24, // Increased bottom padding
+                    minHeight: 24, // Increased minimum height
+                    overflow: 'visible', // Allow content to be fully visible
+                  },
+                  messageAnimation && {
+                    transform: [
+                      {
+                        scale: messageAnimation.interpolate({
+                          inputRange: [0, 0.4, 0.8, 1],
+                          outputRange: [0.95, 0.98, 1.01, 1],
+                          extrapolate: 'clamp',
+                        })
+                      }
+                    ],
+                    opacity: messageAnimation.interpolate({
+                      inputRange: [0, 0.3, 0.8, 1],
+                      outputRange: [0, 0.7, 0.95, 1],
+                      extrapolate: 'clamp',
+                    }),
+                  }
+                ]}>
+                  <View style={[
+                    styles.aiMessageText,
+                    {
+                      paddingHorizontal: 0,
+                      paddingVertical: 12, // Increased vertical padding
+                      maxWidth: '100%',
+                      flexShrink: 1,
+                      marginBottom: 20, // Significantly increased margin at text container level
+                    }
+                  ]}>
+                    {formatAIResponse(msg.text, colors, isDarkMode, isGenerating, cursorAnimation)}
+                    {isGenerating && currentGenerationId === msg.id.toString() && (
+                      <Animated.View style={{ 
+                        opacity: cursorAnimation,
+                        marginLeft: 6,
+                        marginTop: 16, // Increased top margin for cursor
+                        marginBottom: 8, // Increased bottom margin for cursor
+                      }}>
+                        <View style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          backgroundColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        }} />
+                      </Animated.View>
+                    )}
+                  </View>
+                </Animated.View>
+              </View>
+            );
+          }
+        })}
+      </ScrollView>
+
+      {/* Bottom Input Area */}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.inputSection}
+      >
+        {/* Suggestion Cards Slider */}
+        {messages.length <= 1 && (
+          <Animated.View style={[
+            styles.suggestionsContainer,
+            {
+              opacity: inputAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [{
+                translateY: inputAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -50],
+                  extrapolate: 'clamp',
+                })
+              }]
+            }
+          ]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.suggestionsScrollContent}
+              decelerationRate="fast"
+              snapToInterval={280}
+              snapToAlignment="start"
+            >
+              {suggestionPrompts.map((suggestion, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  style={[
+                    styles.suggestionCard, 
+                    { backgroundColor: colors.suggestionBackground, borderColor: colors.suggestionBorder },
+                    index === 0 && styles.firstSuggestionCard,
+                    index === suggestionPrompts.length - 1 && styles.lastSuggestionCard
+                  ]}
+                  onPress={() => handleSuggestionPress(suggestion.prompt)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.suggestionTitle, { color: colors.primaryText }]}>
+                    {suggestion.title}
+                  </Text>
+                  <Text style={[styles.suggestionSubtitle, { color: colors.secondaryText }]}>
+                    {suggestion.subtitle}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        )}
+        
+        {/* Input Row */}
+        <View style={styles.inputRowContainer}>
+          <View style={styles.inputRow}>
+            <TouchableOpacity style={styles.plusButton}>
+              <Text style={[styles.plusIcon, { color: colors.secondaryText }]}>+</Text>
+            </TouchableOpacity>
+            
+            <View style={[styles.inputWrapper, { 
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.inputBorder 
+            }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.primaryText }]}
+                placeholder="Ask anything"
+                placeholderTextColor={colors.secondaryText}
+                value={message}
+                onChangeText={setMessage}
+                onSubmitEditing={handleSendMessage}
+                returnKeyType="send"
+                multiline
+                maxLength={1000}
+              />
+              {message.trim() && (
+                <TouchableOpacity 
+                  onPress={handleSendMessage}
+                  style={styles.sendButton}
+                >
+                  <Text style={styles.sendIcon}>↗</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <TouchableOpacity style={styles.micButton}>
+              <Text style={styles.micIcon}>🎤</Text>
+            </TouchableOpacity>
+            
+            {isGenerating && (
+              <TouchableOpacity 
+                style={styles.stopButton}
+                onPress={stopGeneration}
               >
-                <Text style={[styles.suggestionTitle, { color: colors.primaryText }]}>
-                  {suggestion.title}
-                </Text>
-                <Text style={[styles.suggestionSubtitle, { color: colors.secondaryText }]}>
-                  {suggestion.subtitle}
-                </Text>
+                <View style={[styles.stopIcon, { backgroundColor: '#FF3B30' }]} />
               </TouchableOpacity>
-            ))}
+            )}
           </View>
         </View>
-      )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -1220,247 +2019,435 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    zIndex: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 12,
+    zIndex: 1000,
   },
-  backButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    minWidth: 44,
-    minHeight: 44,
+  menuButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
+  hamburgerMenu: {
+    width: 20,
+    height: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  hamburgerLine: {
+    width: '100%',
+    height: 2,
+    borderRadius: 1,
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    position: 'relative',
   },
-  appSelector: {
-    flexDirection: 'row',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: '-apple-system',
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
-  appSelectorText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 4,
-  },
-  dropdownArrow: {
-    fontSize: 12,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  menuButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  mainContent: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    paddingBottom: 100, // Add space for navigation bar
+  backIcon: {
+    fontSize: 24,
+    fontWeight: '300',
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 40, // More space above input to prevent overlap
+    paddingHorizontal: 20,
+    paddingBottom: 160, // Add space for input area (about 140px) + nav bar (104px)
+    minHeight: '100%',
   },
-  messageContainer: {
-    marginBottom: 16,
-  },
-  userMessage: {
-    alignItems: 'flex-end',
-  },
-  aiMessage: {
+  messageRow: {
+    width: '100%',
     alignItems: 'flex-start',
   },
+  userMessageRow: {
+    alignItems: 'flex-end',
+  },
   messageBubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 16,
+    maxWidth: '85%',
+    minWidth: 60,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 24,
+  },
+  userMessageBubbleFirst: {
+    borderBottomRightRadius: 8,
+  },
+  aiMessageBubbleFirst: {
+    borderBottomLeftRadius: 8,
   },
   messageText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: 'System',
   },
-  inputContainer: {
+  inputSection: {
+    position: 'absolute',
+    bottom: 124, // Position above the 104px tall bottom nav bar with extra padding
+    left: 0,
+    right: 0,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: 'transparent',
+  },
+  suggestionsContainer: {
+    marginBottom: 20,
+  },
+  suggestionsScrollContent: {
+    paddingLeft: 20,
+    paddingRight: 20,
+  },
+  suggestionCard: {
+    width: 260,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginRight: 12,
+  },
+  firstSuggestionCard: {
+    marginLeft: 0,
+  },
+  lastSuggestionCard: {
+    marginRight: 0,
+  },
+  suggestionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+    fontFamily: 'System',
+  },
+  suggestionSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    fontFamily: 'System',
+    lineHeight: 18,
+  },
+  inputRowContainer: {
+    paddingHorizontal: 20,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    gap: 12,
+  },
+  plusButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  plusIcon: {
+    fontSize: 20,
+    fontWeight: '300',
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingBottom: 30, // Extra padding to stay above navigation bar
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.98)', // More opaque background
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
+    borderWidth: 1,
+    minHeight: 48,
   },
   textInput: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 22,
-    fontSize: 16,
-    marginRight: 12,
-    borderWidth: 1,
-    lineHeight: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    fontSize: 18,
+    fontFamily: 'System',
+    maxHeight: 100,
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlignVertical: 'center',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
+    marginLeft: 8,
   },
-  sendButtonText: {
+  sendIcon: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
-  sideMenuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 1000,
+  micButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  sideMenuOverlayTouchable: {
-    flex: 1,
+  micIcon: {
+    fontSize: 18,
   },
   sideMenu: {
     position: 'absolute',
     top: 0,
     right: 0,
-    bottom: 0,
     width: 340,
+    bottom: 0,
     zIndex: 1001,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(0,0,0,0.1)',
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+  sideMenuContent: {
+    flex: 1,
+    paddingTop: 70,
+    paddingHorizontal: 32,
+    paddingBottom: 40,
   },
   sideMenuHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  sideMenuHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  sideMenuBackButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  sideMenuBackButtonText: {
-    fontSize: 20,
-    fontWeight: '600',
+    justifyContent: 'space-between',
+    marginBottom: 36,
+    paddingHorizontal: 0,
   },
   sideMenuTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'System',
+    letterSpacing: -0.4,
   },
   newChatButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 18,
   },
-  newChatButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  newChatIcon: {
+    fontSize: 22,
+    fontWeight: '400',
   },
-  chatHistoryContainer: {
+  chatHistorySection: {
     flex: 1,
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 20,
+    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: -0.08,
+    paddingHorizontal: 8,
+  },
+  chatHistoryList: {
+    flex: 1,
+    paddingHorizontal: 0,
+    marginTop: 8,
   },
   chatHistoryItem: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderWidth: 0,
   },
-  chatHistoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  chatHistorySubtitle: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: 16,
-    right: 16,
-    transform: [{ translateY: -100 }],
-  },
-  suggestionsTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  suggestionsGrid: {
+  chatItemContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    paddingVertical: 4,
   },
-  suggestionCard: {
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  suggestionTitle: {
+  chatTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    fontFamily: 'System',
+    marginBottom: 2,
+    letterSpacing: -0.32,
   },
-  suggestionSubtitle: {
-    fontSize: 14,
-    lineHeight: 18,
+  chatLastMessage: {
+    fontSize: 15,
+    fontWeight: '400',
+    fontFamily: 'System',
+    lineHeight: 20,
+    letterSpacing: -0.24,
+  },
+  chatTimestamp: {
+    fontSize: 13,
+    fontWeight: '400',
+    fontFamily: 'System',
+    textAlign: 'right',
+    marginLeft: 12,
+    minWidth: 70,
+    letterSpacing: -0.08,
+  },
+  newChatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 18,
+    marginBottom: 32,
+    borderWidth: 1,
+  },
+  newChatIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  newChatCardIcon: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  newChatText: {
+    fontSize: 17,
+    fontWeight: '600',
+    fontFamily: 'System',
+    letterSpacing: -0.24,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  aiMessageContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+  aiMessageContent: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 0,
+    maxWidth: '100%',
+  },
+  aiMessageText: {
+    width: '100%',
+    maxWidth: '100%',
+    flexShrink: 1,
+  },
+  stopButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stopIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FF3B30',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  dropdownButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownArrow: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownArrowIcon: {
+    fontSize: 10,
+    fontWeight: '600',
+    opacity: 0.6,
+  },
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: -100,
+    left: -500,
+    right: -500,
+    bottom: -500,
+    zIndex: 999,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 55,
+    left: '50%',
+    marginLeft: -110, // Half of new width (220/2) to center
+    width: 220,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 32 },
+    shadowOpacity: 0.15,
+    shadowRadius: 64,
+    elevation: 64,
+    zIndex: 1000,
+    borderWidth: 0,
+  },
+  dropdownItem: {
+    height: 44,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D1D5DB',
+  },
+  dropdownItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    fontWeight: '400',
+    fontFamily: '-apple-system',
+    color: '#000000',
+    flex: 1,
+  },
+  checkmark: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginRight: 12,
+    width: 16,
+  },
+  checkmarkPlaceholder: {
+    width: 16,
+    marginRight: 12,
+  },
+  thinkingIndicator: {
+    width: '100%',
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    marginBottom: 2,
+    alignItems: 'flex-start',
+  },
+  thinkingText: {
+    fontSize: 18,
+    fontWeight: '400',
+    fontFamily: 'System',
+    textAlign: 'left',
   },
 }); 

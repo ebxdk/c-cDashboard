@@ -1,6 +1,19 @@
 import Constants from 'expo-constants';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+export interface CalendarEventOrganizer {
+  email?: string;
+  displayName?: string;
+  self?: boolean;
+}
+
+export interface CalendarEventAttendee {
+  email?: string;
+  displayName?: string;
+  responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted';
+  organizer?: boolean;
+}
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -16,6 +29,9 @@ export interface CalendarEvent {
   };
   htmlLink?: string;
   hangoutLink?: string;
+  organizer?: CalendarEventOrganizer;
+  attendees?: CalendarEventAttendee[];
+  creator?: CalendarEventOrganizer;
 }
 
 interface CalendarContextType {
@@ -64,7 +80,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       {
         id: 'mock-1',
         summary: 'Community Iftar',
-        description: 'Join us for a blessed iftar gathering with the community. Bring your family and friends!',
+        description: 'Join us for a blessed iftar gathering with the community. Bring your family and friends! Hosted by ahmed.hassan@islamiccenter.org',
         location: 'Islamic Center of Greater Cincinnati',
         start: {
           dateTime: tomorrow.toISOString(),
@@ -72,6 +88,18 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         end: {
           dateTime: new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
         },
+        organizer: {
+          email: 'ahmed.hassan@islamiccenter.org',
+          displayName: 'Ahmed Hassan',
+        },
+        attendees: [
+          {
+            email: 'ahmed.hassan@islamiccenter.org',
+            displayName: 'Ahmed Hassan',
+            organizer: true,
+            responseStatus: 'accepted',
+          },
+        ],
       },
       {
         id: 'mock-2',
@@ -84,11 +112,23 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         end: {
           dateTime: new Date(dayAfter.getTime() + 45 * 60 * 1000).toISOString(), // 45 minutes later
         },
+        organizer: {
+          email: 'imam@masjidalnoor.org',
+          displayName: 'Imam Yusuf Ali',
+        },
+        attendees: [
+          {
+            email: 'imam@masjidalnoor.org',
+            displayName: 'Imam Yusuf Ali',
+            organizer: true,
+            responseStatus: 'accepted',
+          },
+        ],
       },
       {
         id: 'mock-3',
         summary: 'Islamic Study Circle',
-        description: 'Weekly study of Quran and Hadith',
+        description: 'Weekly study of Quran and Hadith. Contact sarah.ahmad@community.org for more info.',
         location: 'Community Center',
         start: {
           date: nextWeek.toISOString().split('T')[0], // All day event
@@ -96,6 +136,18 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         end: {
           date: nextWeek.toISOString().split('T')[0],
         },
+        organizer: {
+          email: 'sarah.ahmad@community.org',
+          displayName: 'Sarah Ahmad',
+        },
+        attendees: [
+          {
+            email: 'sarah.ahmad@community.org',
+            displayName: 'Sarah Ahmad',
+            organizer: true,
+            responseStatus: 'accepted',
+          },
+        ],
       },
     ];
   };

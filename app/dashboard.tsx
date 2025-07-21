@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -5,30 +6,31 @@ import { DeviceMotion } from 'expo-sensors';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView, LongPressGestureHandler, TapGestureHandler } from 'react-native-gesture-handler';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
     Easing,
-    useAnimatedGestureHandler,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
     withTiming
 } from 'react-native-reanimated';
 
+import { useBottomNavHeight } from '@/hooks/useBottomNavHeight';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { DraggableWidget } from '../components/DraggableWidget';
 import {
+    AffinityGroupsWidget,
     CalendarWidget,
     CohortContactsWidget,
     HabitWidget,
     InspireWidget,
     JournalWidget,
-    MinaraWidget,
-    TestWidget
+    MinaraWidget
 } from '../components/WidgetComponents';
+import { useCalendar } from '../contexts/CalendarContext';
+import { useHabits } from '../contexts/HabitsContext';
 import { widgetStyles } from '../styles/widgetStyles';
+import { generateDashboardSummary } from '../utils/dynamicSummary';
 import {
-    findFirstAvailablePosition,
     getDefaultLayout,
     getWidgetGridSize,
     rearrangeWidgets
@@ -38,27 +40,81 @@ import PersonalDetails from './PersonalDetails';
 export default function Dashboard() {
   const params = useLocalSearchParams();
   const systemColorScheme = useColorScheme();
+  const { paddingBottom } = useBottomNavHeight(); // Get dynamic padding
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [showBackgroundSelectorInSettings, setShowBackgroundSelectorInSettings] = useState(false);
-  const [selectedBackground, setSelectedBackground] = useState('gradient1'); // Default to gradient1
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(null); // Start with null
   const [widgetPositions, setWidgetPositions] = useState(() => getDefaultLayout());
+
+  // Dynamic dashboard state
+  const [messageCount, setMessageCount] = useState(0);
+  const [journalEntries, setJournalEntries] = useState(0);
+
+  // Contexts for real data
+  const { events, loading: eventsLoading } = useCalendar();
+  const { habits } = useHabits();
 
   // Load saved background preference
   useEffect(() => {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        if (savedBackground) {
-          setSelectedBackground(savedBackground);
-        }
+        setSelectedBackground(savedBackground || 'gradient1'); // Default to gradient1 if nothing saved
       } catch (error) {
         console.log('Error loading background preference:', error);
+        setSelectedBackground('gradient1'); // Default on error
       }
     };
     loadBackgroundPreference();
   }, []);
+
+  // Listen for real-time background updates from settings
+  useEffect(() => {
+    const checkForBackgroundUpdates = () => {
+      const newBackground = (global as any).dashboardBackgroundUpdate;
+      if (newBackground && selectedBackground && newBackground !== selectedBackground) {
+        setSelectedBackground(newBackground);
+        // Clear the global flag
+        (global as any).dashboardBackgroundUpdate = null;
+      }
+    };
+
+    // Only start checking after background is loaded
+    if (selectedBackground !== null) {
+      const interval = setInterval(checkForBackgroundUpdates, 100);
+      return () => clearInterval(interval);
+    }
+  }, [selectedBackground]);
+
+  // Load dynamic data from various sources
+  useEffect(() => {
+    const loadDynamicData = async () => {
+      try {
+        // For now, simulate message count from community/cohort
+        // In a real implementation, this would come from your messaging system
+        const mockMessageCount = Math.floor(Math.random() * 8) + 1; // 1-8 messages
+        setMessageCount(mockMessageCount);
+
+        // For now, simulate journal entries this week
+        // In a real implementation, this would come from your journal storage
+        const mockJournalEntries = Math.floor(Math.random() * 5); // 0-4 entries this week
+        setJournalEntries(mockJournalEntries);
+      } catch (error) {
+        console.log('Error loading dynamic data:', error);
+      }
+    };
+
+    loadDynamicData();
+    
+    // Refresh dynamic data every hour to keep it fresh
+    const interval = setInterval(loadDynamicData, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Generate dynamic summary
+  const dynamicSummary = generateDashboardSummary(events, habits, messageCount, journalEntries);
 
   // Enhanced parallax effect state with multiple layers
   const [deviceMotion, setDeviceMotion] = useState({ x: 0, y: 0 });
@@ -82,6 +138,17 @@ export default function Dashboard() {
   
   const router = useRouter();
 
+  // Get current date information
+  const currentDate = new Date();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  const currentDayName = dayNames[currentDate.getDay()];
+  const currentMonthName = monthNames[currentDate.getMonth()];
+  const currentDayNumber = currentDate.getDate();
+  const currentYear = currentDate.getFullYear();
+
   useEffect(() => {
     themeTransition.value = withTiming(isDarkMode ? 1 : 0, {
       duration: 300,
@@ -89,29 +156,18 @@ export default function Dashboard() {
     });
   }, [isDarkMode]);
 
-  // Enhanced device motion parallax effect with multiple layers
   useEffect(() => {
     let subscription: any = null;
-    let lastUpdate = 0;
     
     const startDeviceMotion = async () => {
       try {
-        // Request permission for device motion (iOS)
         const { status } = await DeviceMotion.requestPermissionsAsync();
         if (status !== 'granted') {
-          console.log('Device motion permission not granted');
+          console.log('Motion permission denied');
           return;
         }
 
-        // Set update interval to 16ms for 60fps smooth updates
-        DeviceMotion.setUpdateInterval(16);
-
         subscription = DeviceMotion.addListener((motionData) => {
-          const now = Date.now();
-          // Throttle updates to prevent overwhelming the animation system
-          if (now - lastUpdate < 8) return; // ~120fps max for ultra-smooth motion
-          lastUpdate = now;
-
           if (motionData.rotation) {
             // Enhanced parallax with multiple layers and reduced sensitivity
             const maxOffset = 25; // Reduced from 50 for less dramatic effect
@@ -167,74 +223,68 @@ export default function Dashboard() {
         subscription.remove();
       }
     };
-  }, [backgroundX, backgroundY, backgroundLayer2X, backgroundLayer2Y, backgroundLayer3X, backgroundLayer3Y]);
+  }, []);
 
   // Update theme when system changes
   useEffect(() => {
     setIsDarkMode(systemColorScheme === 'dark');
   }, [systemColorScheme]);
 
-  // Determine background color based on selection
+  // Determine background color based on selection and dark mode
   const getBackgroundColor = () => {
-    return '#FFFAF2';
+    switch (selectedBackground) {
+      case 'white':
+        return isDarkMode ? '#1C1C1E' : '#FFFFFF'; // ChatGPT-like dark color
+      case 'off-white':
+        return isDarkMode ? '#000000' : '#FFFAF2'; // Pure black for dark mode
+      case 'pattern-arabic':
+        return isDarkMode ? '#1C1C1E' : '#FFFAF2'; // Base color for patterns
+      default:
+        // For gradients, respect dark mode
+        return isDarkMode ? '#1C1C1E' : '#FFFAF2';
+    }
   };
 
-  // Determine text colors based on background
+  // Determine text colors based on background and dark mode
   const getTextColor = () => {
-    if (selectedBackground === 'blue') {
-      return '#FFFFFF';
-    } else if (selectedBackground === 'white') {
-      return '#000000';
+    if (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') {
+      // For solid colors, text color depends on dark mode since backgrounds now change
+      return isDarkMode ? '#FFFFFF' : '#000000';
     } else {
+      // For gradients, use white text in dark mode, black in light mode
       return isDarkMode ? '#FFFFFF' : '#000000';
     }
   };
 
   const colors = {
     background: getBackgroundColor(),
-    cardBackground: selectedBackground === 'blue' ? '#E5EBEE' : 
-                   selectedBackground === 'white' ? '#F8F9FA' : 
-                   isDarkMode ? '#1C1C1E' : '#FFFFFF',
+    cardBackground: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? 
+                   (isDarkMode ? '#2C2C2E' : '#F8F9FA') : (isDarkMode ? '#1C1C1E' : '#FFFFFF'),
     primaryText: getTextColor(),
-    secondaryText: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.8)' : 
-                   selectedBackground === 'white' ? '#666666' :
-                   isDarkMode ? '#A0A0A0' : '#666666',
-    tertiaryText: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.6)' : 
-                  selectedBackground === 'white' ? '#777777' :
-                  isDarkMode ? '#808080' : '#777777',
-    cardBorder: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.2)' : 
-                selectedBackground === 'white' ? 'rgba(0,0,0,0.08)' :
-                isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.08)',
-    cardShadow: selectedBackground === 'blue' ? 'rgba(0, 0, 0, 0.2)' : 
-                selectedBackground === 'white' ? 'rgba(0,0,0,0.04)' :
-                isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    secondaryText: isDarkMode ? '#A0A0A0' : '#666666',
+    tertiaryText: isDarkMode ? '#808080' : '#777777',
+    cardBorder: isDarkMode ? '#2C2C2E' : 'rgba(0,0,0,0.08)',
+    cardShadow: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
     redDot: '#FF3B30',
-    prayerCompleted: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
-    prayerPending: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.3)' : 
-                   selectedBackground === 'white' ? '#D1D1D6' :
+    prayerCompleted: '#007AFF',
+    prayerPending: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#D1D1D6' :
                    isDarkMode ? '#48484A' : '#D1D1D6',
-    accent: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
-    accentSubtle: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
-                  selectedBackground === 'white' ? '#F0F4FF' :
+    accent: '#007AFF',
+    accentSubtle: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#F0F4FF' :
                   isDarkMode ? '#1A2332' : '#F0F4FF',
-    habitRing: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
-    habitBackground: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.2)' : 
-                     selectedBackground === 'white' ? '#E5E5EA' :
+    habitRing: '#007AFF',
+    habitBackground: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#E5E5EA' :
                      isDarkMode ? '#2C2C2E' : '#E5E5EA',
-    journalGradient: selectedBackground === 'blue' ? '#FFFFFF' : 
-                     selectedBackground === 'white' ? '#007AFF' :
+    journalGradient: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#007AFF' :
                      isDarkMode ? '#2C2C2E' : '#007AFF',
-    journalBg: selectedBackground === 'blue' ? 'rgba(255, 255, 255, 0.1)' : 
-               selectedBackground === 'white' ? '#FFFFFF' :
+    journalBg: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#FFFFFF' :
                isDarkMode ? '#1A1A1A' : '#FFFFFF',
-    cohortAccent: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
-    cohortBackground: selectedBackground === 'blue' ? '#E5EBEE' : 
-                      selectedBackground === 'white' ? '#FFFAF2' :
+    cohortAccent: '#007AFF',
+    cohortBackground: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#FFFAF2' :
                       isDarkMode ? 'rgba(0, 122, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
-    cohortBorder: selectedBackground === 'blue' ? '#E5EBEE' : 
-                  selectedBackground === 'white' ? '#FFFAF2' :
+    cohortBorder: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? '#FFFAF2' :
                   isDarkMode ? 'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.18)',
-    resizeHandle: selectedBackground === 'blue' ? '#FFFFFF' : '#007AFF',
+    resizeHandle: '#007AFF',
   };
 
   const animatedColors = {
@@ -281,401 +331,367 @@ export default function Dashboard() {
     ],
   }));
 
-  // Drag gesture handler for buttery smooth iOS-style dismiss
-  const panGestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: { startY: number }) => {
-      context.startY = 0;
-    },
-    onActive: (event, context: { startY: number }) => {
-      const newTranslateY = context.startY + event.translationY;
-      // Only allow downward dragging
-      if (newTranslateY >= 0) {
-        // Interactive scale feedback during drag
-        const dragProgress = Math.min(newTranslateY / (screenHeight * 0.3), 1);
-        const scaleValue = 1 - (dragProgress * 0.04); // Scale down slightly as dragged
-      }
-    },
-    onEnd: (event) => {
-      const shouldDismiss = event.translationY > 100 || event.velocityY > 500;
-      
-      if (shouldDismiss) {
-        // Ultra-smooth spring dismiss animation
-        backgroundX.value = withSpring(0, {
-          damping: 35,
-          mass: 0.8,
-          stiffness: 250,
-          overshootClamping: true,
-        });
-        backgroundY.value = withSpring(0, {
-          damping: 35,
-          mass: 0.8,
-          stiffness: 250,
-          overshootClamping: true,
-        });
-      } else {
-        // Buttery snap back with perfect spring feel
-        backgroundX.value = withSpring(0, {
-          damping: 25,
-          mass: 0.7,
-          stiffness: 250,
-          overshootClamping: false,
-          restDisplacementThreshold: 0.01,
-          restSpeedThreshold: 2,
-        });
-        backgroundY.value = withSpring(0, {
-          damping: 25,
-          mass: 0.7,
-          stiffness: 250,
-          overshootClamping: false,
-          restDisplacementThreshold: 0.01,
-          restSpeedThreshold: 2,
-        });
-      }
-    },
-  });
+  // Widget management functions
+  const handleWidgetPositionChange = useCallback((widgetId: string, newGridX: number, newGridY: number) => {
+    if (isEditMode) {
+      setWidgetPositions(prevPositions => {
+        return prevPositions.map(position => 
+          position.id === widgetId 
+            ? { ...position, gridX: newGridX, gridY: newGridY }
+            : position
+        );
+      });
+    }
+  }, [isEditMode]);
 
-  // Handle widget position change with auto-rearrangement
-  const handleWidgetPositionChange = useCallback((id: string, newGridX: number, newGridY: number) => {
-    setWidgetPositions(prevPositions => {
-      const newPositions = rearrangeWidgets(id, newGridX, newGridY, prevPositions);
-      return newPositions;
-    });
-  }, []);
+  const handleWidgetResize = useCallback((widgetId: string, newSize: 'small' | 'medium' | 'large') => {
+    if (isEditMode) {
+      setWidgetPositions(prevPositions => {
+        return prevPositions.map(position => 
+          position.id === widgetId 
+            ? { ...position, size: newSize, ...getWidgetGridSize(newSize) }
+            : position
+        );
+      });
+    }
+  }, [isEditMode]);
 
-  // Handle live rearrangement during drag with throttling
-  const handleLiveRearrange = useCallback((id: string, newGridX: number, newGridY: number) => {
-    setWidgetPositions(prevPositions => {
-      // Only update if position actually changed
-      const currentWidget = prevPositions.find(w => w.id === id);
-      if (currentWidget && currentWidget.gridX === newGridX && currentWidget.gridY === newGridY) {
-        return prevPositions;
-      }
+  const handleLiveRearrange = useCallback((draggedWidgetId: string, newGridX: number, newGridY: number) => {
+    if (isEditMode) {
+      setWidgetPositions(prevPositions => {
+        return rearrangeWidgets(draggedWidgetId, newGridX, newGridY, prevPositions);
+      });
+    }
+  }, [isEditMode]);
 
-      const newPositions = rearrangeWidgets(id, newGridX, newGridY, prevPositions);
-      return newPositions;
-    });
-  }, []);
+  // Helper to get gradient colors based on selected background
+  const getGradientColors = (background: string): readonly [string, string, ...string[]] => {
+    switch (background) {
+      case 'gradient1':
+        return ['#667eea', '#764ba2'] as const; // Ocean Breeze
+      case 'gradient2':
+        return ['#f093fb', '#f5576c'] as const; // Sunset Glow
+      case 'gradient3':
+        return ['#4facfe', '#00f2fe'] as const; // Forest Dawn
+      case 'gradient4':
+        return ['#a8edea', '#fed6e3'] as const; // Purple Dream
+      case 'gradient5':
+        return ['#ffd89b', '#19547b'] as const; // Golden Hour
+      case 'gradient6':
+        return ['#667eea', '#764ba2'] as const; // Cosmic Dust
+      default:
+        return ['#667eea', '#764ba2'] as const; // Default to Ocean Breeze
+    }
+  };
 
-  // Handle widget resize
-  const handleWidgetResize = useCallback((id: string, newSize: 'small' | 'medium' | 'large') => {
-    const widget = widgetPositions.find(w => w.id === id);
-    if (!widget) return;
+  // Helper to render the main dashboard content
+  const renderDashboardContent = () => (
+    <>
+      {/* Floating Elements Layer - Enhanced movement (150%) */}
+      <Animated.View style={[
+        {
+          position: 'absolute',
+          top: screenHeight * 0.15,
+          left: screenWidth * 0.75,
+          opacity: isDarkMode ? 0.03 : 0.06,
+          zIndex: 4,
+        },
+        animatedBackgroundStyle
+      ]} />
 
-    const newGridSize = getWidgetGridSize(newSize);
-    const newPos = findFirstAvailablePosition(newGridSize.width, newGridSize.height, widgetPositions, id);
+      {/* Background gesture area */}
+      <LongPressGestureHandler onHandlerStateChange={() => {}} minDurationMs={500}>
+        <TapGestureHandler onHandlerStateChange={() => {}} enabled={isEditMode}>
+          <Animated.View style={[{ flex: 1, zIndex: 10 }, animatedMainContent]}>
+            <ScrollView 
+              style={widgetStyles.mainScrollView}
+              contentContainerStyle={{
+                ...widgetStyles.scrollContent,
+                paddingBottom: paddingBottom + 20, // Dynamic padding based on nav bar visibility
+              }}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={!isEditMode}
+              bounces={!isEditMode}
+            >
+              {/* Header with day and date */}
+              <View style={widgetStyles.header}>
+                <View style={widgetStyles.daySection}>
+                  <Text style={[widgetStyles.dayText, { color: colors.primaryText }]}>{currentDayName}</Text>
+                  <View style={[widgetStyles.redDot, { backgroundColor: colors.redDot }]} />
+                </View>
+                <View style={widgetStyles.headerRight}>
+                  <View style={widgetStyles.dateSection}>
+                    <Text style={[widgetStyles.dateText, { color: colors.secondaryText }]}>{currentMonthName} {currentDayNumber}</Text>
+                    <Text style={[widgetStyles.yearText, { color: colors.tertiaryText }]}>{currentYear}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      widgetStyles.themeToggle,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.cardBorder,
+                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isDarkMode ? 0.1 : 0.15,
+                        shadowRadius: 4,
+                        elevation: 3,
+                      }
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      router.push('/settings-main');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[widgetStyles.themeIcon, { fontSize: 18 }]}>⚙️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-    setWidgetPositions(prev => 
-      prev.map(pos => 
-        pos.id === id 
-          ? { ...pos, size: newSize, gridX: newPos.x, gridY: newPos.y, width: newGridSize.width, height: newGridSize.height }
-          : pos
-      )
-    );
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [widgetPositions]);
+              {/* Dynamic Greeting and Summary */}
+              <View style={widgetStyles.summarySection}>
+                <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>
+                  {dynamicSummary.greeting}
+                </Text>
+                <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
+                  {/* Parse and format the message to bold key numbers and emojis */}
+                  {dynamicSummary.message
+                    .split(/(📅\s+\d+\s+events?|💬\s+\d+\s+messages?|✅\s+\d+\s+habits?)/g)
+                    .map((part, index) => {
+                      // Check if this part contains an emoji and number followed by event/message/habit keywords
+                      if (/(📅\s+\d+\s+events?|💬\s+\d+\s+messages?|✅\s+\d+\s+habits?)/.test(part)) {
+                        return (
+                          <Text key={index} style={[widgetStyles.highlightText, { color: colors.primaryText, fontWeight: '700' }]}>
+                            {part}
+                          </Text>
+                        );
+                      }
+                      return part;
+                    })} <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>{dynamicSummary.motivationalPhrase}</Text>
+                </Text>
+              </View>
+
+              {/* Dynamic Stats Row */}
+              <View style={widgetStyles.statsRow}>
+                <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>
+                  📅 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>{dynamicSummary.stats.events.count}</Text> {dynamicSummary.stats.events.label}
+                </Text>
+                <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>
+                  💬 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>{dynamicSummary.stats.messages.count}</Text> {dynamicSummary.stats.messages.label}
+                </Text>
+                <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>
+                  🌟 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>{dynamicSummary.stats.habits.count}</Text> {dynamicSummary.stats.habits.label}
+                </Text>
+              </View>
+
+              {/* Widget Container */}
+              <View style={widgetStyles.widgetContainer}>
+                {/* Render widgets dynamically based on widgetPositions */}
+                {widgetPositions.map((position) => {
+                  let WidgetComponent;
+                  switch (position.id) {
+                    case 'events':
+                      WidgetComponent = CohortContactsWidget;
+                      break;
+                    case 'messages':
+                      WidgetComponent = MinaraWidget;
+                      break;
+                    case 'habits':
+                      WidgetComponent = CalendarWidget;
+                      break;
+                    case 'askMinara':
+                      WidgetComponent = InspireWidget;
+                      break;
+                    case 'prayer':
+                      WidgetComponent = HabitWidget;
+                      break;
+                    case 'journal':
+                      WidgetComponent = JournalWidget;
+                      break;
+                    case 'test':
+                      WidgetComponent = AffinityGroupsWidget;
+                      break;
+                    default:
+                      return null;
+                  }
+
+                  return (
+                    <DraggableWidget 
+                      key={position.id}
+                      widgetId={position.id} 
+                      position={position} 
+                      allPositions={widgetPositions} 
+                      onPositionChange={handleWidgetPositionChange} 
+                      onResize={handleWidgetResize} 
+                      onLiveRearrange={handleLiveRearrange} 
+                      isEditMode={isEditMode} 
+                      isDarkMode={isDarkMode} 
+                      colors={colors}
+                    >
+                      <WidgetComponent colors={colors} isDarkMode={isDarkMode} />
+                    </DraggableWidget>
+                  );
+                })}
+
+                {/* Add this button to your dashboard for easy testing */}
+                <TouchableOpacity 
+                  style={widgetStyles.testButton} 
+                  onPress={() => router.push('/chat-test')}
+                >
+                  <Text style={widgetStyles.testButtonText}>🧪 Test Supabase Chat</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </TapGestureHandler>
+      </LongPressGestureHandler>
+
+      {/* Personal Details Modal */}
+      <PersonalDetails
+        visible={isPersonalDetailsVisible}
+        onClose={() => setIsPersonalDetailsVisible(false)}
+      />
+    </>
+  );
+
+  // Don't render until background is loaded to prevent flashing
+  if (selectedBackground === null) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       {params.noAnim === '1' && (
         <Stack.Screen options={{ animation: 'none' }} />
       )}
-      <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
-        
-        {/* Enhanced Multi-Layer Parallax Background - Only show for gradient backgrounds */}
-        
-        {selectedBackground.startsWith('gradient') && (
-          <>
-            {/* Background Layer 3 - Slowest movement (30%) */}
-            <Animated.View style={[
-              {
-                position: 'absolute',
-                top: -80,
-                left: -80,
-                right: -80,
-                bottom: -80,
-                opacity: isDarkMode ? 0.08 : 0.12,
-                zIndex: 1,
-              },
-              animatedBackgroundLayer3Style
-            ]}>
-              <ImageBackground
-                source={require('../assets/images/cc.patterns-01.png')}
-                style={{
-                  width: screenWidth + 160,
-                  height: screenHeight + 160,
-                }}
-                resizeMode="cover"
-              />
-              <BlurView
-                intensity={25}
-                style={{
+      
+      {/* Main Container - Wrap everything in gradient if gradient is selected */}
+      {selectedBackground.startsWith('gradient') ? (
+        <LinearGradient
+          colors={getGradientColors(selectedBackground)}
+          style={{ flex: 1 }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={{ flex: 1 }}>
+            {renderDashboardContent()}
+          </View>
+        </LinearGradient>
+      ) : (
+        <View style={[{ flex: 1 }, { backgroundColor: colors.background }]}>
+          
+          {/* Enhanced Multi-Layer Parallax Background - Show patterns only for pattern backgrounds */}
+          {selectedBackground === 'pattern-arabic' && (
+            <>
+              {/* Background Layer 3 - Slowest movement (30%) */}
+              <Animated.View style={[
+                {
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                }}
-              />
-            </Animated.View>
+                  top: -80,
+                  left: -80,
+                  right: -80,
+                  bottom: -80,
+                  opacity: isDarkMode ? 0.08 : 0.12,
+                  zIndex: 1,
+                },
+                animatedBackgroundLayer3Style
+              ]}>
+                <ImageBackground
+                  source={require('../assets/images/cc.patterns-01.png')}
+                  style={{
+                    width: screenWidth + 160,
+                    height: screenHeight + 160,
+                  }}
+                  resizeMode="cover"
+                />
+                <BlurView
+                  intensity={25}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+                />
+              </Animated.View>
 
-            {/* Background Layer 2 - Medium movement (60%) */}
-            <Animated.View style={[
-              {
-                position: 'absolute',
-                top: -60,
-                left: -60,
-                right: -60,
-                bottom: -60,
-                opacity: isDarkMode ? 0.15 : 0.20,
-                zIndex: 2,
-              },
-              animatedBackgroundLayer2Style
-            ]}>
-              <ImageBackground
-                source={require('../assets/images/cc.patterns-01.png')}
-                style={{
-                  width: screenWidth + 120,
-                  height: screenHeight + 120,
-                }}
-                resizeMode="cover"
-              />
-              <BlurView
-                intensity={18}
-                style={{
+              {/* Background Layer 2 - Medium movement (60%) */}
+              <Animated.View style={[
+                {
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                }}
-              />
-            </Animated.View>
+                  top: -60,
+                  left: -60,
+                  right: -60,
+                  bottom: -60,
+                  opacity: isDarkMode ? 0.15 : 0.20,
+                  zIndex: 2,
+                },
+                animatedBackgroundLayer2Style
+              ]}>
+                <ImageBackground
+                  source={require('../assets/images/cc.patterns-01.png')}
+                  style={{
+                    width: screenWidth + 120,
+                    height: screenHeight + 120,
+                  }}
+                  resizeMode="cover"
+                />
+                <BlurView
+                  intensity={18}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+                />
+              </Animated.View>
 
-            {/* Background Layer 1 - Full movement (100%) */}
-            <Animated.View style={[
-              {
-                position: 'absolute',
-                top: -50,
-                left: -50,
-                right: -50,
-                bottom: -50,
-                opacity: isDarkMode ? 0.25 : 0.35,
-                zIndex: 3,
-              },
-              animatedBackgroundStyle
-            ]}>
-              <ImageBackground
-                source={require('../assets/images/cc.patterns-01.png')}
-                style={{
-                  width: screenWidth + 100,
-                  height: screenHeight + 100,
-                }}
-                resizeMode="cover"
-              />
-              <BlurView
-                intensity={12}
-                style={{
+              {/* Background Layer 1 - Fastest movement (100%) */}
+              <Animated.View style={[
+                {
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                }}
-              />
-            </Animated.View>
+                  top: -40,
+                  left: -40,
+                  right: -40,
+                  bottom: -40,
+                  opacity: isDarkMode ? 0.25 : 0.30,
+                  zIndex: 3,
+                },
+                animatedBackgroundStyle
+              ]}>
+                <ImageBackground
+                  source={require('../assets/images/cc.patterns-01.png')}
+                  style={{
+                    width: screenWidth + 80,
+                    height: screenHeight + 80,
+                  }}
+                  resizeMode="cover"
+                />
+                <BlurView
+                  intensity={12}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+                />
+              </Animated.View>
+            </>
+          )}
 
-            {/* Floating Elements Layer - Enhanced movement (150%) */}
-            <Animated.View style={[
-              {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 4,
-                pointerEvents: 'none',
-              },
-            ]}>
-              {/* Subtle floating dots */}
-              <View style={{
-                position: 'absolute',
-                top: '20%',
-                left: '15%',
-                width: 4,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-              }} />
-              <View style={{
-                position: 'absolute',
-                top: '60%',
-                right: '20%',
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)',
-              }} />
-              <View style={{
-                position: 'absolute',
-                top: '40%',
-                left: '70%',
-                width: 3,
-                height: 3,
-                borderRadius: 1.5,
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
-              }} />
-              <View style={{
-                position: 'absolute',
-                bottom: '30%',
-                left: '25%',
-                width: 5,
-                height: 5,
-                borderRadius: 2.5,
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.04)',
-              }} />
-            </Animated.View>
-          </>
-        )}
-
-        {/* Background gesture area */}
-        <LongPressGestureHandler onHandlerStateChange={() => {}} minDurationMs={500}>
-          <TapGestureHandler onHandlerStateChange={() => {}} enabled={isEditMode}>
-            <Animated.View style={[{ flex: 1, zIndex: 10 }, animatedMainContent]}>
-              <ScrollView 
-                style={widgetStyles.mainScrollView}
-                contentContainerStyle={{
-                  ...widgetStyles.scrollContent,
-                  paddingBottom: 120,
-                }}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={!isEditMode}
-                bounces={!isEditMode}
-              >
-                {/* Header with day and date */}
-                <View style={widgetStyles.header}>
-                  <View style={widgetStyles.daySection}>
-                    <Text style={[widgetStyles.dayText, { color: colors.primaryText }]}>Fri</Text>
-                    <View style={[widgetStyles.redDot, { backgroundColor: colors.redDot }]} />
-                  </View>
-                  <View style={widgetStyles.headerRight}>
-                    <View style={widgetStyles.dateSection}>
-                      <Text style={[widgetStyles.dateText, { color: colors.secondaryText }]}>December 9</Text>
-                      <Text style={[widgetStyles.yearText, { color: colors.tertiaryText }]}>2024</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[
-                        widgetStyles.themeToggle,
-                        {
-                          backgroundColor: '#FFFFFF',
-                          borderColor: colors.cardBorder,
-                          shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: isDarkMode ? 0.1 : 0.15,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        }
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        router.push('/settings-main');
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[widgetStyles.themeIcon, { fontSize: 18 }]}>⚙️</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Greeting and Summary */}
-                <View style={widgetStyles.summarySection}>
-                  <Text style={[widgetStyles.greetingText, { color: colors.primaryText }]}>Salam</Text>
-                  <Text style={[widgetStyles.summaryText, { color: colors.secondaryText }]}>
-                    You have 📅 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>3 upcoming events</Text>, 💬 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>2 new messages</Text> and 🌟 <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>4 daily habits</Text> awaiting your attention. <Text style={[widgetStyles.highlightText, { color: colors.primaryText }]}>Let's crush it! 💪</Text>
-                  </Text>
-                </View>
-
-                {/* Stats Row */}
-                <View style={widgetStyles.statsRow}>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>📅 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>3</Text> events</Text>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>💬 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>2</Text> messages</Text>
-                  <Text style={[widgetStyles.statItem, { color: colors.secondaryText }]}>🌟 <Text style={[widgetStyles.statNumber, { color: colors.primaryText }]}>4</Text> habits</Text>
-                </View>
-
-                {/* Widget Container */}
-                <View style={widgetStyles.widgetContainer}>
-
-                  {/* Render widgets dynamically based on widgetPositions */}
-                  {widgetPositions.map((position) => {
-                    let WidgetComponent;
-                    switch (position.id) {
-                      case 'events':
-                        WidgetComponent = CohortContactsWidget;
-                        break;
-                      case 'messages':
-                        WidgetComponent = MinaraWidget;
-                        break;
-                      case 'habits':
-                        WidgetComponent = CalendarWidget;
-                        break;
-                      case 'askMinara':
-                        WidgetComponent = InspireWidget;
-                        break;
-                      case 'prayer':
-                        WidgetComponent = HabitWidget;
-                        break;
-                      case 'journal':
-                        WidgetComponent = JournalWidget;
-                        break;
-                      case 'test':
-                        WidgetComponent = TestWidget;
-                        break;
-                      default:
-                        return null;
-                    }
-
-                    return (
-                      <DraggableWidget 
-                        key={position.id}
-                        widgetId={position.id} 
-                        position={position} 
-                        allPositions={widgetPositions} 
-                        onPositionChange={handleWidgetPositionChange} 
-                        onResize={handleWidgetResize} 
-                        onLiveRearrange={handleLiveRearrange} 
-                        isEditMode={isEditMode} 
-                        isDarkMode={isDarkMode} 
-                        colors={colors}
-                      >
-                        <WidgetComponent colors={colors} isDarkMode={isDarkMode} />
-                      </DraggableWidget>
-                    );
-                  })}
-
-                  {/* Add this button to your dashboard for easy testing */}
-                  <TouchableOpacity 
-                    style={widgetStyles.testButton} 
-                    onPress={() => router.push('/chat-test')}
-                  >
-                    <Text style={widgetStyles.testButtonText}>🧪 Test Supabase Chat</Text>
-                  </TouchableOpacity>
-                  
-                </View>
-              </ScrollView>
-            </Animated.View>
-          </TapGestureHandler>
-        </LongPressGestureHandler>
-
-        {/* Personal Details */}
-        <PersonalDetails
-          visible={isPersonalDetailsVisible}
-          onClose={() => setIsPersonalDetailsVisible(false)}
-        />
-      </View>
+          {renderDashboardContent()}
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }

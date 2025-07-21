@@ -64,7 +64,7 @@ export default function FontSizeSettingsScreen() {
   const currentFontSize = fontSizes.find(size => size.id === selectedSize);
 
   return (
-    <View style={styles.popupCardWrapper}>
+    <View style={[styles.popupCardWrapper, { backgroundColor: colors.background }]}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
@@ -204,12 +204,10 @@ export default function FontSizeSettingsScreen() {
 const styles = StyleSheet.create({
   popupCardWrapper: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderTopLeftRadius: 64,
-    borderTopRightRadius: 64,
+    // Remove top border radius as requested
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
-    marginTop: 12,
+    marginTop: 0, // Adjusted for no top border radius
     marginBottom: 0,
     marginHorizontal: 0,
     overflow: 'hidden',

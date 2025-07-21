@@ -16,19 +16,20 @@ export const widgetStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 30,
-    paddingTop: 85,
+    paddingTop: 70,
     paddingHorizontal: 30,
   },
   daySection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginLeft: -5,
   },
   dayText: {
-    fontSize: 60,
+    fontSize: 52,
     fontWeight: '700',
     fontFamily: Fonts.header,
-    lineHeight: 64,
+    lineHeight: 56,
   },
   redDot: {
     width: 24,
@@ -39,6 +40,7 @@ export const widgetStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginRight: -7,
   },
   dateSection: {
     alignItems: 'flex-end',
@@ -78,10 +80,11 @@ export const widgetStyles = StyleSheet.create({
     paddingHorizontal: 25,
   },
   greetingText: {
-    fontSize: 40,
-    fontWeight: '600',
-    fontFamily: Fonts.header,
+    fontSize: 42,
+    fontWeight: '700',
+    fontFamily: 'System',
     marginBottom: 8,
+    letterSpacing: -0.8,
   },
   summaryText: {
     fontSize: 28,

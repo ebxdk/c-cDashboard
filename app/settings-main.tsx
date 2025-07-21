@@ -1,9 +1,10 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 export const options = { 
@@ -46,6 +47,22 @@ export default function SettingsScreen() {
   const [faceIdEnabled, setFaceIdEnabled] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>('system');
+  const [showBottomNav, setShowBottomNav] = useState(true); // New state for nav bar toggle
+
+  // Load nav bar preference on mount
+  useEffect(() => {
+    const loadNavBarPreference = async () => {
+      try {
+        const savedPreference = await AsyncStorage.getItem('showBottomNav');
+        if (savedPreference !== null) {
+          setShowBottomNav(JSON.parse(savedPreference));
+        }
+      } catch (error) {
+        console.log('Error loading nav bar preference:', error);
+      }
+    };
+    loadNavBarPreference();
+  }, []);
 
   const colors = {
     background: isDarkMode ? '#000000' : '#F2F2F7',
@@ -180,8 +197,22 @@ export default function SettingsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // New toggle handler for bottom nav bar
+  const handleBottomNavToggle = async (value: boolean) => {
+    setShowBottomNav(value);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    try {
+      await AsyncStorage.setItem('showBottomNav', JSON.stringify(value));
+      // Set global flag for real-time updates
+      (global as any).bottomNavVisibilityUpdate = value;
+    } catch (error) {
+      console.log('Error saving nav bar preference:', error);
+    }
+  };
+
   return (
-    <View style={styles.popupCardWrapper}>
+    <View style={[styles.popupCardWrapper, { backgroundColor: colors.background }]}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header with close button */}
         <View style={styles.header}>
@@ -263,7 +294,7 @@ export default function SettingsScreen() {
             
             <View style={styles.personalizeCards}>
               <TouchableOpacity 
-                style={styles.personalizeCard} 
+                style={[styles.personalizeCard, { backgroundColor: colors.cardBackground }]} 
                 activeOpacity={0.7}
                 onPress={() => handleSettingPress('editProfile')}
               >
@@ -273,7 +304,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.personalizeCard} 
+                style={[styles.personalizeCard, { backgroundColor: colors.cardBackground }]} 
                 activeOpacity={0.7}
                 onPress={() => handleSettingPress('theme')}
               >
@@ -298,6 +329,12 @@ export default function SettingsScreen() {
                 colors={colors}
                 onPress={() => handleSettingPress('fontSize')}
                 showSeparator
+              />
+              <SettingRow
+                title="Show Bottom Navigation"
+                colors={colors}
+                switchValue={showBottomNav}
+                onSwitchChange={handleBottomNavToggle}
               />
             </View>
           </View>
@@ -434,8 +471,10 @@ interface SettingRowProps {
   title: string;
   subtitle?: string;
   colors: any;
-  onPress: () => void;
+  onPress?: () => void;
   showSeparator?: boolean;
+  switchValue?: boolean;
+  onSwitchChange?: (value: boolean) => void;
 }
 
 const SettingRow: React.FC<SettingRowProps> = ({
@@ -444,20 +483,44 @@ const SettingRow: React.FC<SettingRowProps> = ({
   colors,
   onPress,
   showSeparator = false,
+  switchValue,
+  onSwitchChange,
 }) => {
+  const hasSwitch = switchValue !== undefined && onSwitchChange;
+  
+  const content = (
+    <View style={styles.settingRow}>
+      <View style={styles.settingLeft}>
+        <Text style={[styles.settingTitle, { color: colors.primaryText }]}>{title}</Text>
+      </View>
+      <View style={styles.settingRight}>
+        {hasSwitch ? (
+          <Switch
+            value={switchValue}
+            onValueChange={onSwitchChange}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={switchValue ? '#FFFFFF' : '#F4F3F4'}
+            ios_backgroundColor={colors.border}
+          />
+        ) : (
+          <>
+            {subtitle && (
+              <Text style={[styles.settingSubtitle, { color: colors.secondaryText }]}>{subtitle}</Text>
+            )}
+            <Text style={[styles.chevron, { color: colors.tertiaryText }]}>›</Text>
+          </>
+        )}
+      </View>
+    </View>
+  );
+
   return (
     <>
-      <TouchableOpacity style={styles.settingRow} onPress={onPress} activeOpacity={0.7}>
-        <View style={styles.settingLeft}>
-          <Text style={[styles.settingTitle, { color: colors.primaryText }]}>{title}</Text>
-        </View>
-        <View style={styles.settingRight}>
-          {subtitle && (
-            <Text style={[styles.settingSubtitle, { color: colors.secondaryText }]}>{subtitle}</Text>
-          )}
-          <Text style={[styles.chevron, { color: colors.tertiaryText }]}>›</Text>
-        </View>
-      </TouchableOpacity>
+      {hasSwitch ? content : (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+          {content}
+        </TouchableOpacity>
+      )}
       {showSeparator && (
         <View style={[styles.separator, { backgroundColor: colors.separator }]} />
       )}
@@ -468,12 +531,10 @@ const SettingRow: React.FC<SettingRowProps> = ({
 const styles = StyleSheet.create({
   popupCardWrapper: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderTopLeftRadius: 64,
-    borderTopRightRadius: 64,
+    // Remove top border radius as requested
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
-    marginTop: 12,
+    marginTop: 0, // Adjusted for no top border radius
     marginBottom: 0,
     marginHorizontal: 0,
     overflow: 'hidden',
@@ -552,7 +613,7 @@ const styles = StyleSheet.create({
   },
   personalizeCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor now applied dynamically in JSX
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',

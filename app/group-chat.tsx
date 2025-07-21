@@ -1,146 +1,125 @@
-import { Colors } from '@/constants/Colors';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Fonts } from '@/constants/Fonts';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Easing,
+    Dimensions,
     Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-    Alert
+    View
 } from 'react-native';
-import chatApi, { ChatMessage, ChatRoom, UserProfile } from '../lib/chatApi';
 
-// Mock avatar data
+const { width: screenWidth } = Dimensions.get('window');
+
+// Avatar data for group members - using memoji images
 const avatarData: { [key: string]: any } = {
-  'Ahmed': { uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' },
-  'Fatima': { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face' },
-  'Omar': { uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
-  'Ebad Khan': { uri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face' },
-  'Abdullah Shahid': { uri: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face' },
-  'Mohammad Hadi': { uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
-  'Ahmed Javed': { uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' },
-  'Mujtaba Saighani': { uri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face' },
+  'Omar Malik': require('../assets/images/memoji1.png'),
+  'Ahmed Hassan': require('../assets/images/memoji2.png'),
+  'Yusuf Ali': require('../assets/images/memoji3.png'),
+  'Ahmed': require('../assets/images/memoji1.png'),
+  'Omar': require('../assets/images/memoji2.png'),
+  'Fatima': require('../assets/images/memoji3.png'),
+  'Bilal Khan': require('../assets/images/memoji1.png'),
+  'Samir Ali': require('../assets/images/memoji2.png')
 };
 
-// Mock group members data
-const groupMembers = [
-  { id: '1', name: 'Mohammad Hadi', role: 'Admin', joinedDate: 'May 5th', avatar: avatarData['Mohammad Hadi'] },
-  { id: '2', name: 'Ahmed Javed', role: 'Member', joinedDate: 'May 13th', avatar: avatarData['Ahmed Javed'] },
-  { id: '3', name: 'Mujtaba Saighani', role: 'Member', joinedDate: 'May 14th', avatar: avatarData['Mujtaba Saighani'] },
-  { id: '4', name: 'Ebad Khan', role: 'Admin', joinedDate: 'May 14th', avatar: avatarData['Ebad Khan'] },
-  { id: '5', name: 'Abdullah Shahid', role: 'Member', joinedDate: 'April 20th', avatar: avatarData['Abdullah Shahid'] },
-  { id: '6', name: 'Ahmed', role: 'Member', joinedDate: 'April 15th', avatar: avatarData['Ahmed'] },
-  { id: '7', name: 'Omar', role: 'Member', joinedDate: 'April 10th', avatar: avatarData['Omar'] },
-];
+interface Message {
+  id: number;
+  sender: string;
+  message: string;
+  time: string;
+  isMe: boolean;
+  avatar: any;
+  isSystemMessage?: boolean;
+}
 
 export default function GroupChatScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const { groupName, groupEmoji, groupId } = useLocalSearchParams();
   const colorScheme = useColorScheme() ?? 'light';
   const isDarkMode = colorScheme === 'dark';
-  const colors = Colors[colorScheme];
-  
-  // Supabase integration states
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [room, setRoom] = useState<ChatRoom | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [messageOffset, setMessageOffset] = useState(0);
-  
-  const [message, setMessage] = useState('');
-  const [inputAnimation] = useState(new Animated.Value(0));
-  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
-  const [headerExpansionAnimation] = useState(new Animated.Value(0));
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  // Get room ID from params (fallback to default for demo)
-  const roomId = params.roomId as string || 'default-engineering-room';
-  const groupName = params.groupName as string || 'engineering';
-  const groupEmoji = params.groupEmoji as string || '🔒';
-  const groupDescription = params.groupDescription as string || 'A space for engineering discussions, collaboration, and team updates. Share your progress, ask questions, and connect with fellow engineers.';
+  const [inputText, setInputText] = useState('');
 
-  const chatColors = {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      sender: 'Omar Malik',
+      message: `joined #${groupName?.toString().toLowerCase().replace(/\s+/g, '-')}.`,
+      time: '9:15 AM',
+      isMe: false,
+      avatar: avatarData['Omar Malik'],
+      isSystemMessage: true,
+    },
+    {
+      id: 2,
+      sender: 'Ahmed Hassan',
+      message: `joined #${groupName?.toString().toLowerCase().replace(/\s+/g, '-')}.`,
+      time: '9:22 AM',
+      isMe: false,
+      avatar: avatarData['Ahmed Hassan'],
+      isSystemMessage: true,
+    },
+    {
+      id: 3,
+      sender: 'Yusuf Ali',
+      message: `joined #${groupName?.toString().toLowerCase().replace(/\s+/g, '-')}.`,
+      time: '10:05 AM',
+      isMe: false,
+      avatar: avatarData['Yusuf Ali'],
+      isSystemMessage: true,
+    },
+    {
+      id: 4,
+      sender: 'Omar Malik',
+      message: 'Assalamu alaikum everyone! Hope you\'re all having a blessed day.',
+      time: '10:30 AM',
+      isMe: false,
+      avatar: avatarData['Omar Malik'],
+    },
+    {
+      id: 5,
+      sender: 'Ahmed Hassan',
+      message: 'Wa alaikum assalam Omar! This group is exactly what I needed. Looking forward to connecting with everyone here.',
+      time: '10:35 AM',
+      isMe: false,
+      avatar: avatarData['Ahmed Hassan'],
+    },
+    {
+      id: 6,
+      sender: 'Yusuf Ali',
+      message: 'MashaAllah, excited to be part of this community! Let\'s support each other on this journey.',
+      time: '10:42 AM',
+      isMe: false,
+      avatar: avatarData['Yusuf Ali'],
+    }
+  ]);
+
+  // Slack-style color scheme (identical to cohort chat)
+  const slackColors = {
     background: isDarkMode ? '#1A1D21' : '#FFFFFF',
-    headerBackground: isDarkMode ? '#1A1D21' : '#FFFFFF',
+    headerBackground: isDarkMode ? '#350D36' : '#4A154B',
+    sidebarBackground: isDarkMode ? '#1A1D21' : '#F8F8F8',
     primaryText: isDarkMode ? '#FFFFFF' : '#1D1C1D',
     secondaryText: isDarkMode ? '#ABABAD' : '#616061',
     tertiaryText: isDarkMode ? '#868686' : '#868686',
-    messageHover: isDarkMode ? '#2C2D30' : '#F8F8F8',
+    channelText: '#FFFFFF',
     inputBackground: isDarkMode ? '#222529' : '#FFFFFF',
     inputBorder: isDarkMode ? '#565856' : '#E1E1E1',
     separatorColor: isDarkMode ? '#565856' : '#E1E1E1',
-    threadBorder: isDarkMode ? '#565856' : '#E1E1E1',
-    avatarBorder: isDarkMode ? '#565856' : '#E1E1E1',
-    modalBackground: isDarkMode ? '#1A1D21' : '#FFFFFF',
-    modalOverlay: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
     systemMessageText: isDarkMode ? '#ABABAD' : '#616061',
-    channelColor: '#007A5A',
-    headerCardBackground: isDarkMode ? '#2C2D30' : '#F8F8F8',
-    channelIntroBackground: isDarkMode ? '#1A1D21' : '#FFFFFF',
-    proTagBackground: '#8B5CF6',
-  };
-
-  // Supabase integration functions
-  const loadRoomData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Load current user profile
-      const userProfile = await chatApi.userProfile.getCurrentProfile();
-      setCurrentUser(userProfile);
-      
-      // Load room info
-      const roomData = await chatApi.rooms.getRoomById(roomId);
-      setRoom(roomData);
-      
-      // Load messages
-      const roomMessages = await chatApi.messages.getRoomMessages(roomId);
-      setMessages(roomMessages);
-      
-      // Join room if not already a participant
-      if (roomData && userProfile) {
-        await chatApi.rooms.joinRoom(roomId);
-      }
-    } catch (error) {
-      console.error('Error loading room data:', error);
-      Alert.alert('Error', 'Failed to load chat data. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadMoreMessages = async () => {
-    if (!hasMoreMessages || isLoading) return;
-    
-    try {
-      const newMessages = await chatApi.messages.getRoomMessages(
-        roomId,
-        50,
-        messageOffset
-      );
-      
-      if (newMessages.length < 50) {
-        setHasMoreMessages(false);
-      }
-      
-      setMessages(prev => [...newMessages, ...prev]);
-      setMessageOffset(prev => prev + 50);
-    } catch (error) {
-      console.error('Error loading more messages:', error);
-    }
+    channelColor: '#4A154B',
+    messageHover: isDarkMode ? '#2C2D30' : '#F8F8F8',
+    onlineGreen: '#007A5A',
+    mentionBackground: isDarkMode ? '#2C2D30' : '#FFF2CC',
+    threadBorder: isDarkMode ? '#565856' : '#E1E1E1',
   };
 
   const handleBackPress = () => {
@@ -148,326 +127,181 @@ export default function GroupChatScreen() {
     router.back();
   };
 
-  const handleHeaderPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    const newExpandedState = !isHeaderExpanded;
-    setIsHeaderExpanded(newExpandedState);
-    
-    // Set global flag for bottom nav overlay
-    (global as any).groupChatModalExpanded = newExpandedState;
-    
-    Animated.spring(headerExpansionAnimation, {
-      toValue: newExpandedState ? 1 : 0,
-      useNativeDriver: false,
-      tension: 120,
-      friction: 9,
-      velocity: 0,
-    }).start();
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim() || !roomId || !currentUser) return;
-    
-    try {
-      // Send message to Supabase
-      const messageId = await chatApi.messages.sendMessage(
-        roomId,
-        message.trim()
-      );
-      
-      if (messageId) {
-        setMessage('');
-        
-        // Scroll to bottom after a short delay
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const dates = ['May 5th', 'May 13th', 'May 14th'];
-    const currentIndex = dates.indexOf(dateString);
-    return currentIndex !== -1 ? dates[currentIndex] : dateString;
-  };
-
-  // Helper function to check if message is from current user
-  const isMessageFromCurrentUser = (message: ChatMessage) => {
-    return currentUser && message.sender_id === currentUser.id;
-  };
-
-  // Helper function to get sender name
-  const getSenderName = (message: ChatMessage) => {
-    if (isMessageFromCurrentUser(message)) {
-      return 'You';
-    }
-    return message.sender_profile?.full_name || 'Unknown User';
-  };
-
-  // Helper function to get sender avatar
-  const getSenderAvatar = (message: ChatMessage) => {
-    if (message.sender_profile?.avatar_url) {
-      return { uri: message.sender_profile.avatar_url };
-    }
-    // Fallback to mock avatar data
-    const senderName = getSenderName(message);
-    return avatarData[senderName] || avatarData['Ahmed'];
-  };
-
-  // Load room data on component mount
-  useEffect(() => {
-    loadRoomData();
-  }, [roomId]);
-
-  // Real-time subscriptions
-  useEffect(() => {
-    if (roomId) {
-      // Subscribe to real-time messages
-      const channel = chatApi.realtime.subscribeToRoomMessages(
-        roomId,
-        (newMessage) => {
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Scroll to bottom for new messages
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
-      );
-
-      return () => {
-        chatApi.realtime.unsubscribe(`room:${roomId}`);
+  const handleSendMessage = () => {
+    if (inputText.trim()) {
+      const newMessage: Message = {
+        id: messages.length + 1,
+        sender: 'You',
+        message: inputText.trim(),
+        time: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+        isMe: true,
+        avatar: null,
       };
+      
+      setMessages([...messages, newMessage]);
+      setInputText('');
+      
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     }
-  }, [roomId]);
+  };
 
   useEffect(() => {
-    const keyboardWillShowListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (event) => {
-        const duration = Platform.OS === 'ios' ? event.duration : 300;
-        Animated.timing(inputAnimation, {
-          toValue: 1,
-          duration: duration,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+  }, []);
 
-    const keyboardWillHideListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      (event) => {
-        const duration = Platform.OS === 'ios' ? event.duration : 300;
-        Animated.timing(inputAnimation, {
-          toValue: 0,
-          duration: duration,
-          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
-
-    return () => {
-      keyboardWillShowListener.remove();
-      keyboardWillHideListener.remove();
-    };
-  }, [inputAnimation]);
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: chatColors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={[styles.loadingText, { color: chatColors.primaryText }]}>Loading chat...</Text>
-      </View>
-    );
-  }
+  const groupMembers = ['Omar Malik', 'Ahmed Hassan', 'Yusuf Ali', 'You']; // Mock member count
 
   return (
-    <View style={[styles.container, { backgroundColor: chatColors.background }]}>
+    <View style={[styles.container, { backgroundColor: slackColors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar 
         barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
         backgroundColor="transparent"
         translucent
       />
-      
-      {/* Modal Overlay - appears when header is expanded */}
-      {isHeaderExpanded && (
-        <Animated.View 
-          style={[
-            styles.modalOverlay,
-            {
-              backgroundColor: chatColors.modalOverlay,
-              opacity: headerExpansionAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 1],
-                extrapolate: 'clamp',
-              }),
-            }
-          ]}
-        >
-          <TouchableOpacity 
-            style={styles.modalOverlayTouchable}
-            onPress={handleHeaderPress}
-            activeOpacity={1}
-          />
-        </Animated.View>
-      )}
-      
-      {/* Top Navigation Bar */}
-      <View style={[
-        styles.slackHeader, 
-        { 
-          backgroundColor: chatColors.headerBackground,
-          borderBottomColor: chatColors.separatorColor,
-        }
-      ]}>
-        {/* Fixed Header Row */}
-        <View style={styles.headerTopRow}>
-          <TouchableOpacity 
+
+      {/* Header - identical to cohort chat */}
+      <View style={[styles.header, { backgroundColor: slackColors.background }]}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleBackPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.backIcon, { color: chatColors.primaryText }]}>←</Text>
+            <Text style={[styles.backIcon, { color: slackColors.primaryText }]}>‹</Text>
           </TouchableOpacity>
-          
-          {/* Header Card Trigger - Compact Version */}
-          <TouchableOpacity 
-            style={styles.headerCardTrigger}
-            onPress={handleHeaderPress}
-            activeOpacity={0.8}
-          >
-            <View style={styles.groupTitleRow}>
-              <Text style={[styles.hashIcon, { color: chatColors.channelColor }]}>🔒</Text>
-              <Text style={[styles.groupTitle, { color: chatColors.primaryText }]}>
-                {room?.name || groupName}
+
+          <View style={styles.headerCenter}>
+            <View style={[styles.headerSubtitleContainer, { backgroundColor: slackColors.messageHover }]}>
+              <View style={styles.titleRowInBox}>
+                <Text style={styles.groupEmojiIcon}>{groupEmoji}</Text>
+                <Text style={styles.headerTitle}>{groupName?.toString().toLowerCase().replace(/\s+/g, '-')}</Text>
+              </View>
+              <Text style={styles.headerSubtitle}>
+                {groupMembers.length} members • 2 tabs ▼
               </Text>
-              <Animated.Text style={[
-                styles.expandIcon, 
-                { 
-                  color: chatColors.secondaryText,
-                  transform: [{
-                    rotate: headerExpansionAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '180deg'],
-                      extrapolate: 'clamp',
-                    })
-                  }]
-                }
-              ]}>
-                ▼
-              </Animated.Text>
             </View>
-            <Text style={[styles.memberInfo, { color: chatColors.secondaryText }]}>
-              {groupMembers.length} members • 2 tabs
-            </Text>
-          </TouchableOpacity>
-          
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerActionButton}>
-              <Text style={[styles.headerActionIcon, { color: chatColors.primaryText }]}>🎧</Text>
-            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity style={styles.headerRightButton}>
+            <IconSymbol name="headphones" size={18} color={slackColors.primaryText} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Messages */}
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <ScrollView
+      {/* Messages Container */}
+      <View style={styles.messagesWrapper}>
+        <ScrollView 
           ref={scrollViewRef}
           style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
+          contentContainerStyle={[styles.messagesContent, { paddingBottom: 120 }]}
           showsVerticalScrollIndicator={false}
-          onScrollBeginDrag={() => {
-            // Load more messages when scrolling to top
-            if (hasMoreMessages) {
-              loadMoreMessages();
-            }
-          }}
         >
-          {messages.map((message) => (
-            <View key={message.id} style={styles.messageContainer}>
-              <View style={styles.messageHeader}>
-                <Image 
-                  source={getSenderAvatar(message)} 
-                  style={styles.avatar}
-                />
-                <View style={styles.messageInfo}>
-                  <Text style={[styles.senderName, { color: chatColors.primaryText }]}>
-                    {getSenderName(message)}
-                  </Text>
-                  <Text style={[styles.messageTime, { color: chatColors.secondaryText }]}>
-                    {new Date(message.created_at).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.messageText, { color: chatColors.primaryText }]}>
-                {message.content}
+          {/* Channel Introduction - Slack style */}
+          <View style={styles.channelIntro}>
+            <View style={[styles.channelIntroIcon, { backgroundColor: slackColors.channelColor }]}>
+              <Text style={styles.channelIntroIconText}>{groupEmoji}</Text>
+            </View>
+            <View style={styles.channelIntroContent}>
+              <Text style={[styles.channelIntroTitle, { color: slackColors.primaryText }]}>
+                Welcome to #{groupName?.toString().toLowerCase().replace(/\s+/g, '-')}!
+              </Text>
+              <Text style={[styles.channelIntroText, { color: slackColors.secondaryText }]}>
+                This is the beginning of your affinity group chat. {groupMembers.length} members are here.
+              </Text>
+              <Text style={[styles.channelIntroSubtext, { color: slackColors.tertiaryText }]}>
+                View channel details
               </Text>
             </View>
-          ))}
-        </ScrollView>
+          </View>
 
-        {/* Input */}
-        <Animated.View 
-          style={[
-            styles.inputContainer,
-            {
-              backgroundColor: chatColors.inputBackground,
-              borderTopColor: chatColors.inputBorder,
-              transform: [{
-                translateY: inputAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, -20],
-                  extrapolate: 'clamp',
-                })
-              }]
-            }
-          ]}
-        >
-          <TextInput
-            style={[
-              styles.textInput,
-              { 
-                color: chatColors.primaryText,
-                backgroundColor: chatColors.inputBackground,
-              }
-            ]}
-            placeholder="Message #engineering"
-            placeholderTextColor={chatColors.secondaryText}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            maxLength={1000}
-          />
-          <TouchableOpacity 
-            style={[
-              styles.sendButton,
-              { 
-                backgroundColor: message.trim() ? chatColors.channelColor : chatColors.secondaryText,
-                opacity: message.trim() ? 1 : 0.5
-              }
-            ]}
-            onPress={handleSendMessage}
-            disabled={!message.trim()}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
+          {/* Date Divider */}
+          <View style={styles.dateDivider}>
+            <View style={[styles.dateLine, { backgroundColor: slackColors.separatorColor }]} />
+            <View style={[styles.dateContainer, { backgroundColor: slackColors.background }]}>
+              <Text style={[styles.dateText, { color: slackColors.secondaryText }]}>Today</Text>
+            </View>
+            <View style={[styles.dateLine, { backgroundColor: slackColors.separatorColor }]} />
+          </View>
+
+          {/* Messages */}
+          {messages.map((msg, index) => {
+            const prevMessage = messages[index - 1];
+            const showSender = !prevMessage || prevMessage.sender !== msg.sender || prevMessage.isSystemMessage !== msg.isSystemMessage;
+            const showAvatar = showSender && !msg.isMe;
+
+            return (
+              <View key={msg.id}>
+                <View style={[
+                  styles.messageRow,
+                  msg.isSystemMessage && styles.systemMessageRow,
+                  !showSender && styles.messageRowCompact
+                ]}>
+                  {showAvatar && !msg.isSystemMessage ? (
+                    <Image source={msg.avatar} style={styles.messageAvatar} />
+                  ) : (
+                    <View style={styles.avatarSpacer} />
+                  )}
+                  
+                  <View style={styles.messageContent}>
+                    {msg.isSystemMessage ? (
+                      <Text style={[styles.systemMessage, { color: slackColors.systemMessageText }]}>
+                        <Text style={styles.systemMessageSender}>{msg.sender}</Text> {msg.message}
+                      </Text>
+                    ) : (
+                      <>
+                        {showSender && (
+                          <View style={styles.messageSenderRow}>
+                            <Text style={[styles.messageSender, { color: slackColors.primaryText }]}>
+                              {msg.sender}
+                            </Text>
+                            <Text style={[styles.messageTime, { color: slackColors.tertiaryText }]}>
+                              {msg.time}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={[styles.messageText]}>
+                          {msg.message}
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Input Area - positioned above bottom nav */}
+      <View style={styles.inputContainer}>
+        <View style={styles.inputWrapper}>
+          <TouchableOpacity style={styles.inputIconButton}>
+            <Text style={styles.inputIcon}>+</Text>
           </TouchableOpacity>
-        </Animated.View>
-      </KeyboardAvoidingView>
+          
+          <TextInput
+            style={styles.messageInput}
+            placeholder={`Message #${groupName?.toString().toLowerCase().replace(/\s+/g, '-')}`}
+            placeholderTextColor="#999"
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+          />
+          
+          <TouchableOpacity style={styles.inputIconButton} onPress={handleSendMessage}>
+            <Text style={styles.inputIcon}>🎤</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* White background behind bottom nav */}
+      <View style={styles.bottomNavBackground} />
     </View>
   );
 }
@@ -476,143 +310,248 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  slackHeader: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 12,
+  header: {
+    paddingTop: 55,
+    paddingBottom: 4,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  headerTopRow: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    height: 44,
   },
   backButton: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   backIcon: {
     fontSize: 20,
-    fontWeight: '600',
-  },
-  headerCardTrigger: {
-    flex: 1,
-    marginHorizontal: 12,
-  },
-  groupTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  hashIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  groupTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginRight: 4,
-  },
-  expandIcon: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  memberInfo: {
-    fontSize: 13,
     fontWeight: '400',
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerActionButton: {
-    padding: 8,
-  },
-  headerActionIcon: {
-    fontSize: 18,
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-  },
-  modalOverlayTouchable: {
+  headerCenter: {
     flex: 1,
   },
-  keyboardAvoidingView: {
+  headerSubtitleContainer: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flex: 1,
+    marginRight: 8,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: Fonts.system,
+    color: '#616061',
+    marginLeft: 22,
+  },
+  headerRightButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  messagesWrapper: {
     flex: 1,
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  messageContainer: {
-    marginBottom: 16,
-  },
-  messageHeader: {
+  channelIntro: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    paddingVertical: 16,
+  },
+  channelIntroIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    backgroundColor: '#4A154B',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
+  },
+  channelIntroIconText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  channelIntroContent: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  channelIntroTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: Fonts.system,
     marginBottom: 4,
   },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  channelIntroText: {
+    fontSize: 15,
+    fontWeight: '400',
+    fontFamily: Fonts.system,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  channelIntroSubtext: {
+    fontSize: 13,
+    fontWeight: '400',
+    fontFamily: Fonts.system,
+  },
+  dateDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    position: 'relative',
+  },
+  dateLine: {
+    flex: 1,
+    height: 1,
+  },
+  dateContainer: {
+    paddingHorizontal: 12,
+  },
+  dateText: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: Fonts.system,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+  },
+  messageRowCompact: {
+    paddingTop: 2,
+  },
+  systemMessageRow: {
+    paddingVertical: 4,
+  },
+  messageAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     marginRight: 8,
   },
-  messageInfo: {
-    flex: 1,
+  avatarSpacer: {
+    width: 44,
   },
-  senderName: {
-    fontSize: 14,
-    fontWeight: '600',
+  messageContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  messageSenderRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 2,
+  },
+  messageSender: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: Fonts.system,
+    marginRight: 8,
   },
   messageTime: {
     fontSize: 12,
     fontWeight: '400',
+    fontFamily: Fonts.system,
   },
   messageText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
-    lineHeight: 20,
-    marginLeft: 40,
+    fontFamily: Fonts.system,
+    lineHeight: 24,
+    color: '#1D1C1D',
+  },
+  systemMessage: {
+    fontSize: 13,
+    fontWeight: '400',
+    fontFamily: Fonts.system,
+    fontStyle: 'italic',
+    marginLeft: 44,
+  },
+  systemMessageSender: {
+    fontWeight: '600',
   },
   inputContainer: {
+    position: 'absolute',
+    bottom: 105,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  textInput: {
-    flex: 1,
-    minHeight: 36,
-    maxHeight: 120,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 18,
-    fontSize: 15,
-    marginRight: 8,
-  },
-  sendButton: {
+    alignItems: 'center',
+    borderRadius: 25,
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  inputIconButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  inputIcon: {
+    fontSize: 18,
+    color: '#666',
     fontWeight: '600',
+  },
+  messageInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: Fonts.system,
+    maxHeight: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    color: '#000',
+  },
+  bottomNavBackground: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 121,
+    backgroundColor: '#FFFFFF',
+  },
+  titleRowInBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  groupEmojiIcon: {
+    fontSize: 16,
+    marginRight: 6,
+    marginTop: 3,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: Fonts.system,
+    color: '#000',
+    marginBottom: 2,
   },
 }); 

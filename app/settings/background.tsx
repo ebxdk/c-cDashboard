@@ -1,10 +1,10 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function BackgroundSettingsScreen() {
   const colorScheme = useColorScheme();
@@ -73,32 +73,22 @@ export default function BackgroundSettingsScreen() {
 
   const solidColorPresets = [
     {
-      id: 'blue',
-      name: 'Blue',
-      color: '#007AFF',
+      id: 'white',
+      name: isDarkMode ? 'Dark Gray' : 'White',
+      color: isDarkMode ? '#1C1C1E' : '#FFFFFF', // ChatGPT-like dark color
     },
     {
-      id: 'white',
-      name: 'White',
-      color: '#FFFFFF',
+      id: 'off-white',
+      name: isDarkMode ? 'Black' : 'Off-White',
+      color: isDarkMode ? '#000000' : '#FFFAF2', // Pure black for dark mode
     },
   ];
 
-  const patternOptions = [
+  const patternPresets = [
     {
-      id: 'pattern1',
-      name: 'Geometric',
-      description: 'Clean lines and shapes',
-    },
-    {
-      id: 'pattern2',
-      name: 'Organic',
-      description: 'Natural flowing forms',
-    },
-    {
-      id: 'pattern3',
-      name: 'Minimal',
-      description: 'Simple and clean',
+      id: 'pattern-arabic',
+      name: 'Arabic Style Pattern',
+      description: 'Traditional Islamic geometric patterns',
     },
   ];
 
@@ -109,13 +99,15 @@ export default function BackgroundSettingsScreen() {
     // Save the background preference
     try {
       await AsyncStorage.setItem('selectedBackground', backgroundId);
+      // Trigger a global event to update the dashboard in real-time
+      (global as any).dashboardBackgroundUpdate = backgroundId;
     } catch (error) {
       console.log('Error saving background preference:', error);
     }
   };
 
   return (
-    <View style={styles.popupCardWrapper}>
+    <View style={[styles.popupCardWrapper, { backgroundColor: colors.background }]}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
@@ -151,12 +143,12 @@ export default function BackgroundSettingsScreen() {
                       styles.gradientPreview,
                       { backgroundColor: preset.color },
                       selectedBackground === preset.id && styles.selectedPreview,
-                      preset.id === 'white' && { borderWidth: 1, borderColor: colors.border }
+                      (preset.id === 'white' || preset.id === 'off-white') && { borderWidth: 1, borderColor: colors.border }
                     ]}
                   >
                     {selectedBackground === preset.id && (
                       <View style={styles.selectedOverlay}>
-                        <Text style={[styles.checkmark, preset.id === 'white' && { color: '#000000' }]}>✓</Text>
+                        <Text style={[styles.checkmark, (preset.id === 'white' || preset.id === 'off-white') && { color: '#000000' }]}>✓</Text>
                       </View>
                     )}
                   </View>
@@ -201,46 +193,44 @@ export default function BackgroundSettingsScreen() {
           {/* Pattern Options */}
           <View style={styles.sectionContainer}>
             <Text style={[styles.sectionHeader, { color: colors.secondaryText }]}>PATTERN STYLES</Text>
-            <View style={[styles.section, { backgroundColor: colors.cardBackground }]}>
-              {patternOptions.map((pattern, index) => (
-                <React.Fragment key={pattern.id}>
-                  <TouchableOpacity 
-                    style={styles.patternOption}
-                    onPress={() => handleBackgroundSelect(pattern.id)}
-                    activeOpacity={0.7}
+            <View style={styles.gradientGrid}>
+              {patternPresets.map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  style={styles.gradientOption}
+                  onPress={() => handleBackgroundSelect(preset.id)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.gradientPreview,
+                      { backgroundColor: '#FFFAF2' },
+                      selectedBackground === preset.id && styles.selectedPreview,
+                      { borderWidth: 1, borderColor: colors.border }
+                    ]}
                   >
-                    <View style={styles.patternLeft}>
-                      <View style={[
-                        styles.patternIcon,
-                        { backgroundColor: colors.accent + '20' }
-                      ]}>
-                        <Text style={[styles.patternEmoji, { color: colors.accent }]}>
-                          {pattern.id === 'pattern1' ? '◆' : pattern.id === 'pattern2' ? '◉' : '◯'}
-                        </Text>
+                    {/* Pattern overlay using ImageBackground */}
+                    <ImageBackground
+                      source={require('../../assets/images/cc.patterns-01.png')}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        opacity: 0.4,
+                      }}
+                      resizeMode="cover"
+                    />
+                    
+                    {selectedBackground === preset.id && (
+                      <View style={styles.selectedOverlay}>
+                        <Text style={[styles.checkmark, { color: '#000000' }]}>✓</Text>
                       </View>
-                      <View style={styles.patternInfo}>
-                        <Text style={[styles.patternTitle, { color: colors.primaryText }]}>{pattern.name}</Text>
-                        <Text style={[styles.patternDescription, { color: colors.secondaryText }]}>{pattern.description}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.patternRight}>
-                      <View style={[
-                        styles.radioButton,
-                        { 
-                          borderColor: selectedBackground === pattern.id ? colors.accent : colors.border,
-                          backgroundColor: selectedBackground === pattern.id ? colors.accent : 'transparent'
-                        }
-                      ]}>
-                        {selectedBackground === pattern.id && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                  {index < patternOptions.length - 1 && (
-                    <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-                  )}
-                </React.Fragment>
+                    )}
+                  </View>
+                  <Text style={[styles.gradientName, { color: colors.primaryText }]}>{preset.name}</Text>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -268,12 +258,10 @@ export default function BackgroundSettingsScreen() {
 const styles = StyleSheet.create({
   popupCardWrapper: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderTopLeftRadius: 64,
-    borderTopRightRadius: 64,
+    // Remove top border radius as requested
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
-    marginTop: 12,
+    marginTop: 0, // Adjusted for no top border radius
     marginBottom: 0,
     marginHorizontal: 0,
     overflow: 'hidden',

@@ -2,21 +2,24 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { Habit, useHabits } from '@/contexts/HabitsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer } from 'expo-audio';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Animated,
+    Dimensions,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Svg, { Circle } from 'react-native-svg';
@@ -643,10 +646,88 @@ export default function HabitsScreen() {
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+  // Load saved background preference
+  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  useEffect(() => {
+    const loadBackgroundPreference = async () => {
+      try {
+        const savedBackground = await AsyncStorage.getItem('selectedBackground');
+        setSelectedBackground(savedBackground || 'gradient1');
+      } catch (error) {
+        console.log('Error loading background preference:', error);
+        setSelectedBackground('gradient1');
+      }
+    };
+    loadBackgroundPreference();
+  }, []);
 
+  // Listen for real-time background updates from settings
+  useEffect(() => {
+    const checkForBackgroundUpdates = () => {
+      const newBackground = (global as any).dashboardBackgroundUpdate;
+      if (newBackground && selectedBackground && newBackground !== selectedBackground) {
+        setSelectedBackground(newBackground);
+        // Clear the global flag
+        (global as any).dashboardBackgroundUpdate = null;
+      }
+    };
+
+    // Only start checking after background is loaded
+    if (selectedBackground !== null) {
+      const interval = setInterval(checkForBackgroundUpdates, 100);
+      return () => clearInterval(interval);
+    }
+  }, [selectedBackground]);
+
+  // Determine background color based on selection and dark mode
+  const getBackgroundColor = () => {
+    switch (selectedBackground) {
+      case 'white':
+        return colorScheme === 'dark' ? '#1C1C1E' : '#FFFFFF';
+      case 'off-white':
+        return colorScheme === 'dark' ? '#000000' : '#FFFAF2';
+      case 'pattern-arabic':
+        return colorScheme === 'dark' ? '#1C1C1E' : '#FFFAF2';
+      default:
+        // For gradients, respect dark mode
+        return colorScheme === 'dark' ? '#1C1C1E' : '#FFFAF2';
+    }
+  };
+
+  // Helper to get gradient colors based on selected background
+  const getGradientColors = (background: string): readonly [string, string, ...string[]] => {
+    switch (background) {
+      case 'gradient1':
+        return ['#667eea', '#764ba2'] as const; // Ocean Breeze
+      case 'gradient2':
+        return ['#f093fb', '#f5576c'] as const; // Sunset Glow
+      case 'gradient3':
+        return ['#4facfe', '#00f2fe'] as const; // Forest Dawn
+      case 'gradient4':
+        return ['#a8edea', '#fed6e3'] as const; // Purple Dream
+      case 'gradient5':
+        return ['#ffd89b', '#19547b'] as const; // Golden Hour
+      case 'gradient6':
+        return ['#667eea', '#764ba2'] as const; // Cosmic Dust
+      default:
+        return ['#667eea', '#764ba2'] as const; // Default to Ocean Breeze
+    }
+  };
+
+  // Enhanced colors with background support
+  const colors = {
+    ...Colors[colorScheme],
+    background: getBackgroundColor(),
+    cardBackground: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? 
+                   (colorScheme === 'dark' ? '#2C2C2E' : '#F8F9FA') : (colorScheme === 'dark' ? '#1C1C1E' : '#FFFFFF'),
+    text: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? 
+          (colorScheme === 'dark' ? '#FFFFFF' : '#000000') : (colorScheme === 'dark' ? '#FFFFFF' : '#000000'),
+  };
+
+  const renderHabitsContent = () => (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      
       {/* Header with back button */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -849,6 +930,46 @@ export default function HabitsScreen() {
           </Animated.View>
         </View>
       </Modal>
+    </View>
+  );
+
+  // Main render with background handling
+  return selectedBackground?.startsWith('gradient') ? (
+    <LinearGradient
+      colors={getGradientColors(selectedBackground)}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      {renderHabitsContent()}
+    </LinearGradient>
+  ) : (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Enhanced Multi-Layer Parallax Background - Show patterns only for pattern backgrounds */}
+      {selectedBackground === 'pattern-arabic' && (
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: colorScheme === 'dark' ? 0.05 : 0.08,
+          zIndex: 0,
+        }}>
+          <ImageBackground
+            source={require('../assets/images/cc.patterns-01.png')}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+            resizeMode="repeat"
+          />
+        </View>
+      )}
+      {renderHabitsContent()}
     </View>
   );
 }

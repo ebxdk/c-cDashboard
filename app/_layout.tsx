@@ -137,8 +137,22 @@ export default function RootLayout() {
               <Stack.Screen name="loading-screen" options={{ headerShown: false }} />
               <Stack.Screen name="match-results" options={{ headerShown: false }} />
               <Stack.Screen name="people-matches" options={{ headerShown: false }} />
-              <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-              <Stack.Screen name="cohort" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="dashboard" 
+                options={({ route }) => ({ 
+                  headerShown: false,
+                  animation: (route.params as any)?.fromNavbar ? 'fade' : 'slide_from_right',
+                  animationDuration: (route.params as any)?.fromNavbar ? 200 : 300,
+                })} 
+              />
+              <Stack.Screen 
+                name="cohort" 
+                options={({ route }) => ({ 
+                  headerShown: false,
+                  animation: (route.params as any)?.fromNavbar ? 'fade' : 'slide_from_right',
+                  animationDuration: (route.params as any)?.fromNavbar ? 200 : 300,
+                })} 
+              />
               <Stack.Screen name="my-cohort" options={{ headerShown: false }} />
               <Stack.Screen name="minara-chat" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ headerShown: false }} />
@@ -146,7 +160,14 @@ export default function RootLayout() {
               <Stack.Screen name="habits" options={{ headerShown: false }} />
               <Stack.Screen name="add-habit" options={{ headerShown: false }} />
               <Stack.Screen name="journal" options={{ headerShown: false }} />
-              <Stack.Screen name="affinity-groups" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="affinity-groups" 
+                options={({ route }) => ({ 
+                  headerShown: false,
+                  animation: (route.params as any)?.fromNavbar ? 'fade' : 'slide_from_right',
+                  animationDuration: (route.params as any)?.fromNavbar ? 200 : 300,
+                })} 
+              />
               <Stack.Screen 
                 name="settings-main" 
                 options={{ 

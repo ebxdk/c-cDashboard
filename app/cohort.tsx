@@ -1,4 +1,6 @@
+import { useBottomNavHeight } from '@/hooks/useBottomNavHeight';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -87,31 +89,97 @@ const MOCK_MODULES = [
 ];
 
 export default function CohortScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams();
+  const { paddingBottom } = useBottomNavHeight();
   const systemColorScheme = useColorScheme();
   const isDarkMode = systemColorScheme === 'dark';
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('For You');
-  
-  // Animation for tab slider
-  const sliderAnimation = useRef(new Animated.Value(0)).current;
-
-  // Mock user membership level with cycling for testing
   const [userMembership, setUserMembership] = useState<'Support+' | 'Companion+' | 'Mentorship+'>('Support+');
-
+  const sliderAnimation = useRef(new Animated.Value(0)).current;
+  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  
   // Mock message count for testing the 9+ cap
   const [messageCount, setMessageCount] = useState(12);
 
+  // Load saved background preference
+  useEffect(() => {
+    const loadBackgroundPreference = async () => {
+      try {
+        const savedBackground = await AsyncStorage.getItem('selectedBackground');
+        setSelectedBackground(savedBackground || 'gradient1');
+      } catch (error) {
+        console.log('Error loading background preference:', error);
+        setSelectedBackground('gradient1');
+      }
+    };
+    loadBackgroundPreference();
+  }, []);
+
+  // Listen for real-time background updates from settings
+  useEffect(() => {
+    const checkForBackgroundUpdates = () => {
+      const newBackground = (global as any).dashboardBackgroundUpdate;
+      if (newBackground && selectedBackground && newBackground !== selectedBackground) {
+        setSelectedBackground(newBackground);
+        // Clear the global flag
+        (global as any).dashboardBackgroundUpdate = null;
+      }
+    };
+
+    // Only start checking after background is loaded
+    if (selectedBackground !== null) {
+      const interval = setInterval(checkForBackgroundUpdates, 100);
+      return () => clearInterval(interval);
+    }
+  }, [selectedBackground]);
+
+  // Determine background color based on selection and dark mode
+  const getBackgroundColor = () => {
+    switch (selectedBackground) {
+      case 'white':
+        return isDarkMode ? '#1C1C1E' : '#FFFFFF';
+      case 'off-white':
+        return isDarkMode ? '#000000' : '#FFFAF2';
+      case 'pattern-arabic':
+        return isDarkMode ? '#1C1C1E' : '#FFFAF2';
+      default:
+        // For gradients, respect dark mode
+        return isDarkMode ? '#1C1C1E' : '#FFFAF2';
+    }
+  };
+
+  // Helper to get gradient colors based on selected background
+  const getGradientColors = (background: string): readonly [string, string, ...string[]] => {
+    switch (background) {
+      case 'gradient1':
+        return ['#667eea', '#764ba2'] as const; // Ocean Breeze
+      case 'gradient2':
+        return ['#f093fb', '#f5576c'] as const; // Sunset Glow
+      case 'gradient3':
+        return ['#4facfe', '#00f2fe'] as const; // Forest Dawn
+      case 'gradient4':
+        return ['#a8edea', '#fed6e3'] as const; // Purple Dream
+      case 'gradient5':
+        return ['#ffd89b', '#19547b'] as const; // Golden Hour
+      case 'gradient6':
+        return ['#667eea', '#764ba2'] as const; // Cosmic Dust
+      default:
+        return ['#667eea', '#764ba2'] as const; // Default to Ocean Breeze
+    }
+  };
+
   const colors = {
-    background: isDarkMode ? '#000000' : '#F2F2F7',
-    cardBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
-    primaryText: isDarkMode ? '#FFFFFF' : '#000000',
-    secondaryText: isDarkMode ? '#8E8E93' : '#6D6D70',
+    background: getBackgroundColor(),
+    cardBackground: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? 
+                   (isDarkMode ? '#2C2C2E' : '#F8F9FA') : (isDarkMode ? '#1C1C1E' : '#FFFFFF'),
+    primaryText: (selectedBackground === 'white' || selectedBackground === 'off-white' || selectedBackground === 'pattern-arabic') ? 
+                (isDarkMode ? '#FFFFFF' : '#000000') : (isDarkMode ? '#FFFFFF' : '#000000'),
+    secondaryText: isDarkMode ? '#8E8E93' : '#666666',
     tertiaryText: isDarkMode ? '#636366' : '#8E8E93',
-    accent: '#A8C8E8',
-    accentLight: isDarkMode ? 'rgba(168, 200, 232, 0.15)' : 'rgba(168, 200, 232, 0.08)',
-    separator: isDarkMode ? 'rgba(84, 84, 88, 0.6)' : 'rgba(60, 60, 67, 0.18)',
-    shadow: isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.04)',
+    accent: '#007AFF',
+    border: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    shadow: isDarkMode ? '#000000' : '#000000',
     tabBackground: isDarkMode ? '#2C2C2E' : '#E5E5EA',
     tabActiveBackground: isDarkMode ? '#48484A' : '#FFFFFF',
     cohortCard: isDarkMode ? '#1C1C1E' : '#F8F9FA',
@@ -444,7 +512,7 @@ export default function CohortScreen() {
               
               <View style={styles.squareCohortHeader}>
                 <View style={styles.squareCohortTitleSection}>
-                  <Text style={[styles.squareCohortMainTitle, { color: '#1C1C1E' }]}>My Cohort</Text>
+                  <Text style={[styles.squareCohortMainTitle, { color: '#1C1C1E' }]}>My Connect</Text>
                   <Text style={[styles.squareCohortSubtitle, { color: '#5A7BA8' }]}>
                     Connect with your group
                   </Text>
@@ -912,7 +980,10 @@ export default function CohortScreen() {
       
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ 
+          flexGrow: 1, 
+          paddingBottom: paddingBottom + 20 // Dynamic padding based on nav bar visibility
+        }}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >

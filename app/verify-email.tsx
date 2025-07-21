@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert,
-  Dimensions,
+    Alert,
+    Dimensions,
+    Keyboard,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 
 // --- COMMENTED OUT: Original verification logic and state ---
@@ -60,67 +62,73 @@ export default function VerifyEmailScreen() {
     router.back(); // Go back to sign up page
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Verification Link Sent</Text>
-        <Text style={styles.subtitle}>
-          We have sent a verification link to your email. Once you verify, please proceed to log in below.
-        </Text>
-        {/* --- Login Form (copied from login.tsx) --- */}
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#34495E80"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              placeholderTextColor="#34495E80"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-          <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.loginEmailButton, isLoading && styles.buttonDisabled]} 
-            onPress={handleLoginWithEmail}
-            disabled={isLoading}
-          >
-            <Text style={styles.loginEmailButtonText}>
-              {isLoading ? 'Signing in...' : 'Sign in with email'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>
-            Don't have an account?{' '}
-            <TouchableOpacity onPress={handleSignUp} style={styles.signUpLinkContainer}>
-              <Text style={styles.signUpLink}>Sign up</Text>
-            </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Verification Link Sent</Text>
+          <Text style={styles.subtitle}>
+            We have sent a verification link to your email. Once you verify, please proceed to log in below.
           </Text>
+          {/* --- Login Form (copied from login.tsx) --- */}
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#34495E80"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#34495E80"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.loginEmailButton, isLoading && styles.buttonDisabled]} 
+              onPress={handleLoginWithEmail}
+              disabled={isLoading}
+            >
+              <Text style={styles.loginEmailButtonText}>
+                {isLoading ? 'Signing in...' : 'Sign in with email'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>
+              Don't have an account?{' '}
+              <TouchableOpacity onPress={handleSignUp} style={styles.signUpLinkContainer}>
+                <Text style={styles.signUpLink}>Sign up</Text>
+              </TouchableOpacity>
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 

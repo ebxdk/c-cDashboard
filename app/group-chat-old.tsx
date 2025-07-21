@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Easing,
     Image,
@@ -17,8 +18,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-    Alert
+    View
 } from 'react-native';
 import chatApi, { ChatMessage, ChatRoom, UserProfile } from '../lib/chatApi';
 
