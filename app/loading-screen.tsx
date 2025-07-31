@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -13,8 +14,358 @@ import Svg, { Line } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Memoji data arranged more evenly across the screen with no overlaps
-const MEMOJI_DATA = [
+// Male memojis data
+const MALE_MEMOJI_DATA = [
+  // Top row - better distribution
+  { 
+    id: 1, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.08, 
+    y: SCREEN_HEIGHT * 0.05,
+    color: '#F4A6A6'
+  },
+  { 
+    id: 2, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.45, 
+    y: SCREEN_HEIGHT * 0.02,
+    color: '#A8E6CF'
+  },
+  { 
+    id: 3, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.82, 
+    y: SCREEN_HEIGHT * 0.05,
+    color: '#DDA0DD'
+  },
+  
+  // Second row - more coverage
+  { 
+    id: 4, 
+    image: require('../assets/images/memoji1.png'), 
+    x: -SCREEN_WIDTH * 0.03, 
+    y: SCREEN_HEIGHT * 0.18,
+    color: '#C7CEEA'
+  },
+  { 
+    id: 5, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.68, 
+    y: SCREEN_HEIGHT * 0.16,
+    color: '#FFDFBA'
+  },
+  
+  // Third row - middle coverage
+  { 
+    id: 6, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.15, 
+    y: SCREEN_HEIGHT * 0.28,
+    color: '#FFB3E6'
+  },
+  { 
+    id: 7, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.55, 
+    y: SCREEN_HEIGHT * 0.26,
+    color: '#FFB3BA'
+  },
+  { 
+    id: 8, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.92, 
+    y: SCREEN_HEIGHT * 0.32,
+    color: '#FFDAC1'
+  },
+  
+  // Fourth row - center area
+  { 
+    id: 9, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.02, 
+    y: SCREEN_HEIGHT * 0.42,
+    color: '#BFBFFF'
+  },
+  { 
+    id: 10, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.35, 
+    y: SCREEN_HEIGHT * 0.40,
+    color: '#E6E6FA'
+  },
+  { 
+    id: 11, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.75, 
+    y: SCREEN_HEIGHT * 0.44,
+    color: '#F0E68C'
+  },
+  
+  // Fifth row - lower middle
+  { 
+    id: 12, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.18, 
+    y: SCREEN_HEIGHT * 0.54,
+    color: '#98FB98'
+  },
+  { 
+    id: 13, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.58, 
+    y: SCREEN_HEIGHT * 0.56,
+    color: '#F5DEB3'
+  },
+  
+  // Sixth row - bottom area
+  { 
+    id: 14, 
+    image: require('../assets/images/memoji2.png'), 
+    x: -SCREEN_WIDTH * 0.02, 
+    y: SCREEN_HEIGHT * 0.68,
+    color: '#FFE4E1'
+  },
+  { 
+    id: 15, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.38, 
+    y: SCREEN_HEIGHT * 0.70,
+    color: '#E0FFFF'
+  },
+  { 
+    id: 16, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.85, 
+    y: SCREEN_HEIGHT * 0.66,
+    color: '#FFEFD5'
+  },
+  
+  // Bottom row - some cut off
+  { 
+    id: 17, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.12, 
+    y: SCREEN_HEIGHT * 0.82,
+    color: '#F0F8FF'
+  },
+  { 
+    id: 18, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.65, 
+    y: SCREEN_HEIGHT * 0.80,
+    color: '#DDA0DD'
+  },
+  { 
+    id: 19, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.95, 
+    y: SCREEN_HEIGHT * 0.88,
+    color: '#FFB3BA'
+  },
+  
+  // Additional memojis for better coverage
+  { 
+    id: 20, 
+    image: require('../assets/images/memoji2.png'), 
+    x: SCREEN_WIDTH * 0.25, 
+    y: SCREEN_HEIGHT * 0.12,
+    color: '#A8E6CF'
+  },
+  { 
+    id: 21, 
+    image: require('../assets/images/memoji3.png'), 
+    x: SCREEN_WIDTH * 0.28, 
+    y: SCREEN_HEIGHT * 0.95,
+    color: '#C7CEEA'
+  },
+  
+  // Right middle edge memoji
+  { 
+    id: 22, 
+    image: require('../assets/images/memoji1.png'), 
+    x: SCREEN_WIDTH * 0.95, 
+    y: SCREEN_HEIGHT * 0.5,
+    color: '#FFD700'
+  },
+];
+
+// Female memojis data
+const FEMALE_MEMOJI_DATA = [
+  // Top row - better distribution
+  { 
+    id: 1, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.08, 
+    y: SCREEN_HEIGHT * 0.05,
+    color: '#F4A6A6'
+  },
+  { 
+    id: 2, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.45, 
+    y: SCREEN_HEIGHT * 0.02,
+    color: '#A8E6CF'
+  },
+  { 
+    id: 3, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.82, 
+    y: SCREEN_HEIGHT * 0.05,
+    color: '#DDA0DD'
+  },
+  
+  // Second row - more coverage
+  { 
+    id: 4, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: -SCREEN_WIDTH * 0.03, 
+    y: SCREEN_HEIGHT * 0.18,
+    color: '#C7CEEA'
+  },
+  { 
+    id: 5, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.68, 
+    y: SCREEN_HEIGHT * 0.16,
+    color: '#FFDFBA'
+  },
+  
+  // Third row - middle coverage
+  { 
+    id: 6, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.15, 
+    y: SCREEN_HEIGHT * 0.28,
+    color: '#FFB3E6'
+  },
+  { 
+    id: 7, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.55, 
+    y: SCREEN_HEIGHT * 0.26,
+    color: '#FFB3BA'
+  },
+  { 
+    id: 8, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.92, 
+    y: SCREEN_HEIGHT * 0.32,
+    color: '#FFDAC1'
+  },
+  
+  // Fourth row - center area
+  { 
+    id: 9, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.02, 
+    y: SCREEN_HEIGHT * 0.42,
+    color: '#BFBFFF'
+  },
+  { 
+    id: 10, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.35, 
+    y: SCREEN_HEIGHT * 0.40,
+    color: '#E6E6FA'
+  },
+  { 
+    id: 11, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.75, 
+    y: SCREEN_HEIGHT * 0.44,
+    color: '#F0E68C'
+  },
+  
+  // Fifth row - lower middle
+  { 
+    id: 12, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.18, 
+    y: SCREEN_HEIGHT * 0.54,
+    color: '#98FB98'
+  },
+  { 
+    id: 13, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.58, 
+    y: SCREEN_HEIGHT * 0.56,
+    color: '#F5DEB3'
+  },
+  
+  // Sixth row - bottom area
+  { 
+    id: 14, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: -SCREEN_WIDTH * 0.02, 
+    y: SCREEN_HEIGHT * 0.68,
+    color: '#FFE4E1'
+  },
+  { 
+    id: 15, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.38, 
+    y: SCREEN_HEIGHT * 0.70,
+    color: '#E0FFFF'
+  },
+  { 
+    id: 16, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.85, 
+    y: SCREEN_HEIGHT * 0.66,
+    color: '#FFEFD5'
+  },
+  
+  // Bottom row - some cut off
+  { 
+    id: 17, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.12, 
+    y: SCREEN_HEIGHT * 0.82,
+    color: '#F0F8FF'
+  },
+  { 
+    id: 18, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.65, 
+    y: SCREEN_HEIGHT * 0.80,
+    color: '#DDA0DD'
+  },
+  { 
+    id: 19, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.95, 
+    y: SCREEN_HEIGHT * 0.88,
+    color: '#FFB3BA'
+  },
+  
+  // Additional memojis for better coverage
+  { 
+    id: 20, 
+    image: require('../assets/images/femalememoji2.png'), 
+    x: SCREEN_WIDTH * 0.25, 
+    y: SCREEN_HEIGHT * 0.12,
+    color: '#A8E6CF'
+  },
+  { 
+    id: 21, 
+    image: require('../assets/images/femalememoji3.png'), 
+    x: SCREEN_WIDTH * 0.28, 
+    y: SCREEN_HEIGHT * 0.95,
+    color: '#C7CEEA'
+  },
+  
+  // Right middle edge memoji
+  { 
+    id: 22, 
+    image: require('../assets/images/femalememoji1.png'), 
+    x: SCREEN_WIDTH * 0.95, 
+    y: SCREEN_HEIGHT * 0.5,
+    color: '#FFD700'
+  },
+];
+
+// Default memojis data (mixed) - fallback
+const DEFAULT_MEMOJI_DATA = [
   // Top row - better distribution
   { 
     id: 1, 
@@ -190,31 +541,53 @@ const MEMOJI_DATA = [
 
 export default function LoadingScreen() {
   const router = useRouter();
+  const [memojiData, setMemojiData] = useState(DEFAULT_MEMOJI_DATA);
+  
+  // Load user gender and set appropriate memojis
+  useEffect(() => {
+    const loadUserGender = async () => {
+      try {
+        const gender = await AsyncStorage.getItem('user-gender');
+        if (gender === 'male') {
+          setMemojiData(MALE_MEMOJI_DATA);
+        } else if (gender === 'female') {
+          setMemojiData(FEMALE_MEMOJI_DATA);
+        } else {
+          setMemojiData(DEFAULT_MEMOJI_DATA); // Fallback to mixed memojis
+        }
+      } catch (error) {
+        console.error('Error loading user gender:', error);
+        setMemojiData(DEFAULT_MEMOJI_DATA); // Fallback to mixed memojis
+      }
+    };
+    
+    loadUserGender();
+  }, []);
   
   // Pop up animations for memojis
   const popAnimations = useRef(
-    MEMOJI_DATA.map(() => new Animated.Value(0))
+    memojiData.map(() => new Animated.Value(0))
   ).current;
   
   // Scale animations for popping effect
   const scaleAnimations = useRef(
-    MEMOJI_DATA.map(() => new Animated.Value(0))
+    memojiData.map(() => new Animated.Value(0))
   ).current;
   
   // Gentle floating animation for memojis
   const floatAnimations = useRef(
-    MEMOJI_DATA.map(() => new Animated.Value(0))
+    memojiData.map(() => new Animated.Value(0))
   ).current;
   
   // Line animations - using state to track progress
   const [lineProgress, setLineProgress] = useState<number[]>(
-    MEMOJI_DATA.map(() => 0)
+    memojiData.map(() => 0)
   );
 
   // Track animation phases
   const [memojiAnimationsCompleted, setMemojiAnimationsCompleted] = useState(0);
   const [allLinesCompleted, setAllLinesCompleted] = useState(false);
-  const totalMemojis = MEMOJI_DATA.length;
+  const totalMemojis = memojiData.length;
 
   useEffect(() => {
     // PHASE 1: Start pop up animations for all memojis first
@@ -371,9 +744,9 @@ export default function LoadingScreen() {
       opacity: number;
     }> = [];
     
-    MEMOJI_DATA.forEach((memoji, index) => {
+    memojiData.forEach((memoji, index) => {
       // Connect each memoji to ALL other memojis around it
-      MEMOJI_DATA.forEach((otherMemoji, otherIndex) => {
+      memojiData.forEach((otherMemoji, otherIndex) => {
         if (index !== otherIndex && index < otherIndex) { // Avoid duplicate lines
           const distance = Math.sqrt(
             Math.pow(memoji.x - otherMemoji.x, 2) + 
@@ -402,7 +775,7 @@ export default function LoadingScreen() {
     return lines;
   };
 
-  const renderMemoji = (memoji: typeof MEMOJI_DATA[0], index: number) => {
+  const renderMemoji = (memoji: typeof memojiData[0], index: number) => {
     const popOpacity = popAnimations[index];
     const scale = scaleAnimations[index];
     const floatTransform = floatAnimations[index].interpolate({
@@ -470,7 +843,7 @@ export default function LoadingScreen() {
       </Svg>
       
       {/* Memoji avatars */}
-      {MEMOJI_DATA.map((memoji, index) => renderMemoji(memoji, index))}
+      {memojiData.map((memoji, index) => renderMemoji(memoji, index))}
     </View>
   );
 }

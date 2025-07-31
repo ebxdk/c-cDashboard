@@ -97,7 +97,7 @@ export default function CohortScreen() {
   const [activeTab, setActiveTab] = useState('For You');
   const [userMembership, setUserMembership] = useState<'Support+' | 'Companion+' | 'Mentorship+'>('Support+');
   const sliderAnimation = useRef(new Animated.Value(0)).current;
-  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  const [selectedBackground, setSelectedBackground] = useState<string>('off-white');
   
   // Mock message count for testing the 9+ cap
   const [messageCount, setMessageCount] = useState(12);
@@ -107,10 +107,10 @@ export default function CohortScreen() {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        setSelectedBackground(savedBackground || 'gradient1');
+        setSelectedBackground(savedBackground || 'off-white');
       } catch (error) {
         console.log('Error loading background preference:', error);
-        setSelectedBackground('gradient1');
+        setSelectedBackground('off-white');
       }
     };
     loadBackgroundPreference();

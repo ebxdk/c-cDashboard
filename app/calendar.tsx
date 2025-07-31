@@ -39,17 +39,17 @@ export default function CalendarPage() {
   const [summaryCards, setSummaryCards] = useState<EventSummaryCard[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  const [selectedBackground, setSelectedBackground] = useState<string>('off-white');
 
   // Load saved background preference
   useEffect(() => {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        setSelectedBackground(savedBackground || 'gradient1');
+        setSelectedBackground(savedBackground || 'off-white');
       } catch (error) {
         console.log('Error loading background preference:', error);
-        setSelectedBackground('gradient1');
+        setSelectedBackground('off-white');
       }
     };
     loadBackgroundPreference();
@@ -948,54 +948,77 @@ export default function CalendarPage() {
 
                 {/* Google Calendar Button (Big) */}
                 {selectedEvent.htmlLink && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      handleLinkPress(selectedEvent.htmlLink!);
-                      closeModal();
-                    }}
-                    style={{
-                      backgroundColor: '#FF9500',
-                      borderRadius: 16,
-                      padding: 20,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowColor: colors.shadow,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    }}
-                    activeOpacity={0.9}
-                  >
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                  }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        handleLinkPress(selectedEvent.htmlLink!);
+                        closeModal();
+                      }}
+                      style={{
+                        borderRadius: 24,
+                        padding: 32,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: colors.shadow,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 8,
+                        elevation: 8,
+                        width: 280,
+                        height: 220,
+                        overflow: 'hidden',
+                      }}
+                      activeOpacity={0.9}
+                    >
+                    <LinearGradient
+                      colors={['#A8C8E8', '#8FB5D8']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                      }}
+                    />
                     <View style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      width: 56,
+                      height: 56,
+                      borderRadius: 14,
+                      backgroundColor: 'rgba(255, 255, 255, 0.3)',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      marginBottom: 12,
+                      marginBottom: 20,
                     }}>
-                      <Text style={{ fontSize: 24 }}>📅</Text>
+                      <Text style={{ fontSize: 28 }}>📅</Text>
                     </View>
                     <Text style={{
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: '700',
                       color: '#FFFFFF',
-                      marginBottom: 4,
+                      marginBottom: 6,
                       fontFamily: Fonts.body,
+                      textAlign: 'center',
                     }}>
                       View in Google Calendar
                     </Text>
                     <Text style={{
-                      fontSize: 14,
-                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: 15,
+                      color: 'rgba(255, 255, 255, 0.9)',
                       fontFamily: Fonts.body,
                       textAlign: 'center',
+                      paddingHorizontal: 20,
+                      lineHeight: 20,
                     }}>
-                      Edit event details and RSVP
+                      RSVP and view event details
                     </Text>
                   </TouchableOpacity>
+                  </View>
                 )}
               </View>
             </ScrollView>

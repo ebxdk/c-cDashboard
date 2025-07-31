@@ -61,10 +61,10 @@ export default function Dashboard() {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        setSelectedBackground(savedBackground || 'gradient1'); // Default to gradient1 if nothing saved
+        setSelectedBackground(savedBackground || 'off-white'); // Default to off-white if nothing saved
       } catch (error) {
         console.log('Error loading background preference:', error);
-        setSelectedBackground('gradient1'); // Default on error
+        setSelectedBackground('off-white'); // Default on error
       }
     };
     loadBackgroundPreference();
@@ -92,6 +92,24 @@ export default function Dashboard() {
   useEffect(() => {
     const loadDynamicData = async () => {
       try {
+        // Load subscription tier
+        const subscription = await AsyncStorage.getItem('selected-subscription');
+        if (subscription) {
+          switch (subscription) {
+            case 'support':
+              setSubscriptionTier('Support+');
+              break;
+            case 'companion':
+              setSubscriptionTier('Companion+');
+              break;
+            case 'mentorship':
+              setSubscriptionTier('Mentorship+');
+              break;
+            default:
+              setSubscriptionTier('Support+');
+          }
+        }
+
         // For now, simulate message count from community/cohort
         // In a real implementation, this would come from your messaging system
         const mockMessageCount = Math.floor(Math.random() * 8) + 1; // 1-8 messages
@@ -135,6 +153,7 @@ export default function Dashboard() {
 
   const [isPersonalDetailsVisible, setIsPersonalDetailsVisible] = useState(false);
   const [isAppearanceVisible, setIsAppearanceVisible] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState<'Support+' | 'Companion+' | 'Mentorship+'>('Support+');
   
   const router = useRouter();
 
@@ -450,6 +469,50 @@ export default function Dashboard() {
                   >
                     <Text style={[widgetStyles.themeIcon, { fontSize: 18 }]}>⚙️</Text>
                   </TouchableOpacity>
+                  
+                  {/* Subscription Toggle for Testing */}
+                  <TouchableOpacity
+                    style={[
+                      widgetStyles.themeToggle,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.cardBorder,
+                        shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isDarkMode ? 0.1 : 0.15,
+                        shadowRadius: 4,
+                        elevation: 3,
+                        marginLeft: 8,
+                      }
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      // Cycle through subscription tiers
+                      const tiers: ('Support+' | 'Companion+' | 'Mentorship+')[] = ['Support+', 'Companion+', 'Mentorship+'];
+                      const currentIndex = tiers.indexOf(subscriptionTier);
+                      const nextIndex = (currentIndex + 1) % tiers.length;
+                      const newTier = tiers[nextIndex];
+                      setSubscriptionTier(newTier);
+                      
+                      // Save to AsyncStorage
+                      const tierMap = {
+                        'Support+': 'support',
+                        'Companion+': 'companion', 
+                        'Mentorship+': 'mentorship'
+                      };
+                      AsyncStorage.setItem('selected-subscription', tierMap[newTier]);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[widgetStyles.themeIcon, { fontSize: 14 }]}>
+                      {subscriptionTier === 'Support+' ? 'S' : subscriptionTier === 'Companion+' ? 'C' : 'M'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -533,7 +596,7 @@ export default function Dashboard() {
                       isDarkMode={isDarkMode} 
                       colors={colors}
                     >
-                      <WidgetComponent colors={colors} isDarkMode={isDarkMode} />
+                      <WidgetComponent colors={colors} isDarkMode={isDarkMode} subscriptionTier={subscriptionTier} />
                     </DraggableWidget>
                   );
                 })}

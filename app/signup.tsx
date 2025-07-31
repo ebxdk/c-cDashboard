@@ -1,23 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { supabase } from '../lib/supabaseClient'
-import * as AuthSession from 'expo-auth-session';
 import Svg, { Path } from 'react-native-svg';
-import { checkBiometricAvailability, authenticateWithBiometric } from '../utils/biometricUtils';
+import { supabase } from '../lib/supabaseClient';
+import { authenticateWithBiometric, checkBiometricAvailability } from '../utils/biometricUtils';
+import { onboardingUtils } from '../utils/onboardingUtils';
 import { storeCredentials } from '../utils/secureStorage';
 
 export default function SignUpScreen() {
@@ -88,7 +89,7 @@ export default function SignUpScreen() {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: process.env.EXPO_PUBLIC_EMAIL_REDIRECT_URL || 'https://your-app.vercel.app/welcome',
+          emailRedirectTo: 'https://c-c-dashboard.vercel.app/welcome',
         },
       });
 
@@ -133,7 +134,17 @@ export default function SignUpScreen() {
           [
             {
               text: 'Continue',
-              onPress: () => router.push('/dashboard')
+              onPress: async () => {
+                // Check onboarding status and redirect accordingly
+                const nextStep = await onboardingUtils.getNextOnboardingStep();
+                if (nextStep) {
+                  console.log('Redirecting to onboarding step:', nextStep);
+                  router.push(nextStep as any);
+                } else {
+                  console.log('Onboarding complete, redirecting to dashboard');
+                  router.push('/dashboard');
+                }
+              }
             }
           ]
         );

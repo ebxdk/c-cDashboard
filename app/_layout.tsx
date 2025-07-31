@@ -110,18 +110,33 @@ export default function RootLayout() {
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="signup" options={{ headerShown: false }} />
               <Stack.Screen name="verify-email" options={{ headerShown: false }} />
-              <Stack.Screen 
+                            <Stack.Screen 
                 name="setup-face-id" 
                 options={{ 
                   headerShown: false
                 }} 
               />
-              <Stack.Screen 
-                name="setup-profile" 
-                options={{ 
-                  headerShown: false
-                }} 
-              />
+              <Stack.Screen name="profile-picture" options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+              }} />
+              <Stack.Screen name="profile-about" options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+              }} />
+              <Stack.Screen name="profile-age" options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+              }} />
+              <Stack.Screen name="profile-location" options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+              }} />
+              <Stack.Screen name="profile-gender" options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+              }} />
+ 
               <Stack.Screen name="persona-selection" options={{ headerShown: false }} />
               <Stack.Screen name="question-1" options={{ headerShown: false }} />
               <Stack.Screen name="question-2" options={{ headerShown: false }} />

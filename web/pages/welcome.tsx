@@ -1,10 +1,10 @@
 // pages/welcome.tsx
-import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 
 // Initialize Supabase client for web
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wzmfprzmogvzgbdqlvyn.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bWZwcnptb2d2emdiZHFsdnluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NDE1MjksImV4cCI6MjA2ODAxNzUyOX0.eNvKT5zEoxksFIiy2Y4iS03MEsArq74dVDfQT0W7MkA';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://yaolamkmoymxieiwolhk.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlhb2xhbWttb3lteGllaXdvbGhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5MTY2MzIsImV4cCI6MjA2OTQ5MjYzMn0.a7_CanUdeCxhlTuB1pGGB1xhc2v_zENSpZVWDLkl86s';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Welcome() {

@@ -647,15 +647,15 @@ export default function HabitsScreen() {
   }
 
   // Load saved background preference
-  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  const [selectedBackground, setSelectedBackground] = useState<string>('off-white');
   useEffect(() => {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        setSelectedBackground(savedBackground || 'gradient1');
+        setSelectedBackground(savedBackground || 'off-white');
       } catch (error) {
         console.log('Error loading background preference:', error);
-        setSelectedBackground('gradient1');
+        setSelectedBackground('off-white');
       }
     };
     loadBackgroundPreference();

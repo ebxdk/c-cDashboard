@@ -16,17 +16,17 @@ export default function AffinityGroupsScreen() {
   const [showMyGroups, setShowMyGroups] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [joinedGroups, setJoinedGroups] = useState<string[]>([]);
-  const [selectedBackground, setSelectedBackground] = useState<string>('gradient1');
+  const [selectedBackground, setSelectedBackground] = useState<string>('off-white');
 
   // Load saved background preference
   useEffect(() => {
     const loadBackgroundPreference = async () => {
       try {
         const savedBackground = await AsyncStorage.getItem('selectedBackground');
-        setSelectedBackground(savedBackground || 'gradient1');
+        setSelectedBackground(savedBackground || 'off-white');
       } catch (error) {
         console.log('Error loading background preference:', error);
-        setSelectedBackground('gradient1');
+        setSelectedBackground('off-white');
       }
     };
     loadBackgroundPreference();

@@ -6,16 +6,16 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useRef } from 'react';
-import { Dimensions, Image, Animated as RNAnimated, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
 import { State, TapGestureHandler } from 'react-native-gesture-handler';
-import Animated, { interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import AnimatedReanimated, { interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { IconSymbol } from './ui/IconSymbol';
-
 
 interface WidgetProps {
   colors: any;
   isDarkMode: boolean;
+  subscriptionTier?: 'Support+' | 'Companion+' | 'Mentorship+';
 }
 
 const baseWidgetStyle = {
@@ -32,14 +32,57 @@ const baseWidgetStyle = {
   borderWidth: 0,
 };
 
-export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
+export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode, subscriptionTier = 'Support+' }) => {
   const router = useRouter();
 
   const handlePress = () => {
-    // Provide haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/cohort');
   };
+
+  // Get widget design based on subscription tier
+  const getWidgetDesign = () => {
+    // Use the same background for all tiers
+    const commonBackground = {
+      backgroundColor: '#A8C8E8',
+      gradientColors: ['#7BA8D1', '#8FB5D6', '#A8C8E8'],
+    };
+
+    switch (subscriptionTier) {
+      case 'Companion+':
+        return {
+          ...commonBackground,
+          title: 'Companion+',
+          subtitle: '',
+          buttonText: 'Start Chat',
+          buttonColor: '#4A90E2',
+          showNotification: true,
+          notificationCount: '+9',
+        };
+      case 'Mentorship+':
+        return {
+          ...commonBackground,
+          title: 'Mentorship+',
+          subtitle: '',
+          buttonText: 'Connect Now',
+          buttonColor: '#6C5CE7',
+          showNotification: true,
+          notificationCount: '+12',
+        };
+      default: // Support+
+        return {
+          ...commonBackground,
+          title: 'Connect',
+          subtitle: 'Join your community',
+          buttonText: 'Open Chat',
+          buttonColor: '#4A90E2',
+          showNotification: false,
+          notificationCount: '',
+        };
+    }
+  };
+
+  const design = getWidgetDesign();
 
   return (
     <TouchableOpacity 
@@ -48,290 +91,515 @@ export const CohortContactsWidget: React.FC<WidgetProps> = ({ colors, isDarkMode
       style={[
         baseWidgetStyle, 
         { 
-          backgroundColor: '#A8C8E8', // Light blue base color
-          shadowColor: '#5A8BC4',
+          backgroundColor: design.backgroundColor,
+          shadowColor: design.gradientColors[0],
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.25,
           shadowRadius: 12,
           elevation: 8,
-          padding: 20, // Adjusted padding for larger circles
-          paddingBottom: 0, // Reduced bottom padding specifically
-          overflow: 'hidden', // Ensure gradient doesn't exceed bounds
+          padding: 20,
+          paddingBottom: 0,
+          overflow: 'hidden',
         }
       ]}
     >
-    {/* Darker blue section on the left */}
-    <View style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '40%',
-      height: '100%',
-      backgroundColor: '#7BA8D1', // Darker blue
-      opacity: 0.8,
-    }} />
-    
-    {/* Additional gradient for smooth transition */}
-    <View style={{
-      position: 'absolute',
-      top: 0,
-      left: '30%',
-      width: '30%',
-      height: '100%',
-      backgroundColor: '#8FB5D6', // Medium blue for transition
-      opacity: 0.6,
-    }} />
-    
-    {/* Heavy blur overlay */}
-    <BlurView
-      intensity={60}
-      tint="light"
-      style={{
+      {/* Gradient background layers */}
+      <View style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
+        backgroundColor: design.gradientColors[0],
         borderRadius: 30,
-      }}
-    />
-    
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1, // Ensure content is above the gradient
-    }}>
-      {/* Single row of contacts */}
+      }} />
       <View style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: '20%',
+        backgroundColor: design.gradientColors[1],
+        borderRadius: 30,
+      }} />
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: '60%',
+        backgroundColor: design.gradientColors[2],
+        borderRadius: 30,
+      }} />
+      
+      {/* Blur overlay */}
+      <BlurView
+        intensity={45}
+        tint="light"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: 30,
+          backgroundColor: `${design.backgroundColor}30`,
+        }}
+      />
+      
+      <View style={{
+        flex: 1,
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 4, // Reduced padding for larger circles
+        zIndex: 1,
+        paddingTop: 0,
+        paddingBottom: 10,
       }}>
-        {/* Contact 1 */}
+        {/* Header section with title and subtitle */}
         <View style={{
           alignItems: 'center',
-          flex: 1,
+          width: '100%',
+          marginBottom: 5,
         }}>
-          <View style={{
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: '#FFFFFF',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 8,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.12,
-            shadowRadius: 10,
-            elevation: 4,
-            borderWidth: 0.5,
-            borderColor: 'rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden',
+          <Text style={{
+            fontSize: 18,
+            fontWeight: '700',
+            color: '#FFFFFF',
+            fontFamily: 'System',
+            textAlign: 'center',
+            marginBottom: 4,
           }}>
-            <Image
-              source={require('../assets/images/memoji1.png')}
-              style={{
-                width: 68,
-                height: 68,
-                borderRadius: 34,
-              }}
-              resizeMode="cover"
-            />
-          </View>
+            {design.title}
+          </Text>
           <Text style={{
             fontSize: 12,
             fontWeight: '500',
             color: '#FFFFFF',
             fontFamily: 'System',
-            opacity: 0.95,
+            opacity: 0.8,
             textAlign: 'center',
-            letterSpacing: -0.1,
-            lineHeight: 14,
-          }}>Ahmed</Text>
-        </View>
-
-        {/* Contact 2 */}
-        <View style={{
-          alignItems: 'center',
-          flex: 1,
-        }}>
-          <View style={{
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: '#FFFFFF',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 8,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.12,
-            shadowRadius: 10,
-            elevation: 4,
-            borderWidth: 0.5,
-            borderColor: 'rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden',
           }}>
-            <Image
-              source={require('../assets/images/memoji2.png')}
-              style={{
-                width: 68,
-                height: 68,
-                borderRadius: 34,
-              }}
-              resizeMode="cover"
-            />
-          </View>
-          <Text style={{
-            fontSize: 12,
-            fontWeight: '500',
-            color: '#FFFFFF',
-            fontFamily: 'System',
-            opacity: 0.95,
-            textAlign: 'center',
-            letterSpacing: -0.1,
-            lineHeight: 14,
-          }}>Omar</Text>
+            {design.subtitle}
+          </Text>
         </View>
 
-        {/* Contact 3 */}
-        <View style={{
-          alignItems: 'center',
-          flex: 1,
-        }}>
+        {/* Content section - different for each tier */}
+        {subscriptionTier === 'Support+' ? (
+          // Support+ shows community contacts
           <View style={{
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: '#FFFFFF',
-            justifyContent: 'center',
+            flexDirection: 'row',
+            justifyContent: 'space-evenly',
             alignItems: 'center',
-            marginBottom: 8,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.12,
-            shadowRadius: 10,
-            elevation: 4,
-            borderWidth: 0.5,
-            borderColor: 'rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden',
+            width: '100%',
+            paddingHorizontal: 8,
+            flex: 1,
           }}>
-            <Image
-              source={require('../assets/images/memoji3.png')}
-              style={{
-                width: 68,
-                height: 68,
-                borderRadius: 34,
-              }}
-              resizeMode="cover"
-            />
-          </View>
-          <Text style={{
-            fontSize: 12,
-            fontWeight: '500',
-            color: '#FFFFFF',
-            fontFamily: 'System',
-            opacity: 0.95,
-            textAlign: 'center',
-            letterSpacing: -0.1,
-            lineHeight: 14,
-          }}>Yusuf</Text>
-        </View>
-
-        {/* Contact 4 - More people indicator */}
-        <View style={{
-          alignItems: 'center',
-          flex: 1,
-        }}>
-          <View style={{ position: 'relative' }}>
+            {/* Contact 1 */}
             <View style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              justifyContent: 'center',
               alignItems: 'center',
-              marginBottom: 8,
-              shadowColor: '#000000',
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.12,
-              shadowRadius: 10,
-              elevation: 4,
-              borderWidth: 0.5,
-              borderColor: 'rgba(0, 0, 0, 0.04)',
+              flex: 1,
+              maxWidth: 80,
             }}>
+              <View style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: '#FFFFFF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 8,
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 10,
+                elevation: 4,
+                borderWidth: 0.5,
+                borderColor: 'rgba(0, 0, 0, 0.04)',
+                overflow: 'hidden',
+              }}>
+                <Image
+                  source={require('../assets/images/memoji1.png')}
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                  }}
+                  resizeMode="cover"
+                />
+              </View>
               <Text style={{
-                fontSize: 22,
-                fontWeight: '600',
-                color: '#666666',
-                fontFamily: 'System',
-                letterSpacing: -0.3,
-              }}>+5</Text>
-            </View>
-
-            {/* Red notification badge */}
-            <View style={{
-              position: 'absolute',
-              top: 2,
-              right: -5,
-              minWidth: 20,
-              height: 20,
-              borderRadius: 10,
-              backgroundColor: '#FF3B30',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingHorizontal: 6,
-              shadowColor: '#FF3B30',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.3,
-              shadowRadius: 2,
-              elevation: 2,
-              borderWidth: 1.5,
-              borderColor: '#FFFFFF',
-            }}>
-              <Text style={{
-                fontSize: 11,
-                fontWeight: '600',
+                fontSize: 12,
+                fontWeight: '500',
                 color: '#FFFFFF',
                 fontFamily: 'System',
-                letterSpacing: -0.2,
-                lineHeight: 13,
-              }}>2</Text>
+                opacity: 0.95,
+                textAlign: 'center',
+                letterSpacing: -0.1,
+                lineHeight: 14,
+              }}>
+                Sarah
+              </Text>
+            </View>
+
+            {/* Contact 2 */}
+            <View style={{
+              alignItems: 'center',
+              flex: 1,
+              maxWidth: 80,
+            }}>
+              <View style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: '#FFFFFF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 8,
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 10,
+                elevation: 4,
+                borderWidth: 0.5,
+                borderColor: 'rgba(0, 0, 0, 0.04)',
+                overflow: 'hidden',
+              }}>
+                <Image
+                  source={require('../assets/images/memoji2.png')}
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                  }}
+                  resizeMode="cover"
+                />
+              </View>
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: '#FFFFFF',
+                fontFamily: 'System',
+                opacity: 0.95,
+                textAlign: 'center',
+                letterSpacing: -0.1,
+                lineHeight: 14,
+              }}>
+                Ahmed
+              </Text>
+            </View>
+
+            {/* Contact 3 */}
+            <View style={{
+              alignItems: 'center',
+              flex: 1,
+              maxWidth: 80,
+            }}>
+              <View style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: '#FFFFFF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 8,
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 10,
+                elevation: 4,
+                borderWidth: 0.5,
+                borderColor: 'rgba(0, 0, 0, 0.04)',
+                overflow: 'hidden',
+              }}>
+                <Image
+                  source={require('../assets/images/memoji3.png')}
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                  }}
+                  resizeMode="cover"
+                />
+              </View>
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: '#FFFFFF',
+                fontFamily: 'System',
+                opacity: 0.95,
+                textAlign: 'center',
+                letterSpacing: -0.1,
+                lineHeight: 14,
+              }}>
+                Fatima
+              </Text>
+            </View>
+
+            {/* More contacts */}
+            <View style={{
+              alignItems: 'center',
+              flex: 1,
+              maxWidth: 80,
+            }}>
+              <View style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 8,
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 10,
+                elevation: 4,
+                borderWidth: 0.5,
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                overflow: 'hidden',
+              }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  opacity: 0.9,
+                  letterSpacing: -0.2,
+                  lineHeight: 16,
+                }}>
+                  +
+                </Text>
+              </View>
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: '#FFFFFF',
+                fontFamily: 'System',
+                opacity: 0.85,
+                textAlign: 'center',
+                letterSpacing: -0.1,
+                lineHeight: 14,
+              }}>
+                more
+              </Text>
             </View>
           </View>
+        ) : (
+          // Companion+ and Mentorship+ show different content
+          <View style={{
+            alignItems: 'center',
+            width: '100%',
+            flex: 1,
+            justifyContent: 'center',
+          }}>
+            {subscriptionTier === 'Companion+' ? (
+              // Companion+ shows companion profile and status
+              <View style={{
+                alignItems: 'center',
+                width: '100%',
+                justifyContent: 'center',
+                flex: 1,
+              }}>
+                {/* Companion Avatar */}
+                <View style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  shadowColor: '#000000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 12,
+                  elevation: 6,
+                  overflow: 'hidden',
+                }}>
+                  <Image
+                    source={require('../assets/images/memoji2.png')}
+                    style={{
+                      width: 70,
+                      height: 70,
+                      borderRadius: 35,
+                    }}
+                  />
+                  {/* Online status indicator */}
+                  <View style={{
+                    position: 'absolute',
+                    bottom: 2,
+                    right: 2,
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: '#34C759',
+                    borderWidth: 2,
+                    borderColor: '#FFFFFF',
+                  }} />
+                </View>
+                
+                {/* Companion Name */}
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  marginBottom: 4,
+                }}>
+                  Omar Hassan
+                </Text>
+                
+                {/* Status */}
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: '500',
+                  color: '#FFFFFF',
+                  fontFamily: 'System',
+                  opacity: 0.8,
+                }}>
+                  Online • Available
+                </Text>
+              </View>
+            ) : subscriptionTier === 'Mentorship+' ? (
+              // Mentorship+ shows clean, readable mentor interface
+              <View style={{
+                width: '100%',
+                flex: 1,
+                justifyContent: 'flex-start',
+                paddingTop: 0,
+                paddingBottom: 8,
+                marginTop: -8,
+              }}>
+                {/* Top Section - Mentor Profile */}
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                }}>
+                  {/* Mentor Avatar */}
+                  <View style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 36,
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: 14,
+                    shadowColor: '#000000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 6,
+                    elevation: 4,
+                    overflow: 'hidden',
+                  }}>
+                    <Image
+                      source={require('../assets/images/memoji1.png')}
+                      style={{
+                        width: 68,
+                        height: 68,
+                        borderRadius: 34,
+                      }}
+                    />
+                    {/* Premium badge */}
+                    <View style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: '#FFD700',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 2,
+                      borderColor: '#FFFFFF',
+                    }}>
+                      <Text style={{
+                        fontSize: 10,
+                        fontWeight: '700',
+                        color: '#000000',
+                      }}>
+                        ★
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  {/* Mentor Info */}
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: '#FFFFFF',
+                      fontFamily: 'System',
+                      marginBottom: 3,
+                    }}>
+                      Dr. Hassan
+                    </Text>
+                    <Text style={{
+                      fontSize: 13,
+                      fontWeight: '500',
+                      color: '#FFFFFF',
+                      fontFamily: 'System',
+                      opacity: 0.8,
+                      marginBottom: 4,
+                    }}>
+                      Islamic Counselor
+                    </Text>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                      <View style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#34C759',
+                        marginRight: 6,
+                      }} />
+                      <Text style={{
+                        fontSize: 12,
+                        fontWeight: '500',
+                        color: '#FFFFFF',
+                        fontFamily: 'System',
+                        opacity: 0.9,
+                      }}>
+                        Available
+                      </Text>
+                    </View>
+                  </View>
+                </View>
 
-          <Text style={{
-            fontSize: 12,
-            fontWeight: '500',
-            color: '#FFFFFF',
-            fontFamily: 'System',
-            opacity: 0.85,
-            textAlign: 'center',
-            letterSpacing: -0.1,
-            lineHeight: 14,
-          }}>more</Text>
-        </View>
+                {/* Bottom Section - Action Button */}
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#00C1CA',
+                    paddingVertical: 12,
+                    paddingHorizontal: 18,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    shadowColor: '#000000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                  onPress={handlePress}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{
+                    fontSize: 15,
+                    fontWeight: '600',
+                    color: '#FFFFFF',
+                    fontFamily: 'System',
+                  }}>
+                    Book Session
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        )}
       </View>
-
-      {/* Bottom label */}
-      <View style={{
-        alignItems: 'center',
-        marginTop: 18, // Increased from 14 to 18 to push text a little more down
-      }}>
-        <Text style={{
-          fontSize: 16,
-          fontWeight: '700',
-          color: '#FFFFFF',
-          fontFamily: 'System',
-          opacity: 0.9,
-          letterSpacing: -0.2,
-        }}>Connect</Text>
-      </View>
-    </View>
     </TouchableOpacity>
   );
 };
@@ -806,7 +1074,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
 
   // Scroll animation values
   const scrollX = useSharedValue(startIndex * habits.length * pageWidth);
-  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const scrollViewRef = useRef<AnimatedReanimated.ScrollView>(null);
 
   // Track scroll state to distinguish between scrolling and tapping
   const isScrolling = useRef(false);
@@ -1069,7 +1337,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   return (
     <TapGestureHandler onHandlerStateChange={onTapHandlerStateChange}>
       <View style={[baseWidgetStyle, { backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', padding: 0, paddingTop: 10, paddingBottom: 10 }]}>
-        <Animated.ScrollView
+        <AnimatedReanimated.ScrollView
           ref={scrollViewRef}
           horizontal
           pagingEnabled
@@ -1089,7 +1357,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
           removeClippedSubviews={true} // Enable view recycling for better performance
         >
           {pages}
-        </Animated.ScrollView>
+        </AnimatedReanimated.ScrollView>
 
         {/* Simplified page indicator dots - now shows dots for actual habits */}
         <View style={{
@@ -1113,7 +1381,7 @@ export const HabitWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
 
 export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => {
   const [currentQuoteIndex, setCurrentQuoteIndex] = React.useState(0);
-  const fadeAnim = React.useRef(new RNAnimated.Value(1)).current;
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const router = useRouter();
 
   const islamicQuotes = [
@@ -1167,7 +1435,7 @@ export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
   // Function to animate quote transition
   const animateQuoteChange = (newIndex: number) => {
     // Fade out
-    RNAnimated.timing(fadeAnim, {
+    Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
@@ -1175,7 +1443,7 @@ export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
       // Change quote
       setCurrentQuoteIndex(newIndex);
       // Fade in
-      RNAnimated.timing(fadeAnim, {
+      Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
@@ -1317,7 +1585,7 @@ export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         }}
       />
       
-      <RNAnimated.View style={{
+      <Animated.View style={{
         position: 'absolute',
         bottom: 20,
         left: 20,
@@ -1326,7 +1594,7 @@ export const InspireWidget: React.FC<WidgetProps> = ({ colors, isDarkMode }) => 
         opacity: fadeAnim,
       }}>
         {renderStyledText(islamicQuotes[currentQuoteIndex])}
-      </RNAnimated.View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };

@@ -1,25 +1,26 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Fonts } from '@/constants/Fonts';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Dimensions,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Avatar data for cohort members - using memoji images for men only
-const avatarData: { [key: string]: any } = {
+// Avatar data for cohort members - gender-specific
+const maleAvatarData: { [key: string]: any } = {
   'Omar Malik': require('../assets/images/memoji1.png'),
   'Ahmed Hassan': require('../assets/images/memoji2.png'),
   'Yusuf Ali': require('../assets/images/memoji3.png'),
@@ -30,8 +31,19 @@ const avatarData: { [key: string]: any } = {
   'Samir Ali': require('../assets/images/memoji2.png')
 };
 
-// Cohort members data - only men
-const cohortMembers = [
+const femaleAvatarData: { [key: string]: any } = {
+  'Amara Hassan': require('../assets/images/femalememoji1.png'),
+  'Zara Ahmed': require('../assets/images/femalememoji2.png'),
+  'Layla Mohamed': require('../assets/images/femalememoji3.png'),
+  'Fatima Rahman': require('../assets/images/femalememoji1.png'),
+  'Amina': require('../assets/images/femalememoji2.png'),
+  'Zara': require('../assets/images/femalememoji3.png'),
+  'Layla': require('../assets/images/femalememoji1.png'),
+  'Fatima': require('../assets/images/femalememoji2.png')
+};
+
+// Male cohort members data
+const maleCohortMembers = [
   { name: 'Omar Malik', online: true },
   { name: 'Ahmed Hassan', online: true },
   { name: 'Yusuf Ali', online: false },
@@ -40,6 +52,18 @@ const cohortMembers = [
   { name: 'Tariq Syed', online: true },
   { name: 'Bilal Khan', online: false },
   { name: 'Samir Ali', online: true }
+];
+
+// Female cohort members data
+const femaleCohortMembers = [
+  { name: 'Amara Hassan', online: true },
+  { name: 'Zara Ahmed', online: true },
+  { name: 'Layla Mohamed', online: false },
+  { name: 'Fatima Rahman', online: true },
+  { name: 'Amina', online: false },
+  { name: 'Zara', online: true },
+  { name: 'Layla', online: false },
+  { name: 'Fatima', online: true }
 ];
 
 interface Message {
@@ -58,15 +82,50 @@ export default function MyCohortScreen() {
   const isDarkMode = colorScheme === 'dark';
   const scrollViewRef = useRef<ScrollView>(null);
   const [inputText, setInputText] = useState('');
+  const [userGender, setUserGender] = useState<string | null>(null);
+  const [cohortMembers, setCohortMembers] = useState(maleCohortMembers);
+  const [avatarData, setAvatarData] = useState(maleAvatarData);
 
-  const [messages, setMessages] = useState<Message[]>([
+  // Load user gender and set appropriate cohort members
+  useEffect(() => {
+    const loadUserGender = async () => {
+      try {
+        const gender = await AsyncStorage.getItem('user-gender');
+        setUserGender(gender);
+        
+        if (gender === 'male') {
+          setCohortMembers(maleCohortMembers);
+          setAvatarData(maleAvatarData);
+          setMessages(generateMaleMessages());
+        } else if (gender === 'female') {
+          setCohortMembers(femaleCohortMembers);
+          setAvatarData(femaleAvatarData);
+          setMessages(generateFemaleMessages());
+        } else {
+          // Fallback to male members if no gender is set
+          setCohortMembers(maleCohortMembers);
+          setAvatarData(maleAvatarData);
+          setMessages(generateMaleMessages());
+        }
+      } catch (error) {
+        console.error('Error loading user gender:', error);
+        setCohortMembers(maleCohortMembers);
+        setAvatarData(maleAvatarData);
+        setMessages(generateMaleMessages());
+      }
+    };
+    
+    loadUserGender();
+  }, []);
+
+  const generateMaleMessages = (): Message[] => [
     {
       id: 1,
       sender: 'Omar Malik',
       message: 'joined #my-cohort.',
       time: '9:15 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
+      avatar: maleAvatarData['Omar Malik'],
       isSystemMessage: true,
     },
     {
@@ -75,7 +134,7 @@ export default function MyCohortScreen() {
       message: 'joined #my-cohort.',
       time: '9:22 AM',
       isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
+      avatar: maleAvatarData['Ahmed Hassan'],
       isSystemMessage: true,
     },
     {
@@ -84,7 +143,7 @@ export default function MyCohortScreen() {
       message: 'joined #my-cohort.',
       time: '10:05 AM',
       isMe: false,
-      avatar: avatarData['Yusuf Ali'],
+      avatar: maleAvatarData['Yusuf Ali'],
       isSystemMessage: true,
     },
     {
@@ -93,137 +152,315 @@ export default function MyCohortScreen() {
       message: 'Assalamu alaikum everyone! Hope you\'re all having a blessed day.',
       time: '10:30 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
+      avatar: maleAvatarData['Omar Malik'],
     },
     {
       id: 5,
       sender: 'Ahmed Hassan',
-      message: 'Wa alaikum assalam Omar! Alhamdulillah, just finished my morning prayers. How is everyone preparing for Jummah today?',
+      message: 'Wa alaikum assalam! Alhamdulillah, it\'s been a productive morning.',
       time: '10:35 AM',
       isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
+      avatar: maleAvatarData['Ahmed Hassan'],
     },
     {
       id: 6,
       sender: 'Yusuf Ali',
-      message: 'Wa alaikum assalam! I\'m planning to leave work early today to attend the khutbah at the community center. Has anyone been there before?',
+      message: 'Assalamu alaikum brothers. Just finished my morning prayers.',
       time: '10:42 AM',
       isMe: false,
-      avatar: avatarData['Yusuf Ali'],
+      avatar: maleAvatarData['Yusuf Ali'],
     },
     {
       id: 7,
       sender: 'Ahmed',
-      message: 'Yes! The imam there gives wonderful khutbahs. Very inspiring and relevant to our daily lives as young Muslims.',
+      message: 'joined #my-cohort.',
       time: '10:45 AM',
       isMe: false,
-      avatar: avatarData['Ahmed'],
+      avatar: maleAvatarData['Ahmed'],
+      isSystemMessage: true,
     },
     {
       id: 8,
       sender: 'Omar Malik',
-      message: 'That sounds perfect! I\'ve been looking for a community that understands the challenges we face balancing deen and dunya.',
+      message: 'Welcome Ahmed! How\'s everyone\'s Quran study going?',
       time: '10:48 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
+      avatar: maleAvatarData['Omar Malik'],
     },
     {
       id: 9,
       sender: 'Omar',
-      message: 'Assalamu alaikum brothers! As your companion for this cohort, I wanted to share some exciting Lantern content with you all. Have you checked out the new series on "Balancing Deen and Dunya" yet?',
+      message: 'joined #my-cohort.',
       time: '11:15 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: maleAvatarData['Omar'],
+      isSystemMessage: true,
     },
     {
       id: 10,
       sender: 'Tariq Syed',
-      message: 'Wa alaikum assalam Omar! Not yet, but that sounds exactly what I need. Where can we find it?',
+      message: 'joined #my-cohort.',
       time: '11:18 AM',
       isMe: false,
-      avatar: avatarData['Tariq Syed'],
+      avatar: maleAvatarData['Tariq Syed'],
+      isSystemMessage: true,
     },
     {
       id: 11,
       sender: 'Omar',
-      message: 'It\'s in our Lantern library under "Personal Development". I highly recommend we all watch Episode 3 together this week - it covers maintaining prayers during busy schedules. Perfect timing, right?',
+      message: 'Assalamu alaikum everyone! Excited to be part of this community.',
       time: '11:20 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: maleAvatarData['Omar'],
     },
     {
       id: 12,
       sender: 'Ahmed Hassan',
-      message: 'JazakAllahu khair Omar! I love how you always guide us to the right content. I\'ll watch it tonight insha\'Allah.',
+      message: 'Welcome Omar and Tariq! Great to have more brothers joining.',
       time: '11:22 AM',
       isMe: false,
-      avatar: avatarData['Ahmed Hassan'],
+      avatar: maleAvatarData['Ahmed Hassan'],
     },
     {
       id: 13,
       sender: 'Bilal Khan',
-      message: 'MashAllah, this is why having a companion is so beneficial. Omar, should we discuss it in our next group session?',
+      message: 'joined #my-cohort.',
       time: '11:30 AM',
       isMe: false,
-      avatar: avatarData['Bilal Khan'],
+      avatar: maleAvatarData['Bilal Khan'],
+      isSystemMessage: true,
     },
     {
       id: 14,
       sender: 'Omar',
-      message: 'Absolutely! Let\'s plan to discuss it this Friday after Jummah. I\'ll also share the reflection questions from Lantern to help guide our conversation. This will be a great learning opportunity for all of us.',
+      message: 'Anyone up for a study session later today?',
       time: '11:33 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: maleAvatarData['Omar'],
     },
     {
       id: 15,
       sender: 'Samir Ali',
-      message: 'Ameen to that! I\'ve been making du\'a for all of us to grow stronger in our faith together. May Allah bless this group and our companion Omar.',
+      message: 'joined #my-cohort.',
       time: '11:35 AM',
       isMe: false,
-      avatar: avatarData['Samir Ali'],
+      avatar: maleAvatarData['Samir Ali'],
+      isSystemMessage: true,
     },
     {
       id: 16,
       sender: 'Yusuf Ali',
-      message: 'That\'s wonderful! Omar, I\'ve been working on memorizing Surah Al-Mulk. Are there any Lantern resources on Quran memorization techniques?',
+      message: 'I\'m in for the study session! What time works for everyone?',
       time: '11:40 AM',
       isMe: false,
-      avatar: avatarData['Yusuf Ali'],
+      avatar: maleAvatarData['Yusuf Ali'],
     },
     {
       id: 17,
       sender: 'Omar',
-      message: 'SubhanAllah, great question Yusuf! There\'s an excellent series called "Memorizing with Meaning" in the Quran Studies section. I\'ll send the link to our group chat. It really helps with retention and understanding.',
+      message: 'How about 7 PM? We can discuss the tafsir we\'ve been reading.',
       time: '11:43 AM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: maleAvatarData['Omar'],
     },
     {
       id: 18,
       sender: 'Ahmed',
-      message: 'JazakAllahu khair Omar! You always know exactly what content we need. This is why our cohort is thriving under your guidance.',
+      message: 'Perfect timing! I\'ll prepare some notes.',
       time: '11:45 AM',
       isMe: false,
-      avatar: avatarData['Ahmed'],
+      avatar: maleAvatarData['Ahmed'],
     },
     {
       id: 19,
       sender: 'Omar Malik',
-      message: 'Ameen! Omar, your leadership and the Lantern resources have really transformed how I approach my daily Islamic practices.',
+      message: 'Great initiative Omar! This is exactly what we need.',
       time: '11:50 AM',
       isMe: false,
-      avatar: avatarData['Omar Malik'],
+      avatar: maleAvatarData['Omar Malik'],
     },
     {
       id: 20,
       sender: 'Omar',
-      message: 'JazakAllahu khair everyone for this beautiful discussion! Remember, our goal is to support each other\'s spiritual growth. I\'ll share the Lantern content links in our group resources. Let\'s make this week count, brothers!',
+      message: 'JazakAllah khair! Looking forward to learning together.',
       time: '12:00 PM',
       isMe: false,
-      avatar: avatarData['Omar'],
+      avatar: maleAvatarData['Omar'],
     }
-  ]);
+  ];
+
+  const generateFemaleMessages = (): Message[] => [
+    {
+      id: 1,
+      sender: 'Amara Hassan',
+      message: 'joined #my-cohort.',
+      time: '9:15 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amara Hassan'],
+      isSystemMessage: true,
+    },
+    {
+      id: 2,
+      sender: 'Zara Ahmed',
+      message: 'joined #my-cohort.',
+      time: '9:22 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Zara Ahmed'],
+      isSystemMessage: true,
+    },
+    {
+      id: 3,
+      sender: 'Layla Mohamed',
+      message: 'joined #my-cohort.',
+      time: '10:05 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Layla Mohamed'],
+      isSystemMessage: true,
+    },
+    {
+      id: 4,
+      sender: 'Amara Hassan',
+      message: 'Assalamu alaikum sisters! Hope you\'re all having a blessed day.',
+      time: '10:30 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amara Hassan'],
+    },
+    {
+      id: 5,
+      sender: 'Zara Ahmed',
+      message: 'Wa alaikum assalam! Alhamdulillah, it\'s been a beautiful morning.',
+      time: '10:35 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Zara Ahmed'],
+    },
+    {
+      id: 6,
+      sender: 'Layla Mohamed',
+      message: 'Assalamu alaikum everyone. Just finished my morning prayers.',
+      time: '10:42 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Layla Mohamed'],
+    },
+    {
+      id: 7,
+      sender: 'Fatima Rahman',
+      message: 'joined #my-cohort.',
+      time: '10:45 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Fatima Rahman'],
+      isSystemMessage: true,
+    },
+    {
+      id: 8,
+      sender: 'Amara Hassan',
+      message: 'Welcome Fatima! How\'s everyone\'s Quran study going?',
+      time: '10:48 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amara Hassan'],
+    },
+    {
+      id: 9,
+      sender: 'Amina',
+      message: 'joined #my-cohort.',
+      time: '11:15 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amina'],
+      isSystemMessage: true,
+    },
+    {
+      id: 10,
+      sender: 'Zara',
+      message: 'joined #my-cohort.',
+      time: '11:18 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Zara'],
+      isSystemMessage: true,
+    },
+    {
+      id: 11,
+      sender: 'Amina',
+      message: 'Assalamu alaikum everyone! Excited to be part of this community.',
+      time: '11:20 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amina'],
+    },
+    {
+      id: 12,
+      sender: 'Zara Ahmed',
+      message: 'Welcome Amina and Zara! Great to have more sisters joining.',
+      time: '11:22 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Zara Ahmed'],
+    },
+    {
+      id: 13,
+      sender: 'Layla',
+      message: 'joined #my-cohort.',
+      time: '11:30 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Layla'],
+      isSystemMessage: true,
+    },
+    {
+      id: 14,
+      sender: 'Amina',
+      message: 'Anyone interested in a study session later today?',
+      time: '11:33 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amina'],
+    },
+    {
+      id: 15,
+      sender: 'Fatima',
+      message: 'joined #my-cohort.',
+      time: '11:35 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Fatima'],
+      isSystemMessage: true,
+    },
+    {
+      id: 16,
+      sender: 'Layla Mohamed',
+      message: 'I\'m in for the study session! What time works for everyone?',
+      time: '11:40 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Layla Mohamed'],
+    },
+    {
+      id: 17,
+      sender: 'Amina',
+      message: 'How about 7 PM? We can discuss the tafsir we\'ve been reading.',
+      time: '11:43 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amina'],
+    },
+    {
+      id: 18,
+      sender: 'Fatima Rahman',
+      message: 'Perfect timing! I\'ll prepare some notes.',
+      time: '11:45 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Fatima Rahman'],
+    },
+    {
+      id: 19,
+      sender: 'Amara Hassan',
+      message: 'Great initiative Amina! This is exactly what we need.',
+      time: '11:50 AM',
+      isMe: false,
+      avatar: femaleAvatarData['Amara Hassan'],
+    },
+    {
+      id: 20,
+      sender: 'Amina',
+      message: 'JazakAllah khair! Looking forward to learning together.',
+      time: '12:00 PM',
+      isMe: false,
+      avatar: femaleAvatarData['Amina'],
+    }
+  ];
+
+  const [messages, setMessages] = useState<Message[]>(generateMaleMessages());
 
   // Slack-style color scheme
   const slackColors = {

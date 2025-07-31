@@ -1,21 +1,24 @@
+import * as AuthSession from 'expo-auth-session';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Keyboard,
     StatusBar,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '../lib/supabaseClient';
-import * as AuthSession from 'expo-auth-session';
-import { checkBiometricAvailability, authenticateWithBiometric } from '../utils/biometricUtils';
-import { storeCredentials, getStoredCredentials } from '../utils/secureStorage';
+import { authenticateWithBiometric, checkBiometricAvailability } from '../utils/biometricUtils';
+import { onboardingUtils } from '../utils/onboardingUtils';
+import { getStoredCredentials, storeCredentials } from '../utils/secureStorage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -87,8 +90,31 @@ export default function LoginScreen() {
       // Store credentials securely for biometric login
       await storeCredentials(email, password);
       
-      // Navigate to dashboard on successful login
-      router.push('/dashboard');
+      // Check email verification
+      const isEmailVerified = await onboardingUtils.isEmailVerified();
+      if (!isEmailVerified) {
+        Alert.alert(
+          'Email Not Verified', 
+          'Please verify your email address before signing in. Check your inbox for a verification link.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/verify-email')
+            }
+          ]
+        );
+        return;
+      }
+      
+      // Check onboarding status and redirect accordingly
+      const nextStep = await onboardingUtils.getNextOnboardingStep();
+      if (nextStep) {
+        console.log('Redirecting to onboarding step:', nextStep);
+        router.push(nextStep as any);
+      } else {
+        console.log('Onboarding complete, redirecting to dashboard');
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Login failed');
     } finally {
@@ -134,7 +160,32 @@ export default function LoginScreen() {
             console.error('Supabase auth error:', error);
           } else {
             console.log('Biometric login successful');
-            router.push('/dashboard');
+            
+            // Check email verification
+            const isEmailVerified = await onboardingUtils.isEmailVerified();
+            if (!isEmailVerified) {
+              Alert.alert(
+                'Email Not Verified', 
+                'Please verify your email address before signing in. Check your inbox for a verification link.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => router.push('/verify-email')
+                  }
+                ]
+              );
+              return;
+            }
+            
+            // Check onboarding status and redirect accordingly
+            const nextStep = await onboardingUtils.getNextOnboardingStep();
+            if (nextStep) {
+              console.log('Redirecting to onboarding step:', nextStep);
+              router.push(nextStep as any);
+            } else {
+              console.log('Onboarding complete, redirecting to dashboard');
+              router.push('/dashboard');
+            }
           }
         } else {
           Alert.alert('No Stored Credentials', 'Please sign in with email/password first to enable biometric login.');
@@ -169,16 +220,17 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
-      
-      {/* Back Button - Top Left */}
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-        <Text style={styles.backButtonText}>‹</Text>
-      </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#B8D4F0" translucent={false} />
+        
+        {/* Back Button - Top Left */}
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Text style={styles.backButtonText}>‹</Text>
+        </TouchableOpacity>
 
-      {/* Main Content */}
-      <View style={styles.contentContainer}>
+        {/* Main Content */}
+        <View style={styles.contentContainer}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Welcome Back</Text>
@@ -258,6 +310,15 @@ export default function LoginScreen() {
           >
             <Text style={styles.debugButtonText}>Refresh Biometric Status</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.debugButton, { marginTop: 8 }]} 
+            onPress={async () => {
+              await onboardingUtils.markOnboardingComplete();
+              Alert.alert('Debug', 'Onboarding marked as complete for testing');
+            }}
+          >
+            <Text style={styles.debugButtonText}>Mark Onboarding Complete (Debug)</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Login Button */}
@@ -282,8 +343,9 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Text>
         </View>
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 

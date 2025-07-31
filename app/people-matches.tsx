@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -5,8 +6,8 @@ import React, { useEffect, useState } from 'react';
 import {
     Animated,
     Dimensions,
+    FlatList,
     Image,
-    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -14,7 +15,7 @@ import {
     View,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Person {
   id: number;
@@ -27,6 +28,7 @@ interface Person {
   profession?: string;
   education?: string;
   strengths?: string[];
+  isCompanion?: boolean; // Added for companion profiles
 }
 
 // Enhanced mock profiles data
@@ -133,6 +135,8 @@ export default function PeopleMatchesScreen() {
   const router = useRouter();
   const [subscriptionTier, setSubscriptionTier] = useState<string>('support');
   const [displayedProfiles, setDisplayedProfiles] = useState<Person[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState<Person | null>(null);
+  const [userGender, setUserGender] = useState<string | null>(null);
 
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -140,14 +144,25 @@ export default function PeopleMatchesScreen() {
 
   useEffect(() => {
     loadSubscriptionData();
+    loadUserGender();
     startAnimations();
   }, []);
 
   useEffect(() => {
-    if (subscriptionTier) {
+    if (subscriptionTier && userGender) {
       setupProfilesForTier();
     }
-  }, [subscriptionTier]);
+  }, [subscriptionTier, userGender]);
+
+  const loadUserGender = async () => {
+    try {
+      const gender = await AsyncStorage.getItem('user-gender');
+      setUserGender(gender);
+    } catch (error) {
+      console.log('Error loading user gender:', error);
+      setUserGender(null);
+    }
+  };
 
   const startAnimations = () => {
     Animated.parallel([
@@ -177,28 +192,67 @@ export default function PeopleMatchesScreen() {
   };
 
   const setupProfilesForTier = () => {
+    // Filter profiles based on user gender
+    let genderFilteredProfiles = MOCK_PROFILES;
+    if (userGender === 'male') {
+      // For male users, show only male profiles
+      genderFilteredProfiles = MOCK_PROFILES.filter(profile => 
+        profile.name.includes('Omar') || 
+        profile.name.includes('Ibrahim') || 
+        profile.name.includes('Yusuf') || 
+        profile.name.includes('Hassan')
+      );
+    } else if (userGender === 'female') {
+      // For female users, show only female profiles
+      genderFilteredProfiles = MOCK_PROFILES.filter(profile => 
+        profile.name.includes('Amara') || 
+        profile.name.includes('Zara') || 
+        profile.name.includes('Layla') || 
+        profile.name.includes('Fatima')
+      );
+    }
+    // If no gender is set, show all profiles (fallback)
+
     switch (subscriptionTier) {
       case 'support':
-        setDisplayedProfiles(MOCK_PROFILES.slice(0, 8));
+        // For Support+: Show 1 companion first + 7 reverts
+        const companionProfile = {
+          ...genderFilteredProfiles[genderFilteredProfiles.length - 1], // Use last profile as companion
+          isCompanion: true, // Mark as companion
+          name: userGender === 'male' ? "Omar Hassan" : "Amina Hassan", // Gender-appropriate companion name
+          bio: "Experienced companion and mentor helping reverts on their journey. Passionate about Islamic knowledge and community building.",
+          profession: "Islamic Studies Teacher",
+          education: "Islamic Studies, Al-Azhar University",
+          strengths: ["Patient", "Knowledgeable", "Supportive"]
+        };
+        const supportProfiles = [
+          companionProfile, // Companion first
+          ...genderFilteredProfiles.slice(0, Math.min(7, genderFilteredProfiles.length)), // Then up to 7 reverts
+        ];
+        setDisplayedProfiles(supportProfiles);
         break;
       case 'companion':
       case 'mentorship':
-        setDisplayedProfiles(MOCK_PROFILES.slice(0, 5));
+        setDisplayedProfiles(genderFilteredProfiles.slice(0, Math.min(5, genderFilteredProfiles.length)));
         break;
       default:
-        setDisplayedProfiles(MOCK_PROFILES.slice(0, 8));
+        setDisplayedProfiles(genderFilteredProfiles.slice(0, Math.min(8, genderFilteredProfiles.length)));
     }
   };
 
   const handleProfileSelect = (profile: Person) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     console.log('Selected profile:', profile.name);
-    router.replace('/dashboard');
+    setSelectedProfile(profile);
   };
 
   const handleContinue = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace('/dashboard');
+    if (selectedProfile) {
+      router.replace('/dashboard');
+    } else {
+      console.warn('No profile selected to continue.');
+    }
   };
 
   const getTierDisplayName = () => {
@@ -227,39 +281,131 @@ export default function PeopleMatchesScreen() {
         <View style={styles.header}>
           <Text style={styles.tierBadge}>{getTierDisplayName()}</Text>
           <Text style={styles.title}>People Near You</Text>
-          <Text style={styles.subtitle}>Connect with {displayedProfiles.length} people in your community</Text>
+          <Text style={styles.subtitle}>
+            {subscriptionTier === 'support' 
+              ? `Swipe through ${displayedProfiles.length} people (1 companion + 7 reverts)`
+              : `Swipe through ${displayedProfiles.length} people in your community`
+            }
+          </Text>
         </View>
 
-        {/* Profiles Grid */}
-        <ScrollView 
-          style={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.gridContent}
-        >
-          <View style={styles.profilesGrid}>
-            {displayedProfiles.map((profile, index) => (
-              <TouchableOpacity
-                key={profile.id}
-                style={styles.gridProfileContainer}
-                onPress={() => handleProfileSelect(profile)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.profileImageContainer}>
-                  <Image source={profile.image} style={styles.gridProfileImage} />
+        {/* TikTok-style Profile Cards */}
+        <FlatList 
+          data={displayedProfiles}
+          renderItem={({ item }) => {
+            const isSelected = selectedProfile?.id === item.id;
+            const cardContent = (
+              <>
+                {/* Backdrop Area (top third) */}
+                <View style={[
+                  styles.backdropArea,
+                  item.isCompanion && styles.companionBackdropArea,
+                  isSelected && styles.selectedBackdropArea
+                ]}>
+                  {/* Companion Badge */}
+                  {item.isCompanion && (
+                    <View style={styles.companionBadge}>
+                      <Text style={styles.companionBadgeText}>Companion</Text>
+                    </View>
+                  )}
+                  
+                  {/* Selection Badge */}
+                  {isSelected && (
+                    <View style={styles.selectionBadge}>
+                      <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                    </View>
+                  )}
+                  
+                  {/* Profile Picture positioned at bottom border */}
+                  <View style={styles.profileImageContainer}>
+                    <Image source={item.image} style={styles.profileImage} />
+                  </View>
                 </View>
-                <Text style={styles.gridProfileName} numberOfLines={1}>{profile.name}</Text>
+                
+                {/* Profile Info Area */}
+                <View style={styles.profileInfoArea}>
+                  {/* Name and Age */}
+                  <View style={styles.nameAgeContainer}>
+                    <Text style={styles.profileName}>{item.name}</Text>
+                    <Text style={styles.profileAge}>{item.age}</Text>
+                  </View>
+                  
+                  {/* Location */}
+                  <Text style={styles.profileLocation}>{item.location}</Text>
+                  
+                  {/* Bio */}
+                  <Text style={styles.profileBio}>{item.bio}</Text>
+                </View>
+              </>
+            );
+
+            // For Support+, render as View (non-clickable)
+            if (subscriptionTier === 'support') {
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.profileCard,
+                    item.isCompanion && styles.companionCard
+                  ]}
+                >
+                  {cardContent}
+                </View>
+              );
+            }
+
+            // For other tiers, render as TouchableOpacity (clickable for selection)
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.profileCard,
+                  item.isCompanion && styles.companionCard,
+                  isSelected && styles.selectedCard
+                ]}
+                onPress={() => handleProfileSelect(item)}
+                activeOpacity={0.95}
+              >
+                {cardContent}
               </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+            );
+          }}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false}
+          pagingEnabled={true} // Makes scrolling more strict like TikTok
+          snapToInterval={SCREEN_HEIGHT * 0.6 + 20} // Snap to the height of each card plus margin
+          snapToAlignment="start" // Ensures cards snap to the top of the screen
+          decelerationRate={0.2} // Much faster deceleration for strict snapping
+          scrollEventThrottle={16} // More responsive scroll events (60fps)
+          getItemLayout={(data, index) => ({
+            length: SCREEN_HEIGHT * 0.6 + 20,
+            offset: (SCREEN_HEIGHT * 0.6 + 20) * index,
+            index,
+          })}
+          contentContainerStyle={styles.cardsContent}
+        />
 
         {/* Continue button */}
         <TouchableOpacity 
-          style={styles.continueButton} 
+          style={[
+            styles.continueButton,
+            !selectedProfile && subscriptionTier !== 'support' && styles.continueButtonDisabled
+          ]} 
           onPress={handleContinue}
           activeOpacity={0.8}
+          disabled={!selectedProfile && subscriptionTier !== 'support'}
         >
-          <Text style={styles.continueButtonText}>Continue to Dashboard</Text>
+          <Text style={[
+            styles.continueButtonText,
+            !selectedProfile && subscriptionTier !== 'support' && styles.continueButtonTextDisabled
+          ]}>
+            {subscriptionTier === 'support' 
+              ? 'Continue to Dashboard' 
+              : selectedProfile 
+                ? `Continue with ${selectedProfile.name}` 
+                : 'Select a person to continue'
+            }
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -279,7 +425,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   tierBadge: {
     fontSize: 14,
@@ -311,42 +457,114 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  gridContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
+  cardsContent: {
+    paddingTop: 20, // Added top padding for better spacing from header
+    paddingBottom: 20, // Changed back to paddingBottom for vertical scroll
   },
-  profilesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 20,
+  profileCard: {
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_HEIGHT * 0.6, // Reduced from 0.7 to fit screen better
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginBottom: 20, // Changed back to marginBottom for vertical spacing
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    overflow: 'hidden',
   },
-  gridProfileContainer: {
-    width: (SCREEN_WIDTH - 60) / 2 - 10,
-    alignItems: 'center',
-    marginBottom: 25,
+  companionCard: {
+    backgroundColor: '#E8F5E9', // Lighter green background for companion
+    borderWidth: 2,
+    borderColor: '#4CAF50', // Green border for companion
+  },
+  companionBackdropArea: {
+    backgroundColor: '#E8F5E9', // Lighter green background for companion
+  },
+  companionBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  companionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  backdropArea: {
+    height: SCREEN_HEIGHT * 0.25, // Increased from 0.23 to accommodate bigger profile picture
+    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    position: 'relative', // Added for absolute positioning of profile picture
+  },
+  profileInfoArea: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 60, // Increased from 24 to move text further down and avoid profile picture overlap
+    paddingBottom: 24,
   },
   profileImageContainer: {
+    position: 'absolute',
+    bottom: -40, // Position at bottom border of backdrop section
+    left: 24, // Left-aligned with content padding
+    zIndex: 10, // Ensure it's above other content
+  },
+  profileImage: {
+    width: 100, // Increased from 80
+    height: 100, // Increased from 80
+    borderRadius: 50, // Increased from 40
+    borderWidth: 4, // Increased from 3
+    borderColor: '#FFFFFF',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.15, // Increased from 0.1
+    shadowRadius: 12, // Increased from 8
+    elevation: 6, // Increased from 4
   },
-  gridProfileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+  nameAgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start', // Changed from 'center' to left-align
+    marginBottom: 8,
+    marginLeft: 0, // Ensure no left margin
   },
-  gridProfileName: {
-    fontSize: 16,
-    fontWeight: '600',
+  profileName: {
+    fontSize: 24,
+    fontWeight: '700',
     color: '#2C3E50',
-    textAlign: 'center',
-    marginTop: 12,
-    fontFamily: 'System',
+    marginRight: 8,
+    textAlign: 'left', // Ensure left alignment
+  },
+  profileAge: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#34495E',
+    opacity: 0.8,
+    textAlign: 'left', // Ensure left alignment
+  },
+  profileLocation: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#34495E',
+    textAlign: 'left', // Changed from 'center' to left-align
+    marginBottom: 16,
+    opacity: 0.7,
+  },
+  profileBio: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#2C3E50',
+    textAlign: 'left', // Changed from 'center' to left-align
+    lineHeight: 24,
+    flex: 1,
   },
   continueButton: {
     backgroundColor: '#2C3E50',
@@ -365,5 +583,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: 'System',
+  },
+  continueButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#808080',
+  },
+  continueButtonTextDisabled: {
+    color: '#A0A0A0',
+  },
+  selectedBackdropArea: {
+    backgroundColor: '#E0F2F7', // Light blue background for selected
+  },
+  selectionBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#4CAF50',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  selectionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#4CAF50', // Green border for selected
   },
 });

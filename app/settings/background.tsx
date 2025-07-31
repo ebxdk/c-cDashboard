@@ -10,7 +10,7 @@ export default function BackgroundSettingsScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const router = useRouter();
-  const [selectedBackground, setSelectedBackground] = useState('gradient1');
+  const [selectedBackground, setSelectedBackground] = useState('off-white');
 
   // Load saved background preference
   useEffect(() => {

@@ -12,6 +12,8 @@ import {
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
+import { supabase } from '../lib/supabaseClient';
+import { onboardingUtils } from '../utils/onboardingUtils';
 
 // --- COMMENTED OUT: Original verification logic and state ---
 /*
@@ -47,11 +49,71 @@ export default function VerifyEmailScreen() {
       Alert.alert('Error', 'Please enter both email and password.');
       return;
     }
+    
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        Alert.alert('Error', error.message || 'Login failed');
+        return;
+      }
+      
+      // Check email verification
+      const isEmailVerified = await onboardingUtils.isEmailVerified();
+      if (!isEmailVerified) {
+        Alert.alert(
+          'Email Not Verified', 
+          'Please verify your email address before signing in. Check your inbox for a verification link.'
+        );
+        return;
+      }
+      
+      // Reset profile setup status for new users to ensure proper flow
+      await onboardingUtils.resetProfileSetupStatus();
+      
+      // Reset gender selection for new users to ensure they see gender page
+      await onboardingUtils.resetGenderSelection();
+      
+      // Debug: Check onboarding status
+      const status = await onboardingUtils.getOnboardingStatus();
+      console.log('Onboarding status:', status);
+      
+      // Check onboarding status and redirect accordingly
+      const nextStep = await onboardingUtils.getNextOnboardingStep();
+      console.log('Next onboarding step:', nextStep);
+      
+      if (nextStep === 'profile-gender') {
+        console.log('Redirecting to gender selection');
+        router.push('/profile-gender');
+      } else if (nextStep === 'profile-picture') {
+        console.log('Redirecting to profile picture');
+        router.push('/profile-picture');
+      } else if (nextStep === 'persona-selection') {
+        console.log('Redirecting to persona selection');
+        router.push('/persona-selection');
+      } else if (nextStep === 'question-1') {
+        console.log('Redirecting to questionnaire');
+        router.push('/question-1');
+      } else if (nextStep === 'subscription') {
+        console.log('Redirecting to subscription');
+        router.push('/subscription');
+      } else if (nextStep === 'verify-email') {
+        console.log('Still needs email verification');
+        Alert.alert('Email Not Verified', 'Please verify your email address.');
+      } else {
+        console.log('Onboarding complete, redirecting to dashboard');
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Login failed');
+    } finally {
       setIsLoading(false);
-      router.push('/dashboard');
-    }, 1000);
+    }
   };
 
   const handleForgotPassword = () => {
