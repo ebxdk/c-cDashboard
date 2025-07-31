@@ -14,15 +14,15 @@
 
 #### **For Mobile App (Replit/Development)**
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://wzmfprzmogvzgbdqlvyn.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bWZwcnptb2d2emdiZHFsdnluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NDE1MjksImV4cCI6MjA2ODAxNzUyOX0.eNvKT5zEoxksFIiy2Y4iS03MEsArq74dVDfQT0W7MkA
+EXPO_PUBLIC_SUPABASE_URL=https://yaolamkmoymxieiwolhk.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_new_anon_key_here
 EXPO_PUBLIC_EMAIL_REDIRECT_URL=https://your-app.vercel.app/welcome
 ```
 
 #### **For Web App (Vercel)**
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://wzmfprzmogvzgbdqlvyn.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bWZwcnptb2d2emdiZHFsdnluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NDE1MjksImV4cCI6MjA2ODAxNzUyOX0.eNvKT5zEoxksFIiy2Y4iS03MEsArq74dVDfQT0W7MkA
+NEXT_PUBLIC_SUPABASE_URL=https://yaolamkmoymxieiwolhk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_new_anon_key_here
 ```
 
 ### 3. **Supabase Settings**

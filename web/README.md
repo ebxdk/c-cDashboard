@@ -22,8 +22,8 @@ This is the web component that handles email verification from Supabase for your
    - Go to your project settings in Vercel
    - Add these environment variables:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://wzmfprzmogvzgbdqlvyn.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bWZwcnptb2d2emdiZHFsdnluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NDE1MjksImV4cCI6MjA2ODAxNzUyOX0.eNvKT5zEoxksFIiy2Y4iS03MEsArq74dVDfQT0W7MkA
+   NEXT_PUBLIC_SUPABASE_URL=https://yaolamkmoymxieiwolhk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_new_anon_key_here
    ```
 
 3. **Update Mobile App Environment**
